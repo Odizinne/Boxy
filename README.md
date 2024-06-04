@@ -5,7 +5,7 @@ yt-dlp discord music bot
 
 - Python
 - PyNaCl, discord, yt-dlp modules: `pip install pynacl discord yt-dlp`
-
+- ffmpeg added to path
 ## Usage
 /play YOUTUBE_URL<br/>
 /stop<br/>
