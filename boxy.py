@@ -3,6 +3,8 @@ from discord.ext import commands, tasks
 import yt_dlp
 import os
 import time
+from youtube_search import YoutubeSearch
+
 
 intents = discord.Intents.default()
 intents.message_content = True
@@ -30,7 +32,7 @@ class BoxyBot(commands.Bot):
 boxy = BoxyBot(command_prefix='/', intents=intents)
 
 @boxy.command(name='play')
-async def play(ctx, url):
+async def play(ctx, *, search):
     channel = ctx.author.voice.channel
     if ctx.voice_client is not None:
         voice_client = ctx.voice_client
@@ -44,13 +46,20 @@ async def play(ctx, url):
 
     delete_file(audio_file)
 
+    if not search.startswith('http'):
+        search = get_first_video_url(search)
+
+    if search is None:
+        await ctx.send('Could not find any videos.')
+        return
+
     ydl_opts = {
         'format': 'bestaudio/best',
         'outtmpl': audio_file,
         'noplaylist': True,
     }
     with yt_dlp.YoutubeDL(ydl_opts) as ydl:
-        info = ydl.extract_info(url, download=True)
+        info = ydl.extract_info(search, download=True)
         song_name = info['title']
 
     if os.path.exists(audio_file):
@@ -61,7 +70,7 @@ async def play(ctx, url):
 
     boxy.voice_client = voice_client
     boxy.last_activity = time.time()
-
+    
 def delete_file(file_path):
     while True:
         try:
@@ -71,6 +80,15 @@ def delete_file(file_path):
         except PermissionError:
             time.sleep(.1)
 
+def get_first_video_url(keywords):
+    results = YoutubeSearch(keywords, max_results=1).to_dict()
+    if results:
+        first_result = results[0]
+        video_url = f"https://www.youtube.com{first_result['url_suffix']}"
+        return video_url
+    else:
+        return None
+    
 @boxy.command(name='stop')
 async def stop(ctx):
     if ctx.voice_client is not None:
