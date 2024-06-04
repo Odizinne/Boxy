@@ -1,5 +1,5 @@
 import discord
-from discord.ext import commands
+from discord.ext import commands, tasks
 import yt_dlp
 import os
 import time
@@ -7,13 +7,29 @@ import time
 intents = discord.Intents.default()
 intents.message_content = True
 
-bot = commands.Bot(command_prefix='/', intents=intents)
+class BoxyBot(commands.Bot):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.voice_client = None
+        self.last_activity = time.time()
 
-@bot.event
-async def on_ready():
-    print(f'We have logged in as {bot.user}')
+    @tasks.loop(minutes=1)
+    async def check_inactivity(self):
+        if self.voice_client and not self.voice_client.is_playing():
+            if time.time() - self.last_activity >= 600:
+                await self.voice_client.disconnect()
+                self.voice_client = None
+            elif len(self.voice_client.channel.members) == 1:
+                await self.voice_client.disconnect()
+                self.voice_client = None
 
-@bot.command(name='play')
+    async def on_ready(self):
+        print(f'We have logged in as {boxy.user}')
+        self.check_inactivity.start()
+
+boxy = BoxyBot(command_prefix='/', intents=intents)
+
+@boxy.command(name='play')
 async def play(ctx, url):
     channel = ctx.author.voice.channel
     if ctx.voice_client is not None:
@@ -31,8 +47,7 @@ async def play(ctx, url):
     ydl_opts = {
         'format': 'bestaudio/best',
         'outtmpl': audio_file,
-        'noplaylist': True,  # Only download single video, not playlist
-
+        'noplaylist': True,
     }
     with yt_dlp.YoutubeDL(ydl_opts) as ydl:
         info = ydl.extract_info(url, download=True)
@@ -44,6 +59,9 @@ async def play(ctx, url):
     else:
         await ctx.send(f'Could not find file {audio_file}')
 
+    boxy.voice_client = voice_client
+    boxy.last_activity = time.time()
+
 def delete_file(file_path):
     while True:
         try:
@@ -53,7 +71,7 @@ def delete_file(file_path):
         except PermissionError:
             time.sleep(.1)
 
-@bot.command(name='stop')
+@boxy.command(name='stop')
 async def stop(ctx):
     if ctx.voice_client is not None:
         if isinstance(ctx.voice_client.source, discord.FFmpegPCMAudio):
@@ -63,22 +81,25 @@ async def stop(ctx):
         audio_file = os.path.abspath('downloaded_audio.webm')
         delete_file(audio_file)
         await ctx.send('Stopped playing music and disconnected from the channel.')
+        boxy.voice_client = None
     else:
         await ctx.send('No music is playing.')
 
-@bot.command(name='pause')
+@boxy.command(name='pause')
 async def pause(ctx):
     if ctx.voice_client is not None and ctx.voice_client.is_playing():
         ctx.voice_client.pause()
         await ctx.send('Paused the music.')
+        boxy.last_activity = time.time()
     else:
         await ctx.send('No music is playing.')
 
-@bot.command(name='resume')
+@boxy.command(name='resume')
 async def resume(ctx):
     if ctx.voice_client is not None and ctx.voice_client.is_paused():
         ctx.voice_client.resume()
         await ctx.send('Resumed the music.')
+        boxy.last_activity = time.time()
     else:
         await ctx.send('No music is paused.')
 
@@ -86,5 +107,6 @@ def get_token():
     dir_path = os.path.dirname(os.path.realpath(__file__))
     with open(os.path.join(dir_path, 'token.txt'), 'r') as file:
         return file.read().strip()
+
 print("Starting the bot...")
-bot.run(get_token())
+boxy.run(get_token())
