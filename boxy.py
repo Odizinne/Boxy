@@ -82,5 +82,9 @@ async def resume(ctx):
     else:
         await ctx.send('No music is paused.')
 
+def get_token():
+    dir_path = os.path.dirname(os.path.realpath(__file__))
+    with open(os.path.join(dir_path, 'token.txt'), 'r') as file:
+        return file.read().strip()
 print("Starting the bot...")
-bot.run('YOUR_BOT_TOKEN_HERE')
+bot.run(get_token())
