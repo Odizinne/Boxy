@@ -9,7 +9,7 @@ yt-dlp discord music bot
 
 ## Usage
 
-- `/play YOUTUBE_URL`<br/>
+- `/play YOUTUBE_URL / KEYWORDS`<br/>
 - `/stop`<br/>
 - `/pause`<br/>
 - `/resume`
