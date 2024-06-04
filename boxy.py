@@ -31,6 +31,8 @@ async def play(ctx, url):
     ydl_opts = {
         'format': 'bestaudio/best',
         'outtmpl': audio_file,
+        'noplaylist': True,  # Only download single video, not playlist
+
     }
     with yt_dlp.YoutubeDL(ydl_opts) as ydl:
         info = ydl.extract_info(url, download=True)
