@@ -5,7 +5,6 @@ import os
 import time
 from youtube_search import YoutubeSearch
 
-
 intents = discord.Intents.default()
 intents.message_content = True
 
@@ -26,7 +25,7 @@ class BoxyBot(commands.Bot):
                 self.voice_client = None
 
     async def on_ready(self):
-        print(f'We have logged in as {boxy.user}')
+        print(f'We have logged in as {self.user}')
         self.check_inactivity.start()
 
 boxy = BoxyBot(command_prefix='/', intents=intents)
@@ -37,7 +36,7 @@ async def play(ctx, *, search):
     if ctx.voice_client is not None:
         voice_client = ctx.voice_client
         if isinstance(voice_client.source, discord.FFmpegPCMAudio):
-            voice_client.source._process.kill()
+            voice_client.source.cleanup()
         voice_client.stop()
     else:
         voice_client = await channel.connect()
@@ -88,12 +87,12 @@ def get_first_video_url(keywords):
         return video_url
     else:
         return None
-    
+
 @boxy.command(name='stop')
 async def stop(ctx):
     if ctx.voice_client is not None:
         if isinstance(ctx.voice_client.source, discord.FFmpegPCMAudio):
-            ctx.voice_client.source._process.kill()
+            ctx.voice_client.source.cleanup()
         ctx.voice_client.stop()
         await ctx.voice_client.disconnect()
         audio_file = os.path.abspath('downloaded_audio.webm')
