@@ -32,6 +32,10 @@ boxy = BoxyBot(command_prefix='/', intents=intents)
 
 @boxy.command(name='play')
 async def play(ctx, *, search):
+    if ctx.author.voice is None or ctx.author.voice.channel is None:
+        await ctx.send("You need to be in a voice channel to use this command.")
+        return
+
     channel = ctx.author.voice.channel
     if ctx.voice_client is not None:
         voice_client = ctx.voice_client
