@@ -50,10 +50,11 @@ async def play(ctx, *, search):
     delete_file(audio_file)
 
     if not search.startswith('http'):
+        ctx.send('Searching...')
         search = get_first_video_url(search)
 
     if search is None:
-        await ctx.send('Could not find any videos.')
+        await ctx.send("You should tell me what you'd like to listen to.")
         return
 
     ydl_opts = {
@@ -69,7 +70,7 @@ async def play(ctx, *, search):
         voice_client.play(discord.FFmpegPCMAudio(audio_file), after=lambda e: delete_file(audio_file))
         await ctx.send(f'Playing: {song_name}')
     else:
-        await ctx.send(f'Could not find file {audio_file}')
+        await ctx.send(f'Ups! Something went wrong. You should tell it to Odizinne.')
 
     boxy.voice_client = voice_client
     boxy.last_activity = time.time()
