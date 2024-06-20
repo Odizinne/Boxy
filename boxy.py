@@ -1,5 +1,5 @@
 import discord
-from discord.ext import commands, tasks
+from discord.ext import commands
 import yt_dlp
 import os
 import time
@@ -7,28 +7,26 @@ from youtube_search import YoutubeSearch
 
 intents = discord.Intents.default()
 intents.message_content = True
+intents.voice_states = True
 
 class BoxyBot(commands.Bot):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.voice_client = None
-        self.last_activity = time.time()
-
-    @tasks.loop(minutes=1)
-    async def check_inactivity(self):
-        if self.voice_client and not self.voice_client.is_playing():
-            if time.time() - self.last_activity >= 600:
-                await self.voice_client.disconnect()
-                self.voice_client = None
-            elif len(self.voice_client.channel.members) == 1:
-                await self.voice_client.disconnect()
-                self.voice_client = None
 
     async def on_ready(self):
         print(f'We have logged in as {self.user}')
-        self.check_inactivity.start()
 
 boxy = BoxyBot(command_prefix='/', intents=intents)
+
+@boxy.event
+async def on_voice_state_update(member, before, after):
+    voice_state = member.guild.voice_client
+    if voice_state is None:
+        return 
+
+    if len(voice_state.channel.members) == 1:
+        await voice_state.disconnect()
 
 @boxy.command(name='play')
 async def play(ctx, *, search):
@@ -50,7 +48,7 @@ async def play(ctx, *, search):
     delete_file(audio_file)
 
     if not search.startswith('http'):
-        ctx.send('Searching...')
+        await ctx.send('Searching...')
         search = get_first_video_url(search)
 
     if search is None:
@@ -73,7 +71,6 @@ async def play(ctx, *, search):
         await ctx.send(f'Ups! Something went wrong. You should tell it to Odizinne.')
 
     boxy.voice_client = voice_client
-    boxy.last_activity = time.time()
     
 def delete_file(file_path):
     while True:
@@ -112,7 +109,6 @@ async def pause(ctx):
     if ctx.voice_client is not None and ctx.voice_client.is_playing():
         ctx.voice_client.pause()
         await ctx.send('Paused the music.')
-        boxy.last_activity = time.time()
     else:
         await ctx.send('No music is playing.')
 
@@ -121,7 +117,6 @@ async def resume(ctx):
     if ctx.voice_client is not None and ctx.voice_client.is_paused():
         ctx.voice_client.resume()
         await ctx.send('Resumed the music.')
-        boxy.last_activity = time.time()
     else:
         await ctx.send('No music is paused.')
 
