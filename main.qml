@@ -54,7 +54,11 @@ ApplicationWindow {
             Connections {
                 target: botBridge
                 function onSongChanged(songTitle) {
-                    songLabel.text = "Now playing: " + songTitle
+                    if (songTitle !== "" ) {
+                        songLabel.text = "Now playing: " + songTitle
+                    } else {
+                        songLabel.text = "No song playing"
+                    }
                     songLoaded = songTitle !== ""
                 }
             }
@@ -120,18 +124,11 @@ ApplicationWindow {
             spacing: 14
             Button {
                 id: pauseButton
-                //text: botBridge.isPlaying ? "Pause" : "Resume"
                 Layout.preferredWidth: pauseButton.height
                 enabled: songLoaded
                 onClicked: {
                     botBridge.toggle_playback()
                 }
-                //Connections {
-                //    target: botBridge
-                //    function onPlayStateChanged(isPlaying) {
-                //        pauseButton.text = isPlaying ? "Pause" : "Resume"
-                //    }
-                //}
 
                 Image {
                     id:pauseImage
