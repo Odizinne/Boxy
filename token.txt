@@ -1,1 +1,1 @@
-#REPLACE THIS WITH YOUR DISCORD BOT TOKEN
+Your discord bot token here
