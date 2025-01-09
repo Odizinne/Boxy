@@ -4,6 +4,7 @@ import sys
 import threading
 import argparse
 import discord
+from discord.errors import LoginFailure
 from discord.ext import commands
 from PySide6.QtCore import QObject, Signal, Slot, QUrl, Property
 from PySide6.QtGui import QGuiApplication
@@ -240,7 +241,7 @@ class BoxyBot(commands.Bot):
         super().__init__(*args, **kwargs)
         self.voice_client = None
         self.bridge = None
-        self.loop = asyncio.get_event_loop()
+        # self.loop = asyncio.get_event_loop()
 
     async def on_ready(self):
         print(f"We have logged in as {self.user}")
@@ -359,7 +360,34 @@ def get_token():
         return file.read().strip()
 
 
+async def verify_token(token):
+    """Verify token before starting the GUI"""
+    import aiohttp
+
+    async with aiohttp.ClientSession() as session:
+        headers = {"Authorization": f"Bot {token}"}
+
+        try:
+            async with session.get("https://discord.com/api/v10/users/@me", headers=headers) as response:
+                return response.status == 200
+        except Exception as e:
+            print(f"Error verifying token: {e}")
+            return False
+
+
 def run_bot_with_gui():
+    try:
+        token = get_token()
+    except Exception as e:
+        print(f"Error reading token: {e}")
+        sys.exit(1)
+
+    # Verify token before creating any Qt components
+    if not asyncio.run(verify_token(token)):
+        print("Token was rejected by Discord")
+        sys.exit(1)
+
+    # Only create Qt application if token is valid
     app = QGuiApplication(sys.argv)
     engine = QQmlApplicationEngine()
 
@@ -369,21 +397,40 @@ def run_bot_with_gui():
 
     engine.rootContext().setContextProperty("botBridge", bridge)
 
-    # Start bot in separate thread
-    bot_thread = threading.Thread(target=lambda: bot.run(get_token()), daemon=True)
+    def bot_runner():
+        try:
+            bot.run(token)
+        except Exception as e:
+            print(f"Bot error: {e}")
+            app.quit()
+
+    bot_thread = threading.Thread(target=bot_runner, daemon=True)
     bot_thread.start()
 
     engine.load(QUrl.fromLocalFile("main.qml"))
 
     if not engine.rootObjects():
-        sys.exit(-1)
+        sys.exit(1)
 
     sys.exit(app.exec())
 
 
 def run_bot_no_gui():
-    bot = BoxyBot(command_prefix="/", intents=intents)
-    bot.run(get_token())
+    try:
+        token = get_token()
+
+        # Verify token first
+        if not asyncio.run(verify_token(token)):
+            print("Token was rejected by Discord")
+            sys.exit(1)
+
+        # Create and run bot only if token is valid
+        bot = BoxyBot(command_prefix="/", intents=intents)
+        # Don't get event loop here since it will be created by bot.run()
+        bot.run(token)
+    except Exception as e:
+        print(f"Bot error: {e}")
+        sys.exit(1)
 
 
 if __name__ == "__main__":
