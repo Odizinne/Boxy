@@ -503,8 +503,31 @@ def get_first_video_url(keywords):
 
 def get_token():
     dir_path = os.path.dirname(os.path.realpath(__file__))
-    with open(os.path.join(dir_path, "token.txt"), "r") as file:
-        return file.read().strip()
+    token_path = os.path.join(dir_path, "token.txt")
+
+    # Check if token.txt exists
+    if not os.path.exists(token_path):
+        # Create token.txt with placeholder
+        with open(token_path, "w") as file:
+            file.write("REPLACE_THIS_WITH_YOUR_BOT_TOKEN")
+        print("\ntoken.txt has been created.")
+        print(
+            "Please replace the placeholder text in token.txt with your Discord bot token and restart the application."
+        )
+        sys.exit(0)
+
+    # Read the token
+    with open(token_path, "r") as file:
+        token = file.read().strip()
+
+    # Check if token is still the placeholder
+    if token == "REPLACE_THIS_WITH_YOUR_BOT_TOKEN":
+        print(
+            "\nPlease replace the placeholder text in token.txt with your Discord bot token and restart the application."
+        )
+        sys.exit(0)
+
+    return token
 
 
 async def verify_token(token):
