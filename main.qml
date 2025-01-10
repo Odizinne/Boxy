@@ -104,6 +104,7 @@ ApplicationWindow {
                 horizontalAlignment: Text.AlignLeft
                 elide: Text.ElideRight
                 font.pixelSize: 14
+                font.bold: true
                 wrapMode: Text.Wrap
                 maximumLineCount: 3
                 Connections {
