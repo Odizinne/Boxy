@@ -80,26 +80,6 @@ ApplicationWindow {
             }
         }
 
-        Label {
-            id: songLabel
-            text: "No song playing"
-            Layout.alignment: Qt.AlignHCenter
-            Layout.fillWidth: true
-            horizontalAlignment: Text.AlignHCenter
-            elide: Text.ElideRight
-            font.pixelSize: 14
-            Connections {
-                target: botBridge
-                function onSongChanged(songTitle) {
-                    if (songTitle !== "" ) {
-                        songLabel.text = "Now playing: " + songTitle
-                    } else {
-                        songLabel.text = "No song playing"
-                    }
-                    songLoaded = songTitle !== ""
-                }
-            }
-        }
 
         Label {
             id: downloadStatus
@@ -123,6 +103,33 @@ ApplicationWindow {
             visible: !downloadStatus.visible
         }
 
+        MenuSeparator { 
+            Layout.fillWidth: true
+            Layout.leftMargin: -14
+            Layout.rightMargin: -14
+        }
+
+        Label {
+            id: songLabel
+            text: "No song playing"
+            Layout.alignment: Qt.AlignHCenter
+            Layout.fillWidth: true
+            horizontalAlignment: Text.AlignHCenter
+            elide: Text.ElideRight
+            font.pixelSize: 14
+            Connections {
+                target: botBridge
+                function onSongChanged(songTitle) {
+                    if (songTitle !== "" ) {
+                        songLabel.text = "Now playing: " + songTitle
+                    } else {
+                        songLabel.text = "No song playing"
+                    }
+                    songLoaded = songTitle !== ""
+                }
+            }
+        }
+        
         RowLayout {
             Layout.fillWidth: true
             spacing: 10
@@ -237,6 +244,11 @@ ApplicationWindow {
             }
         }
 
+        MenuSeparator { 
+            Layout.fillWidth: true
+            Layout.leftMargin: -14
+            Layout.rightMargin: -14
+        }
         // Server row
         RowLayout {
             Layout.fillWidth: true
