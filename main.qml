@@ -16,7 +16,6 @@ ApplicationWindow {
     Universal.accent: Universal.Green
     property bool songLoaded: false
 
-    // Add this function somewhere in your QML
     function formatTime(seconds) {
         var minutes = Math.floor(seconds / 60)
         var remainingSeconds = Math.floor(seconds % 60)
@@ -49,23 +48,6 @@ ApplicationWindow {
                 }
             }
         }
-
-        //Label {
-        //    id: downloadStatus
-        //    text: ""
-        //    Layout.alignment: Qt.AlignHCenter
-        //    Layout.fillWidth: true
-        //    horizontalAlignment: Text.AlignHCenter
-        //    color: "gray"
-        //    font.pixelSize: 12
-        //    visible: text !== ""
-        //    Connections {
-        //        target: botBridge
-        //        function onDownloadStatusChanged(status) {
-        //            downloadStatus.text = status
-        //        }
-        //    }
-        //}
 
         RowLayout {
             Layout.fillWidth: true
@@ -114,7 +96,6 @@ ApplicationWindow {
             Layout.fillWidth: true
             spacing: 10
 
-            // Left side - Song label
             Label {
                 id: songLabel
                 text: "No song playing"
@@ -129,7 +110,7 @@ ApplicationWindow {
                     target: botBridge
                     function onSongChanged(songTitle) {
                         if (songTitle !== "" ) {
-                            songLabel.text = "Now playing: " + songTitle
+                            songLabel.text = songTitle
                         } else {
                             songLabel.text = "No song playing"
                         }
@@ -151,15 +132,14 @@ ApplicationWindow {
                 Connections {
                     target: botBridge
                     function onThumbnailChanged(url) {
-                        console.log("Thumbnail URL changed:", url)
                         thumbnailImage.currentUrl = url
                     }
                 }
 
                 visible: true
                 clip: true
-                asynchronous: true  // Add this
-                cache: false       // Add this
+                asynchronous: true 
+                cache: false      
 
 
             }
@@ -192,11 +172,9 @@ ApplicationWindow {
                 Connections {
                     target: botBridge
                     function onDurationChanged(duration) {
-                        console.log("Duration changed:", duration)
                         timelineSlider.to = duration
                     }
                     function onPositionChanged(position) {
-                        console.log("Position changed:", position)
                         if (!timelineSlider.pressed) {
                             timelineSlider.value = position
                         }
@@ -284,7 +262,7 @@ ApplicationWindow {
             Layout.leftMargin: -14
             Layout.rightMargin: -14
         }
-        // Server row
+
         RowLayout {
             Layout.fillWidth: true
             spacing: 10
@@ -304,7 +282,6 @@ ApplicationWindow {
                 model: []
 
                 onCurrentValueChanged: {
-                    console.log("Selected server:", currentValue)
                     if (currentValue) {
                         botBridge.set_current_server(currentValue)
                     }
@@ -313,7 +290,6 @@ ApplicationWindow {
                 Connections {
                     target: botBridge
                     function onServersChanged(servers) {
-                        console.log("Servers received:", servers.length)
                         serverComboBox.model = servers
                         if (servers.length > 0) {
                             serverComboBox.currentIndex = 0
@@ -331,7 +307,6 @@ ApplicationWindow {
             }
         }
 
-        // Channel row
         RowLayout {
             Layout.fillWidth: true
             spacing: 10
@@ -352,7 +327,6 @@ ApplicationWindow {
                 model: []
 
                 onCurrentValueChanged: {
-                    console.log("Selected channel:", currentValue)
                     if (currentValue) {
                         botBridge.set_current_channel(currentValue)
                     }
@@ -361,7 +335,6 @@ ApplicationWindow {
                 Connections {
                     target: botBridge
                     function onChannelsChanged(channels) {
-                        console.log("Channels received:", channels.length)
                         channelComboBox.model = channels
                         if (channels.length > 0) {
                             channelComboBox.currentIndex = 0
