@@ -33,6 +33,7 @@ class BotBridge(QObject):
     positionChanged = Signal(float)
     startTimerSignal = Signal()
     stopTimerSignal = Signal()
+    thumbnailChanged = Signal(str)
 
     def __init__(self, bot):
         super().__init__()
@@ -51,6 +52,7 @@ class BotBridge(QObject):
         self._current_server = None
         self._duration = 0
         self._position = 0
+        self._current_thumbnail_url = None
 
         self._position_timer = QTimer(self)
         self._position_timer.setInterval(1000)
@@ -58,6 +60,16 @@ class BotBridge(QObject):
 
         self.startTimerSignal.connect(self._position_timer.start)
         self.stopTimerSignal.connect(self._position_timer.stop)
+
+    @Property(str, notify=thumbnailChanged)
+    def current_thumbnail_url(self):
+        return self._current_thumbnail_url
+
+    @current_thumbnail_url.setter
+    def current_thumbnail_url(self, url):
+        if self._current_thumbnail_url != url:
+            self._current_thumbnail_url = url
+            self.thumbnailChanged.emit(url)
 
     async def cleanup(self):
         if self.bot.voice_client:
@@ -136,6 +148,8 @@ class BotBridge(QObject):
                 self.current_audio_file = None
                 self.current_url = None
                 self.downloadStatusChanged.emit("")
+                self._current_thumbnail_url = None
+                self.thumbnailChanged.emit("")
 
         asyncio.run_coroutine_threadsafe(disconnect_wrapper(), self.bot.loop)
 
@@ -301,6 +315,8 @@ class BotBridge(QObject):
                 self.songChanged.emit(song_name)
                 self.current_audio_file = audio_file
                 self.current_url = search
+                self._current_thumbnail_url = info.get("thumbnail") or info.get("thumbnails", [{}])[0].get("url", "")
+                self.thumbnailChanged.emit(self._current_thumbnail_url)  # Add this line
 
         except Exception as e:
             print(f"Download error: {e}")
@@ -352,6 +368,8 @@ class BotBridge(QObject):
         if not (self.repeat_mode and audio_file == self.current_audio_file):
             self.songLoadedChanged.emit(False)
             self.songChanged.emit("")
+            self._current_thumbnail_url = ""  # Changed from None to empty string
+            self.thumbnailChanged.emit("")
 
         if error:
             print(f"An error occurred: {error}")

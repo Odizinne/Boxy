@@ -110,24 +110,58 @@ ApplicationWindow {
             Layout.rightMargin: -14
         }
 
-        Label {
-            id: songLabel
-            text: "No song playing"
-            Layout.alignment: Qt.AlignHCenter
+        RowLayout {
             Layout.fillWidth: true
-            horizontalAlignment: Text.AlignHCenter
-            elide: Text.ElideRight
-            font.pixelSize: 14
-            Connections {
-                target: botBridge
-                function onSongChanged(songTitle) {
-                    if (songTitle !== "" ) {
-                        songLabel.text = "Now playing: " + songTitle
-                    } else {
-                        songLabel.text = "No song playing"
+            spacing: 14
+
+            // Left side - Song label
+            Label {
+                id: songLabel
+                text: "No song playing"
+                Layout.fillWidth: true
+                Layout.preferredWidth: parent.width * 0.85
+                horizontalAlignment: Text.AlignLeft
+                elide: Text.ElideRight
+                font.pixelSize: 14
+                wrapMode: Text.Wrap
+                maximumLineCount: 3
+                Connections {
+                    target: botBridge
+                    function onSongChanged(songTitle) {
+                        if (songTitle !== "" ) {
+                            songLabel.text = "Now playing: " + songTitle
+                        } else {
+                            songLabel.text = "No song playing"
+                        }
+                        songLoaded = songTitle !== ""
                     }
-                    songLoaded = songTitle !== ""
                 }
+            }
+
+            Image {
+                id: thumbnailImage
+                Layout.preferredWidth: parent.width * 0.15
+                Layout.preferredHeight: thumbnailImage.Layout.preferredWidth  
+                fillMode: Image.PreserveAspectCrop
+                property string currentUrl: ""
+
+                source: currentUrl || (Universal.theme === Universal.Dark ? 
+                    "icons/placeholder_light.png" : "icons/placeholder_dark.png")
+
+                Connections {
+                    target: botBridge
+                    function onThumbnailChanged(url) {
+                        console.log("Thumbnail URL changed:", url)
+                        thumbnailImage.currentUrl = url
+                    }
+                }
+
+                visible: true
+                clip: true
+                asynchronous: true  // Add this
+                cache: false       // Add this
+
+
             }
         }
         
