@@ -58,6 +58,13 @@ class BotBridge(QObject):
         self.startTimerSignal.connect(self._position_timer.start)
         self.stopTimerSignal.connect(self._position_timer.stop)
 
+    async def cleanup(self):
+        if self.bot.voice_client:
+            await self.bot.voice_client.disconnect()
+            self.bot.voice_client = None
+            if self.current_audio_file and os.path.exists(self.current_audio_file):
+                await delete_file(self.current_audio_file)
+
     def _update_position(self):
         if self.bot.voice_client and (self.bot.voice_client.is_playing() or self.bot.voice_client.is_paused()):
             self._position += 1
@@ -582,6 +589,11 @@ def run_bot_with_gui():
     bot = BoxyBot(command_prefix="/", intents=intents)
     bridge = BotBridge(bot)
     bot.bridge = bridge
+
+    def cleanup():
+        asyncio.run_coroutine_threadsafe(bridge.cleanup(), bot.loop).result()
+
+    app.aboutToQuit.connect(cleanup)
 
     engine.rootContext().setContextProperty("botBridge", bridge)
 
