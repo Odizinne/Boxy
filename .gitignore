@@ -2,3 +2,4 @@ build/
 dist/
 .venv/
 downloaded_audio.webm
+token.txt

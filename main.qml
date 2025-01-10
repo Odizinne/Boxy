@@ -16,6 +16,14 @@ ApplicationWindow {
     Universal.accent: Universal.Orange
     property bool songLoaded: false
 
+
+    // Add this function somewhere in your QML
+    function formatTime(seconds) {
+        var minutes = Math.floor(seconds / 60)
+        var remainingSeconds = Math.floor(seconds % 60)
+        return minutes + ":" + (remainingSeconds < 10 ? "0" : "") + remainingSeconds
+    }
+
     onActiveChanged: {
         if (active) {
             urlInput.forceActiveFocus()
@@ -27,6 +35,35 @@ ApplicationWindow {
         anchors.fill: parent
         anchors.margins: 14
         spacing: 14
+
+        RowLayout {
+            Layout.fillWidth: true
+            spacing: 14
+            TextField {
+                id: urlInput
+                enabled: statusLabel.text === "Connected"
+                Layout.preferredWidth: 250
+                Layout.preferredHeight: playButton.implicitHeight -1
+                placeholderText: "Enter YouTube URL or search term"
+                Layout.fillWidth: true
+                onAccepted: {
+                    playButton.clicked()
+                    urlInput.text = ""
+                }
+            }
+            Button {
+                id: playButton
+                enabled: statusLabel.text === "Connected"
+                Layout.preferredWidth: 40
+                text: "Go"
+                onClicked: {
+                    if (urlInput.text.length > 0) {
+                        botBridge.play_url(urlInput.text)
+                        urlInput.text = ""
+                    }
+                }
+            }
+        }
 
         Label {
             id: statusLabel
@@ -64,10 +101,6 @@ ApplicationWindow {
             }
         }
 
-        Item {
-            Layout.preferredHeight: 5
-        }
-
         Label {
             id: downloadStatus
             text: ""
@@ -92,30 +125,48 @@ ApplicationWindow {
 
         RowLayout {
             Layout.fillWidth: true
-            spacing: 14
-            TextField {
-                id: urlInput
-                enabled: statusLabel.text === "Connected"
-                Layout.preferredWidth: 250
-                Layout.preferredHeight: playButton.implicitHeight -1
-                placeholderText: "Enter YouTube URL or search term"
-                Layout.fillWidth: true
-                onAccepted: {
-                    playButton.clicked()
-                    urlInput.text = ""
-                }
+            spacing: 10
+
+            Label {
+                text: formatTime(timelineSlider.value)
+                font.pixelSize: 12
+                Layout.preferredWidth: pauseButton.width
+                horizontalAlignment: Text.AlignHCenter
             }
-            Button {
-                id: playButton
-                enabled: statusLabel.text === "Connected"
-                Layout.preferredWidth: 40
-                text: "Go"
-                onClicked: {
-                    if (urlInput.text.length > 0) {
-                        botBridge.play_url(urlInput.text)
-                        urlInput.text = ""
+
+            Slider {
+                id: timelineSlider
+                Layout.fillWidth: true
+                from: 0
+                to: 1
+                enabled: songLoaded
+
+                onPressedChanged: {
+                    if (!pressed) {  // Only trigger when the slider is released
+                        botBridge.seek(value)
                     }
                 }
+
+                Connections {
+                    target: botBridge
+                    function onDurationChanged(duration) {
+                        console.log("Duration changed:", duration)
+                        timelineSlider.to = duration
+                    }
+                    function onPositionChanged(position) {
+                        console.log("Position changed:", position)
+                        if (!timelineSlider.pressed) {
+                            timelineSlider.value = position
+                        }
+                    }
+                }
+            }
+
+            Label {
+                Layout.preferredWidth: pauseButton.width
+                text: formatTime(timelineSlider.to)
+                font.pixelSize: 12
+                horizontalAlignment: Text.AlignHCenter
             }
         }
 
@@ -176,7 +227,7 @@ ApplicationWindow {
                 icon.source: Universal.theme === Universal.Dark ? "icons/repeat_light.png" : "icons/repeat_dark.png"
                 icon.width: 16
                 icon.height: 16
-                Layout.preferredWidth: playButton.width
+                Layout.preferredWidth: pauseButton.width
                 checkable: true
                 enabled: statusLabel.text === "Connected"
                 onCheckedChanged: {

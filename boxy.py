@@ -4,9 +4,8 @@ import sys
 import threading
 import argparse
 import discord
-from discord.errors import LoginFailure
 from discord.ext import commands
-from PySide6.QtCore import QObject, Signal, Slot, QUrl, Property
+from PySide6.QtCore import QObject, Signal, Slot, QUrl, Property, QTimer
 from PySide6.QtGui import QGuiApplication
 from PySide6.QtQml import QQmlApplicationEngine
 import yt_dlp
@@ -25,10 +24,14 @@ class BotBridge(QObject):
     repeatModeChanged = Signal(bool)
     songLoadedChanged = Signal(bool)
     voiceConnectedChanged = Signal(bool)
-    channelsChanged = Signal(list)  # For updating channel list
-    currentChannelChanged = Signal(str)  # For updating selected channel
-    serversChanged = Signal(list)  # For updating server list
-    currentServerChanged = Signal(str)  # For updating selected server
+    channelsChanged = Signal(list)
+    currentChannelChanged = Signal(str)
+    serversChanged = Signal(list)
+    currentServerChanged = Signal(str)
+    durationChanged = Signal(float)
+    positionChanged = Signal(float)
+    startTimerSignal = Signal()
+    stopTimerSignal = Signal()
 
     def __init__(self, bot):
         super().__init__()
@@ -45,6 +48,24 @@ class BotBridge(QObject):
         self._current_channel = None
         self._servers = []
         self._current_server = None
+        self._duration = 0
+        self._position = 0
+
+        self._position_timer = QTimer(self)
+        self._position_timer.setInterval(1000)
+        self._position_timer.timeout.connect(self._update_position)
+
+        self.startTimerSignal.connect(self._position_timer.start)
+        self.stopTimerSignal.connect(self._position_timer.stop)
+
+    def _update_position(self):
+        if self.bot.voice_client and (self.bot.voice_client.is_playing() or self.bot.voice_client.is_paused()):
+            self._position += 1
+            self.positionChanged.emit(self._position)
+        else:
+            self.stopTimerSignal.emit()
+            self._position = 0
+            self.positionChanged.emit(0)
 
     @Property(list, notify=serversChanged)
     def servers(self):
@@ -54,15 +75,15 @@ class BotBridge(QObject):
     def update_servers(self):
         if self.bot:
             self._servers = [{"name": guild.name, "id": str(guild.id)} for guild in self.bot.guilds]
-            print(f"Servers updated: {self._servers}")  # Debug print
+            print(f"Servers updated: {self._servers}")
             self.serversChanged.emit(self._servers)
 
     @Slot(str)
     def set_current_server(self, server_id):
-        print(f"Setting current server to: {server_id}")  # Debug print
+        print(f"Setting current server to: {server_id}")
         self._current_server = server_id
         self.currentServerChanged.emit(server_id)
-        self.update_channels()  # Update channels for selected server
+        self.update_channels()
 
     @Property(list, notify=channelsChanged)
     def channels(self):
@@ -73,18 +94,17 @@ class BotBridge(QObject):
         if not self.bot or not self._current_server:
             self._channels = []
         else:
-            # Find the selected server
             server = discord.utils.get(self.bot.guilds, id=int(self._current_server))
             if server:
                 self._channels = [{"name": channel.name, "id": str(channel.id)} for channel in server.voice_channels]
             else:
                 self._channels = []
-        print(f"Channels updated: {self._channels}")  # Debug print
+        print(f"Channels updated: {self._channels}")
         self.channelsChanged.emit(self._channels)
 
     @Slot(str)
     def set_current_channel(self, channel_id):
-        print(f"Setting current channel to: {channel_id}")  # Debug print
+        print(f"Setting current channel to: {channel_id}")
         self._current_channel = channel_id
         self.currentChannelChanged.emit(channel_id)
 
@@ -96,6 +116,9 @@ class BotBridge(QObject):
                 self.bot.voice_client = None
                 self.is_playing = False
                 self._voice_connected = False
+                self.stopTimerSignal.emit()
+                self._position = 0
+                self.positionChanged.emit(0)
                 self.playStateChanged.emit(False)
                 self.songChanged.emit("")
                 self.songLoadedChanged.emit(False)
@@ -120,9 +143,11 @@ class BotBridge(QObject):
         if self.bot.voice_client.is_playing():
             self.bot.voice_client.pause()
             self.is_playing = False
+            self.stopTimerSignal.emit()
         elif self.bot.voice_client.is_paused():
             self.bot.voice_client.resume()
             self.is_playing = True
+            self.startTimerSignal.emit()
 
         self.playStateChanged.emit(self.is_playing)
 
@@ -132,6 +157,16 @@ class BotBridge(QObject):
         self.repeat_mode = enabled
         self.repeatModeChanged.emit(enabled)
 
+    @Slot(float)
+    def seek(self, position):
+        if self.bot.voice_client and self.bot.voice_client.is_playing():
+            position_ms = int(position * 1000)
+            self.bot.voice_client.source = discord.PCMVolumeTransformer(
+                discord.FFmpegPCMAudio(self.current_audio_file, before_options=f"-ss {position_ms}ms")
+            )
+            self._position = position
+            self.positionChanged.emit(position)
+
     @Slot(str)
     def play_url(self, url):
         async def play_wrapper():
@@ -139,25 +174,6 @@ class BotBridge(QObject):
                 self.downloadStatusChanged.emit("Please select a server and channel first")
                 return
 
-            # First disconnect if already connected
-            if self.bot.voice_client:
-                if self.bot.voice_client.is_playing() or self.bot.voice_client.is_paused():
-                    self.bot.voice_client.stop()
-                await self.bot.voice_client.disconnect()
-                self.bot.voice_client = None
-                self.is_playing = False
-                self._voice_connected = False
-                self.playStateChanged.emit(False)
-                self.songChanged.emit("")
-                self.songLoadedChanged.emit(False)
-                self.voiceConnectedChanged.emit(False)
-                if self.current_audio_file and os.path.exists(self.current_audio_file):
-                    await delete_file(self.current_audio_file)
-                self.current_audio_file = None
-                self.current_url = None
-                self.downloadStatusChanged.emit("")
-
-            # Attempt new connection
             selected_server = discord.utils.get(self.bot.guilds, id=int(self._current_server))
             if not selected_server:
                 self.downloadStatusChanged.emit("Selected server not found")
@@ -168,19 +184,45 @@ class BotBridge(QObject):
                 self.downloadStatusChanged.emit("Selected channel not found")
                 return
 
-            if all(member.bot for member in selected_channel.members):
-                self.downloadStatusChanged.emit("Cannot join empty channel")
-                return
+            # Check if we need to change channels
+            need_reconnect = True
+            if self.bot.voice_client and self.bot.voice_client.is_connected():
+                if self.bot.voice_client.channel.id == int(self._current_channel):
+                    need_reconnect = False
+                else:
+                    # Different channel, need to disconnect first
+                    await self.bot.voice_client.disconnect()
+                    self.bot.voice_client = None
+                    self.is_playing = False
+                    self._voice_connected = False
+                    self.stopTimerSignal.emit()
+                    self._position = 0
+                    self.positionChanged.emit(0)
+                    self.playStateChanged.emit(False)
+                    self.songChanged.emit("")
+                    self.songLoadedChanged.emit(False)
+                    self.voiceConnectedChanged.emit(False)
 
-            try:
-                self.bot.voice_client = await selected_channel.connect()
-                self._voice_connected = True
-                self.voiceConnectedChanged.emit(True)
-            except Exception as e:
-                self.downloadStatusChanged.emit(f"Failed to connect: {str(e)}")
-                return
+            if need_reconnect:
+                if all(member.bot for member in selected_channel.members):
+                    self.downloadStatusChanged.emit("Cannot join empty channel")
+                    return
 
-            # Start playback
+                try:
+                    self.bot.voice_client = await selected_channel.connect()
+                    self._voice_connected = True
+                    self.voiceConnectedChanged.emit(True)
+                except Exception as e:
+                    self.downloadStatusChanged.emit(f"Failed to connect: {str(e)}")
+                    return
+
+            # Stop current playback if any
+            if self.bot.voice_client and (self.bot.voice_client.is_playing() or self.bot.voice_client.is_paused()):
+                self.bot.voice_client.stop()
+                self.stopTimerSignal.emit()
+                self._position = 0
+                self.positionChanged.emit(0)
+
             was_repeat = self.repeat_mode
             self.repeat_mode = False
             await self.play_from_gui(url)
@@ -189,31 +231,11 @@ class BotBridge(QObject):
         asyncio.run_coroutine_threadsafe(play_wrapper(), self.bot.loop)
 
     async def play_from_gui(self, search):
-        # Only check voice connection if we're not already in the right place
         if not self.bot.voice_client or not self.bot.voice_client.is_connected():
             if not self._current_channel or not self._current_server:
                 self.downloadStatusChanged.emit("Please select a server and channel first")
                 return
 
-            # First disconnect if already connected
-            if self.bot.voice_client:
-                if self.bot.voice_client.is_playing() or self.bot.voice_client.is_paused():
-                    self.bot.voice_client.stop()
-                await self.bot.voice_client.disconnect()
-                self.bot.voice_client = None
-                self.is_playing = False
-                self._voice_connected = False
-                self.playStateChanged.emit(False)
-                self.songChanged.emit("")
-                self.songLoadedChanged.emit(False)
-                self.voiceConnectedChanged.emit(False)
-                if self.current_audio_file and os.path.exists(self.current_audio_file):
-                    await delete_file(self.current_audio_file)
-                self.current_audio_file = None
-                self.current_url = None
-                self.downloadStatusChanged.emit("")
-
-            # Attempt new connection
             selected_server = discord.utils.get(self.bot.guilds, id=int(self._current_server))
             if not selected_server:
                 self.downloadStatusChanged.emit("Selected server not found")
@@ -236,55 +258,63 @@ class BotBridge(QObject):
                 self.downloadStatusChanged.emit(f"Failed to connect: {str(e)}")
                 return
 
-        # Continue with download and playback
         self.downloadStatusChanged.emit("Preparing...")
         audio_file = os.path.abspath("downloaded_audio.webm")
 
-        if self.current_url != search:
-            if self.bot.voice_client and (self.bot.voice_client.is_playing() or self.bot.voice_client.is_paused()):
-                self.bot.voice_client.stop()
+        if self.bot.voice_client and (self.bot.voice_client.is_playing() or self.bot.voice_client.is_paused()):
+            self.bot.voice_client.stop()
+            self.stopTimerSignal.emit()
+            self._position = 0
+            self.positionChanged.emit(0)
 
-            if os.path.exists(audio_file):
-                await delete_file(audio_file)
-                await asyncio.sleep(0.1)
+        if os.path.exists(audio_file):
+            await delete_file(audio_file)
+            await asyncio.sleep(0.1)
 
-            self.current_url = search
-            url = search if search.startswith("http") else get_first_video_url(search)
-            if url is None:
-                self.downloadStatusChanged.emit("No video found")
-                return
+        url = search if search.startswith("http") else get_first_video_url(search)
+        if url is None:
+            self.downloadStatusChanged.emit("No video found")
+            return
 
-            try:
-                ydl_opts = {
-                    "format": "bestaudio/best",
-                    "outtmpl": audio_file,
-                    "noplaylist": True,
-                    "progress_hooks": [self.download_hook],
-                }
+        try:
+            ydl_opts = {
+                "format": "bestaudio/best",
+                "outtmpl": audio_file,
+                "noplaylist": True,
+                "progress_hooks": [self.download_hook],
+            }
 
-                self.downloadStatusChanged.emit("Extracting video info...")
-                with yt_dlp.YoutubeDL(ydl_opts) as ydl:
-                    info = ydl.extract_info(url, download=True)
-                    song_name = info["title"]
-                    self.songChanged.emit(song_name)
-                    self.current_audio_file = audio_file
+            self.downloadStatusChanged.emit("Extracting video info...")
+            with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+                info = ydl.extract_info(url, download=True)
+                song_name = info["title"]
+                self._duration = info.get("duration", 0)
+                self.durationChanged.emit(self._duration)
+                self.songChanged.emit(song_name)
+                self.current_audio_file = audio_file
+                self.current_url = search
 
-            except Exception as e:
-                print(f"Download error: {e}")
-                self.downloadStatusChanged.emit(f"Error: {str(e)}")
-                return
+        except Exception as e:
+            print(f"Download error: {e}")
+            self.downloadStatusChanged.emit(f"Error: {str(e)}")
+            return
 
         try:
             if os.path.exists(audio_file):
                 self.downloadStatusChanged.emit("Starting playback...")
                 if self.bot.voice_client:
+                    self._position = 0
+                    self.positionChanged.emit(0)
+
                     self.bot.voice_client.play(
                         discord.FFmpegPCMAudio(audio_file), after=lambda e: self.on_playback_finished(e, audio_file)
                     )
+
                     self.is_playing = True
                     self.playStateChanged.emit(True)
                     self.downloadStatusChanged.emit("")
                     self.songLoadedChanged.emit(True)
+                    self.startTimerSignal.emit()
 
         except Exception as e:
             print(f"Playback error: {e}")
@@ -293,7 +323,6 @@ class BotBridge(QObject):
     def download_hook(self, d):
         if d["status"] == "downloading":
             try:
-                # Calculate download progress
                 downloaded = d.get("downloaded_bytes", 0)
                 total = d.get("total_bytes", 0) or d.get("total_bytes_estimate", 0)
                 if total:
@@ -307,48 +336,37 @@ class BotBridge(QObject):
             self.downloadStatusChanged.emit("Download complete, processing...")
 
     def on_playback_finished(self, error, audio_file):
+        self.stopTimerSignal.emit()
+        self._position = 0
+        self.positionChanged.emit(0)
+
+        # Reset song state unless we're repeating
+        if not (self.repeat_mode and audio_file == self.current_audio_file):
+            self.songLoadedChanged.emit(False)
+            self.songChanged.emit("")
+
         if error:
             print(f"An error occurred: {error}")
             return
 
-        if self.repeat_mode and audio_file == self.current_audio_file:  # Only repeat if it's still the current file
+        if self.repeat_mode and audio_file == self.current_audio_file:
             print("Repeating song...")
             asyncio.run_coroutine_threadsafe(self.replay_audio(audio_file), self.bot.loop)
         else:
-            # Clean up if we're not repeating or if it's an old file
             asyncio.run_coroutine_threadsafe(delete_file(audio_file), self.bot.loop)
 
-    async def handle_playback_finished(self, error, audio_file):
-        if self.repeat_mode:
-            # Instead of calling play_from_gui, directly replay the existing file
-            await self.replay_audio(audio_file)
-        else:
-            # Only delete the file if we're not repeating
-            await delete_file(audio_file)
-
     async def replay_audio(self, audio_file):
-        if os.path.exists(audio_file) and audio_file == self.current_audio_file:  # Double check it's still current
+        if os.path.exists(audio_file) and audio_file == self.current_audio_file:
+            self._position = 0
+            self.positionChanged.emit(0)
+
             self.bot.voice_client.play(
                 discord.FFmpegPCMAudio(audio_file), after=lambda e: self.on_playback_finished(e, audio_file)
             )
+
             self.is_playing = True
             self.playStateChanged.emit(True)
-
-    def download_hook(self, d):
-        if d["status"] == "downloading":
-            try:
-                # Calculate download progress
-                downloaded = d.get("downloaded_bytes", 0)
-                total = d.get("total_bytes", 0) or d.get("total_bytes_estimate", 0)
-                if total:
-                    progress = (downloaded / total) * 100
-                    self.downloadStatusChanged.emit(f"Downloading: {progress:.1f}%")
-                else:
-                    self.downloadStatusChanged.emit("Downloading...")
-            except:
-                self.downloadStatusChanged.emit("Downloading...")
-        elif d["status"] == "finished":
-            self.downloadStatusChanged.emit("Download complete, processing...")
+            self.startTimerSignal.emit()
 
 
 class BoxyBot(commands.Bot):
