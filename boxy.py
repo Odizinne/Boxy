@@ -8,6 +8,7 @@ from discord.ext import commands
 from PySide6.QtCore import QObject, Signal, Slot, QUrl, Property, QTimer
 from PySide6.QtGui import QGuiApplication
 from PySide6.QtQml import QQmlApplicationEngine
+from PySide6.QtQuickControls2 import QQuickStyle
 import yt_dlp
 from youtube_search import YoutubeSearch
 
@@ -582,7 +583,6 @@ def run_bot_with_gui():
         print("Token was rejected by Discord")
         sys.exit(1)
 
-    # Only create Qt application if token is valid
     app = QGuiApplication(sys.argv)
     engine = QQmlApplicationEngine()
 

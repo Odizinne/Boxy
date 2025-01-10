@@ -13,9 +13,8 @@ ApplicationWindow {
     maximumHeight: colLayout.implicitHeight + 28
     title: "Boxy GUI"
     Universal.theme: Universal.System
-    Universal.accent: Universal.Orange
+    Universal.accent: Universal.Green
     property bool songLoaded: false
-
 
     // Add this function somewhere in your QML
     function formatTime(seconds) {
@@ -36,6 +35,38 @@ ApplicationWindow {
         anchors.margins: 14
         spacing: 14
 
+        Label {
+            id: statusLabel
+            text: "Connecting..."
+            color: text === "Connecting..." ? Universal.foreground : Universal.accent
+            font.pixelSize: 18
+            font.bold: true
+            Layout.alignment: Qt.AlignHCenter
+            Connections {
+                target: botBridge
+                function onStatusChanged(status) {
+                    statusLabel.text = status
+                }
+            }
+        }
+
+        //Label {
+        //    id: downloadStatus
+        //    text: ""
+        //    Layout.alignment: Qt.AlignHCenter
+        //    Layout.fillWidth: true
+        //    horizontalAlignment: Text.AlignHCenter
+        //    color: "gray"
+        //    font.pixelSize: 12
+        //    visible: text !== ""
+        //    Connections {
+        //        target: botBridge
+        //        function onDownloadStatusChanged(status) {
+        //            downloadStatus.text = status
+        //        }
+        //    }
+        //}
+
         RowLayout {
             Layout.fillWidth: true
             spacing: 14
@@ -50,11 +81,19 @@ ApplicationWindow {
                     playButton.clicked()
                     urlInput.text = ""
                 }
+                Connections {
+                    target: botBridge
+                    function onDownloadStatusChanged(status) {
+                        urlInput.placeholderText = status === "" ? 
+                            "Enter YouTube URL or search term" : status
+                    }
+                }
             }
+
             Button {
                 id: playButton
                 enabled: statusLabel.text === "Connected"
-                Layout.preferredWidth: 40
+                Layout.preferredWidth: pauseButton.width
                 text: "Go"
                 onClicked: {
                     if (urlInput.text.length > 0) {
@@ -63,44 +102,6 @@ ApplicationWindow {
                     }
                 }
             }
-        }
-
-        Label {
-            id: statusLabel
-            text: "Connecting..."
-            color: statusLabel.text === "Connecting..." ? "#c2802f" : "#2fc245"
-            font.pixelSize: 18
-            font.bold: true
-            Layout.alignment: Qt.AlignHCenter
-            Connections {
-                target: botBridge
-                function onStatusChanged(status) {
-                    statusLabel.text = status
-                }
-            }
-        }
-
-
-        Label {
-            id: downloadStatus
-            text: ""
-            Layout.alignment: Qt.AlignHCenter
-            Layout.fillWidth: true
-            horizontalAlignment: Text.AlignHCenter
-            color: "gray"
-            font.pixelSize: 12
-            visible: text !== ""
-            Connections {
-                target: botBridge
-                function onDownloadStatusChanged(status) {
-                    downloadStatus.text = status
-                }
-            }
-        }
-
-        Item {
-            Layout.preferredHeight: downloadStatus.implicitHeight
-            visible: !downloadStatus.visible
         }
 
         MenuSeparator { 
@@ -136,7 +137,7 @@ ApplicationWindow {
 
             Label {
                 text: formatTime(timelineSlider.value)
-                font.pixelSize: 12
+                font.pixelSize: 14
                 Layout.preferredWidth: pauseButton.width
                 horizontalAlignment: Text.AlignHCenter
             }
@@ -149,7 +150,7 @@ ApplicationWindow {
                 enabled: songLoaded
 
                 onPressedChanged: {
-                    if (!pressed) {  // Only trigger when the slider is released
+                    if (!pressed) { 
                         botBridge.seek(value)
                     }
                 }
@@ -172,7 +173,7 @@ ApplicationWindow {
             Label {
                 Layout.preferredWidth: pauseButton.width
                 text: formatTime(timelineSlider.to)
-                font.pixelSize: 12
+                font.pixelSize: 14
                 horizontalAlignment: Text.AlignHCenter
             }
         }
