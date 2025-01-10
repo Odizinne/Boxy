@@ -275,7 +275,7 @@ class BoxyBot(commands.Bot):
                 voice_client = await channel.connect()
 
             audio_file = os.path.abspath("downloaded_audio.webm")
-            delete_file(audio_file)
+            await delete_file(audio_file)  # Properly await the coroutine
 
             if not search.startswith("http"):
                 await ctx.send("Searching...")
@@ -296,7 +296,17 @@ class BoxyBot(commands.Bot):
                 song_name = info["title"]
 
             if os.path.exists(audio_file):
-                voice_client.play(discord.FFmpegPCMAudio(audio_file), after=lambda e: delete_file(audio_file))
+                # Define an async callback function
+                async def after_playing(error):
+                    if error:
+                        print(f"An error occurred: {error}")
+                    await delete_file(audio_file)
+
+                # Convert the async callback to a sync one that runs in the event loop
+                def sync_after(error):
+                    asyncio.run_coroutine_threadsafe(after_playing(error), self.loop)
+
+                voice_client.play(discord.FFmpegPCMAudio(audio_file), after=sync_after)
                 await ctx.send(f"Playing: {song_name}")
             else:
                 await ctx.send(f"Ups! Something went wrong. You should tell it to Odizinne.")
