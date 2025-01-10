@@ -1,6 +1,7 @@
 # Boxy
 yt-dlp discord music bot
 
+![image](.assets/screenshot.png)
 ## Requierments
 
 - Python 3.13
