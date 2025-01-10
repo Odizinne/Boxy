@@ -33,7 +33,7 @@ ApplicationWindow {
         id: colLayout
         anchors.fill: parent
         anchors.margins: 14
-        spacing: 14
+        spacing: 10
 
         Label {
             id: statusLabel
@@ -69,7 +69,7 @@ ApplicationWindow {
 
         RowLayout {
             Layout.fillWidth: true
-            spacing: 14
+            spacing: 10
             TextField {
                 id: urlInput
                 enabled: statusLabel.text === "Connected"
@@ -112,7 +112,7 @@ ApplicationWindow {
 
         RowLayout {
             Layout.fillWidth: true
-            spacing: 14
+            spacing: 10
 
             // Left side - Song label
             Label {
@@ -214,7 +214,7 @@ ApplicationWindow {
 
         RowLayout {
             Layout.fillWidth: true
-            spacing: 14
+            spacing: 10
             Button {
                 id: pauseButton
                 Layout.preferredWidth: pauseButton.height
@@ -287,7 +287,7 @@ ApplicationWindow {
         // Server row
         RowLayout {
             Layout.fillWidth: true
-            spacing: 14
+            spacing: 10
 
             Label {
                 text: "Serv:"
@@ -334,7 +334,7 @@ ApplicationWindow {
         // Channel row
         RowLayout {
             Layout.fillWidth: true
-            spacing: 14
+            spacing: 10
 
             Label {
                 id: channelListLabel
