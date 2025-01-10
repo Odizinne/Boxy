@@ -5,11 +5,11 @@ import QtQuick.Controls.Universal
 
 ApplicationWindow {
     visible: true
-    width: colLayout.implicitWidth + 58
+    width: 400
     height: colLayout.implicitHeight + 28
-    minimumWidth: colLayout.implicitWidth + 58
+    minimumWidth: 400
     minimumHeight: colLayout.implicitHeight + 28
-    maximumWidth: colLayout.implicitWidth + 58
+    maximumWidth: 400
     maximumHeight: colLayout.implicitHeight + 28
     title: "Boxy GUI"
     Universal.theme: Universal.System
@@ -163,7 +163,7 @@ ApplicationWindow {
 
             Button {
                 id: disconnectButton
-                text: "Leave channel"
+                text: "Disconnect from channel"
                 Layout.fillWidth: true
                 enabled: botBridge.voiceConnected
                 onClicked: {
@@ -182,6 +182,101 @@ ApplicationWindow {
                 onCheckedChanged: {
                     botBridge.set_repeat_mode(checked)
                     
+                }
+            }
+        }
+
+        // Server row
+        RowLayout {
+            Layout.fillWidth: true
+            spacing: 14
+
+            Label {
+                text: "Serv:"
+                Layout.preferredWidth: pauseButton.width
+                Layout.alignment: Qt.AlignVCenter
+            }
+
+            ComboBox {
+                id: serverComboBox
+                Layout.fillWidth: true
+                enabled: statusLabel.text === "Connected"
+                textRole: "name"
+                valueRole: "id"
+                model: []
+
+                onCurrentValueChanged: {
+                    console.log("Selected server:", currentValue)
+                    if (currentValue) {
+                        botBridge.set_current_server(currentValue)
+                    }
+                }
+
+                Connections {
+                    target: botBridge
+                    function onServersChanged(servers) {
+                        console.log("Servers received:", servers.length)
+                        serverComboBox.model = servers
+                        if (servers.length > 0) {
+                            serverComboBox.currentIndex = 0
+                            botBridge.set_current_server(servers[0].id)
+                        }
+                    }
+                }
+
+                Text {
+                    visible: parent.model.length === 0 && statusLabel.text === "Connected"
+                    anchors.centerIn: parent
+                    text: "No servers available"
+                    color: "gray"
+                }
+            }
+        }
+
+        // Channel row
+        RowLayout {
+            Layout.fillWidth: true
+            spacing: 14
+
+            Label {
+                id: channelListLabel
+                text: "Chan:"
+                Layout.preferredWidth: pauseButton.width
+                Layout.alignment: Qt.AlignVCenter
+            }
+
+            ComboBox {
+                id: channelComboBox
+                Layout.fillWidth: true
+                enabled: statusLabel.text === "Connected" && model.length > 0
+                textRole: "name"
+                valueRole: "id"
+                model: []
+
+                onCurrentValueChanged: {
+                    console.log("Selected channel:", currentValue)
+                    if (currentValue) {
+                        botBridge.set_current_channel(currentValue)
+                    }
+                }
+
+                Connections {
+                    target: botBridge
+                    function onChannelsChanged(channels) {
+                        console.log("Channels received:", channels.length)
+                        channelComboBox.model = channels
+                        if (channels.length > 0) {
+                            channelComboBox.currentIndex = 0
+                            botBridge.set_current_channel(channels[0].id)
+                        }
+                    }
+                }
+
+                Text {
+                    visible: parent.model.length === 0 && statusLabel.text === "Connected"
+                    anchors.centerIn: parent
+                    text: "No channels available"
+                    color: "gray"
                 }
             }
         }

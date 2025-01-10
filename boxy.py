@@ -25,6 +25,10 @@ class BotBridge(QObject):
     repeatModeChanged = Signal(bool)
     songLoadedChanged = Signal(bool)
     voiceConnectedChanged = Signal(bool)
+    channelsChanged = Signal(list)  # For updating channel list
+    currentChannelChanged = Signal(str)  # For updating selected channel
+    serversChanged = Signal(list)  # For updating server list
+    currentServerChanged = Signal(str)  # For updating selected server
 
     def __init__(self, bot):
         super().__init__()
@@ -37,6 +41,52 @@ class BotBridge(QObject):
         self.current_url = None
         self.song_loaded = False
         self._voice_connected = False
+        self._channels = []
+        self._current_channel = None
+        self._servers = []
+        self._current_server = None
+
+    @Property(list, notify=serversChanged)
+    def servers(self):
+        return self._servers
+
+    @Slot()
+    def update_servers(self):
+        if self.bot:
+            self._servers = [{"name": guild.name, "id": str(guild.id)} for guild in self.bot.guilds]
+            print(f"Servers updated: {self._servers}")  # Debug print
+            self.serversChanged.emit(self._servers)
+
+    @Slot(str)
+    def set_current_server(self, server_id):
+        print(f"Setting current server to: {server_id}")  # Debug print
+        self._current_server = server_id
+        self.currentServerChanged.emit(server_id)
+        self.update_channels()  # Update channels for selected server
+
+    @Property(list, notify=channelsChanged)
+    def channels(self):
+        return self._channels
+
+    @Slot()
+    def update_channels(self):
+        if not self.bot or not self._current_server:
+            self._channels = []
+        else:
+            # Find the selected server
+            server = discord.utils.get(self.bot.guilds, id=int(self._current_server))
+            if server:
+                self._channels = [{"name": channel.name, "id": str(channel.id)} for channel in server.voice_channels]
+            else:
+                self._channels = []
+        print(f"Channels updated: {self._channels}")  # Debug print
+        self.channelsChanged.emit(self._channels)
+
+    @Slot(str)
+    def set_current_channel(self, channel_id):
+        print(f"Setting current channel to: {channel_id}")  # Debug print
+        self._current_channel = channel_id
+        self.currentChannelChanged.emit(channel_id)
 
     @Slot()
     def disconnect_voice(self):
@@ -62,28 +112,6 @@ class BotBridge(QObject):
     def voiceConnected(self):
         return self._voice_connected
 
-    @Slot(str)
-    def play_url(self, url):
-        async def play_wrapper():
-            # First ensure we're connected to voice
-            if not self.bot.voice_client:
-                channel = self.bot.guilds[0].voice_channels[0]
-                try:
-                    self.bot.voice_client = await channel.connect()
-                    self._voice_connected = True
-                    self.voiceConnectedChanged.emit(True)
-                except Exception as e:
-                    self.downloadStatusChanged.emit(f"Failed to connect: {str(e)}")
-                    return
-
-            # Rest of your existing play logic
-            was_repeat = self.repeat_mode
-            self.repeat_mode = False
-            await self.play_from_gui(url)
-            self.repeat_mode = was_repeat
-
-        asyncio.run_coroutine_threadsafe(play_wrapper(), self.bot.loop)
-
     @Slot()
     def toggle_playback(self):
         if not self.bot.voice_client:
@@ -104,40 +132,128 @@ class BotBridge(QObject):
         self.repeat_mode = enabled
         self.repeatModeChanged.emit(enabled)
 
-    async def play_from_gui(self, search):
-        # Modify the voice connection check to also verify guild connection
-        if not self.bot.voice_client or not self.bot.voice_client.is_connected():
-            channel = self.bot.guilds[0].voice_channels[0]
+    @Slot(str)
+    def play_url(self, url):
+        async def play_wrapper():
+            if not self._current_channel or not self._current_server:
+                self.downloadStatusChanged.emit("Please select a server and channel first")
+                return
+
+            # First disconnect if already connected
+            if self.bot.voice_client:
+                if self.bot.voice_client.is_playing() or self.bot.voice_client.is_paused():
+                    self.bot.voice_client.stop()
+                await self.bot.voice_client.disconnect()
+                self.bot.voice_client = None
+                self.is_playing = False
+                self._voice_connected = False
+                self.playStateChanged.emit(False)
+                self.songChanged.emit("")
+                self.songLoadedChanged.emit(False)
+                self.voiceConnectedChanged.emit(False)
+                if self.current_audio_file and os.path.exists(self.current_audio_file):
+                    await delete_file(self.current_audio_file)
+                self.current_audio_file = None
+                self.current_url = None
+                self.downloadStatusChanged.emit("")
+
+            # Attempt new connection
+            selected_server = discord.utils.get(self.bot.guilds, id=int(self._current_server))
+            if not selected_server:
+                self.downloadStatusChanged.emit("Selected server not found")
+                return
+
+            selected_channel = discord.utils.get(selected_server.voice_channels, id=int(self._current_channel))
+            if not selected_channel:
+                self.downloadStatusChanged.emit("Selected channel not found")
+                return
+
+            if all(member.bot for member in selected_channel.members):
+                self.downloadStatusChanged.emit("Cannot join empty channel")
+                return
+
             try:
-                self.bot.voice_client = await channel.connect()
+                self.bot.voice_client = await selected_channel.connect()
                 self._voice_connected = True
                 self.voiceConnectedChanged.emit(True)
             except Exception as e:
                 self.downloadStatusChanged.emit(f"Failed to connect: {str(e)}")
                 return
 
+            # Start playback
+            was_repeat = self.repeat_mode
+            self.repeat_mode = False
+            await self.play_from_gui(url)
+            self.repeat_mode = was_repeat
+
+        asyncio.run_coroutine_threadsafe(play_wrapper(), self.bot.loop)
+
+    async def play_from_gui(self, search):
+        # Only check voice connection if we're not already in the right place
+        if not self.bot.voice_client or not self.bot.voice_client.is_connected():
+            if not self._current_channel or not self._current_server:
+                self.downloadStatusChanged.emit("Please select a server and channel first")
+                return
+
+            # First disconnect if already connected
+            if self.bot.voice_client:
+                if self.bot.voice_client.is_playing() or self.bot.voice_client.is_paused():
+                    self.bot.voice_client.stop()
+                await self.bot.voice_client.disconnect()
+                self.bot.voice_client = None
+                self.is_playing = False
+                self._voice_connected = False
+                self.playStateChanged.emit(False)
+                self.songChanged.emit("")
+                self.songLoadedChanged.emit(False)
+                self.voiceConnectedChanged.emit(False)
+                if self.current_audio_file and os.path.exists(self.current_audio_file):
+                    await delete_file(self.current_audio_file)
+                self.current_audio_file = None
+                self.current_url = None
+                self.downloadStatusChanged.emit("")
+
+            # Attempt new connection
+            selected_server = discord.utils.get(self.bot.guilds, id=int(self._current_server))
+            if not selected_server:
+                self.downloadStatusChanged.emit("Selected server not found")
+                return
+
+            selected_channel = discord.utils.get(selected_server.voice_channels, id=int(self._current_channel))
+            if not selected_channel:
+                self.downloadStatusChanged.emit("Selected channel not found")
+                return
+
+            if all(member.bot for member in selected_channel.members):
+                self.downloadStatusChanged.emit("Cannot join empty channel")
+                return
+
+            try:
+                self.bot.voice_client = await selected_channel.connect()
+                self._voice_connected = True
+                self.voiceConnectedChanged.emit(True)
+            except Exception as e:
+                self.downloadStatusChanged.emit(f"Failed to connect: {str(e)}")
+                return
+
+        # Continue with download and playback
         self.downloadStatusChanged.emit("Preparing...")
         audio_file = os.path.abspath("downloaded_audio.webm")
 
-        # Always consider a new search as a fresh start
         if self.current_url != search:
-            # Clear current playback state
             if self.bot.voice_client and (self.bot.voice_client.is_playing() or self.bot.voice_client.is_paused()):
                 self.bot.voice_client.stop()
 
-            # Clean up old file
             if os.path.exists(audio_file):
                 await delete_file(audio_file)
                 await asyncio.sleep(0.1)
 
-            # Update current URL before downloading
             self.current_url = search
             url = search if search.startswith("http") else get_first_video_url(search)
             if url is None:
                 self.downloadStatusChanged.emit("No video found")
                 return
 
-            # Download new file
             try:
                 ydl_opts = {
                     "format": "bestaudio/best",
@@ -158,7 +274,6 @@ class BotBridge(QObject):
                 self.downloadStatusChanged.emit(f"Error: {str(e)}")
                 return
 
-        # Start playback
         try:
             if os.path.exists(audio_file):
                 self.downloadStatusChanged.emit("Starting playback...")
@@ -247,16 +362,38 @@ class BoxyBot(commands.Bot):
         print(f"We have logged in as {self.user}")
         if self.bridge:
             self.bridge.statusChanged.emit("Connected")
-            # Initialize voice state
             self.bridge._voice_connected = False
             self.bridge.voiceConnectedChanged.emit(False)
+
+            await asyncio.sleep(0.5)
+            # First update servers
+            self.bridge.update_servers()
 
     async def on_voice_state_update(self, member, before, after):
         voice_state = member.guild.voice_client
         if voice_state is None:
             return
-        if len(voice_state.channel.members) == 1:
+
+        if len(voice_state.channel.members) == 1:  # Only bot remains
+            # Disconnect from voice
             await voice_state.disconnect()
+            self.voice_client = None
+
+            # Update bridge state just like in disconnect_voice
+            if self.bridge:
+                self.bridge.is_playing = False
+                self.bridge._voice_connected = False
+                self.bridge.playStateChanged.emit(False)
+                self.bridge.songChanged.emit("")
+                self.bridge.songLoadedChanged.emit(False)
+                self.bridge.voiceConnectedChanged.emit(False)
+
+                # Clean up current audio file
+                if self.bridge.current_audio_file and os.path.exists(self.bridge.current_audio_file):
+                    await delete_file(self.bridge.current_audio_file)
+                self.bridge.current_audio_file = None
+                self.bridge.current_url = None
+                self.bridge.downloadStatusChanged.emit("")
 
     async def setup_hook(self):
         @self.command(name="play")
