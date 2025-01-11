@@ -34,6 +34,7 @@ class BotBridge(QObject):
     startTimerSignal = Signal()
     stopTimerSignal = Signal()
     thumbnailChanged = Signal(str)
+    channelNameChanged = Signal(str)
 
     def __init__(self, bot):
         super().__init__()
@@ -53,6 +54,7 @@ class BotBridge(QObject):
         self._duration = 0
         self._position = 0
         self._current_thumbnail_url = None
+        self._current_channel_name = ""
 
         self._position_timer = QTimer(self)
         self._position_timer.setInterval(1000)
@@ -60,6 +62,16 @@ class BotBridge(QObject):
 
         self.startTimerSignal.connect(self._position_timer.start)
         self.stopTimerSignal.connect(self._position_timer.stop)
+
+    @Property(str, notify=channelNameChanged)
+    def current_channel_name(self):
+        return self._current_channel_name
+
+    @current_channel_name.setter
+    def current_channel_name(self, name):
+        if self._current_channel_name != name:
+            self._current_channel_name = name
+            self.channelNameChanged.emit(name)
 
     @Property(str, notify=thumbnailChanged)
     def current_thumbnail_url(self):
@@ -310,13 +322,17 @@ class BotBridge(QObject):
             with yt_dlp.YoutubeDL(ydl_opts) as ydl:
                 info = ydl.extract_info(url, download=True)
                 song_name = info["title"]
+                channel_name = info.get("channel", "") or info.get("uploader", "")
+                print(channel_name)
                 self._duration = info.get("duration", 0)
                 self.durationChanged.emit(self._duration)
+                self._current_channel_name = channel_name
                 self.songChanged.emit(song_name)
+                self.channelNameChanged.emit(channel_name)
                 self.current_audio_file = audio_file
                 self.current_url = search
                 self._current_thumbnail_url = info.get("thumbnail") or info.get("thumbnails", [{}])[0].get("url", "")
-                self.thumbnailChanged.emit(self._current_thumbnail_url)  # Add this line
+                self.thumbnailChanged.emit(self._current_thumbnail_url)
 
         except Exception as e:
             print(f"Download error: {e}")
@@ -368,7 +384,9 @@ class BotBridge(QObject):
         if not (self.repeat_mode and audio_file == self.current_audio_file):
             self.songLoadedChanged.emit(False)
             self.songChanged.emit("")
-            self._current_thumbnail_url = ""  # Changed from None to empty string
+            self._current_thumbnail_url = ""
+            self._current_channel_name = ""
+            self.channelNameChanged.emit("")
             self.thumbnailChanged.emit("")
 
         if error:
@@ -429,6 +447,7 @@ class BoxyBot(commands.Bot):
                 self.bridge._voice_connected = False
                 self.bridge.playStateChanged.emit(False)
                 self.bridge.songChanged.emit("")
+                self.bridge.channelNameChanged.emit("")
                 self.bridge.songLoadedChanged.emit(False)
                 self.bridge.voiceConnectedChanged.emit(False)
 

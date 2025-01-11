@@ -96,6 +96,10 @@ ApplicationWindow {
             Layout.fillWidth: true
             spacing: 10
 
+            ColumnLayout {
+                Layout.fillWidth: true
+                spacing: 10
+            
             Label {
                 id: songLabel
                 text: "No song playing"
@@ -106,7 +110,7 @@ ApplicationWindow {
                 font.pixelSize: 14
                 font.bold: true
                 wrapMode: Text.Wrap
-                maximumLineCount: 3
+                maximumLineCount: 1
                 Connections {
                     target: botBridge
                     function onSongChanged(songTitle) {
@@ -120,8 +124,32 @@ ApplicationWindow {
                 }
             }
 
+            Label {
+                id: channelLabel
+                text: ""
+                Layout.fillWidth: true
+                Layout.preferredWidth: parent.width * 0.85
+                horizontalAlignment: Text.AlignLeft
+                elide: Text.ElideRight
+                font.pixelSize: 14
+                font.bold: false
+                wrapMode: Text.Wrap
+                maximumLineCount: 1
+                Connections {
+                    target: botBridge
+                    function onChannelNameChanged(channelName) {
+                        if (channelName !== "" ) {
+                            channelLabel.text = channelName
+                        } else {
+                            channelLabel.text = ""
+                        }
+                    }
+                }
+            }
+            }
             Image {
                 id: thumbnailImage
+                Layout.rowSpan: 2
                 Layout.preferredWidth: parent.width * 0.15
                 Layout.preferredHeight: thumbnailImage.Layout.preferredWidth  
                 fillMode: Image.PreserveAspectCrop
