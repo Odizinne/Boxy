@@ -293,7 +293,7 @@ class BotBridge(QObject):
                 return
 
         self.downloadStatusChanged.emit("Preparing...")
-        audio_file = os.path.abspath("downloaded_audio.webm")
+        audio_file = os.path.join(get_script_dir(), "downloaded_audio.webm")
 
         if self.bot.voice_client and (self.bot.voice_client.is_playing() or self.bot.voice_client.is_paused()):
             self.bot.voice_client.stop()
@@ -474,7 +474,7 @@ class BoxyBot(commands.Bot):
             else:
                 voice_client = await channel.connect()
 
-            audio_file = os.path.abspath("downloaded_audio.webm")
+            audio_file = os.path.join(get_script_dir(), "downloaded_audio.webm")
             await delete_file(audio_file)  # Properly await the coroutine
 
             if not search.startswith("http"):
@@ -520,7 +520,7 @@ class BoxyBot(commands.Bot):
                     ctx.voice_client.source.cleanup()
                 ctx.voice_client.stop()
                 await ctx.voice_client.disconnect()
-                audio_file = os.path.abspath("downloaded_audio.webm")
+                audio_file = os.path.join(get_script_dir(), "downloaded_audio.webm")
                 delete_file(audio_file)
                 await ctx.send("Stopped playing music and disconnected from the channel.")
                 self.voice_client = None
@@ -565,8 +565,7 @@ def get_first_video_url(keywords):
 
 
 def get_token():
-    dir_path = os.path.dirname(os.path.realpath(__file__))
-    token_path = os.path.join(dir_path, "token.txt")
+    token_path = os.path.join(get_script_dir(), "token.txt")
 
     # Check if token.txt exists
     if not os.path.exists(token_path):
@@ -644,7 +643,8 @@ def run_bot_with_gui():
     bot_thread = threading.Thread(target=bot_runner, daemon=True)
     bot_thread.start()
 
-    engine.load(QUrl.fromLocalFile("main.qml"))
+    qml_path = os.path.join(get_script_dir(), "main.qml")
+    engine.load(QUrl.fromLocalFile(qml_path))
 
     if not engine.rootObjects():
         sys.exit(1)
@@ -668,6 +668,10 @@ def run_bot_no_gui():
     except Exception as e:
         print(f"Bot error: {e}")
         sys.exit(1)
+
+
+def get_script_dir():
+    return os.path.dirname(os.path.abspath(__file__))
 
 
 if __name__ == "__main__":
