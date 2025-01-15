@@ -8,7 +8,10 @@ from discord.ext import commands
 from PySide6.QtCore import QObject, Signal, Slot, QUrl, Property, QTimer
 from PySide6.QtGui import QGuiApplication
 from PySide6.QtQml import QQmlApplicationEngine
+from PySide6.QtWidgets import QFileDialog, QApplication
 from PySide6.QtQuickControls2 import QQuickStyle
+import json
+import platform
 import yt_dlp
 from youtube_search import YoutubeSearch
 
@@ -35,6 +38,9 @@ class BotBridge(QObject):
     stopTimerSignal = Signal()
     thumbnailChanged = Signal(str)
     channelNameChanged = Signal(str)
+    titleResolved = Signal(int, str, str)
+    playlistLoaded = Signal(list, str)  # List of playlist items
+    playlistSaved = Signal(str)  # Success/error message
 
     def __init__(self, bot):
         super().__init__()
@@ -62,6 +68,138 @@ class BotBridge(QObject):
 
         self.startTimerSignal.connect(self._position_timer.start)
         self.stopTimerSignal.connect(self._position_timer.stop)
+
+    @Slot()
+    def stop_playing(self):
+        async def stop_wrapper():
+            if self.bot.voice_client and (self.bot.voice_client.is_playing() or self.bot.voice_client.is_paused()):
+                self.bot.voice_client.stop()
+                self.is_playing = False
+                self.stopTimerSignal.emit()
+                self._position = 0
+                self.positionChanged.emit(0)
+                self.playStateChanged.emit(False)
+                self.songChanged.emit("")
+                self.songLoadedChanged.emit(False)
+                if self.current_audio_file and os.path.exists(self.current_audio_file):
+                    await delete_file(self.current_audio_file)
+                self.current_audio_file = None
+                self.current_url = None
+                self.downloadStatusChanged.emit("")
+                self._current_thumbnail_url = None
+                self.thumbnailChanged.emit("")
+                self._current_channel_name = ""
+                self.channelNameChanged.emit("")
+
+        asyncio.run_coroutine_threadsafe(stop_wrapper(), self.bot.loop)
+
+    @Slot()
+    def connect_to_channel(self):
+        async def connect_wrapper():
+            if not self._current_channel or not self._current_server:
+                self.downloadStatusChanged.emit("Please select a server and channel first")
+                return
+
+            selected_server = discord.utils.get(self.bot.guilds, id=int(self._current_server))
+            if not selected_server:
+                self.downloadStatusChanged.emit("Selected server not found")
+                return
+
+            selected_channel = discord.utils.get(selected_server.voice_channels, id=int(self._current_channel))
+            if not selected_channel:
+                self.downloadStatusChanged.emit("Selected channel not found")
+                return
+
+            if all(member.bot for member in selected_channel.members):
+                self.downloadStatusChanged.emit("Cannot join empty channel")
+                return
+
+            try:
+                self.bot.voice_client = await selected_channel.connect()
+                self._voice_connected = True
+                self.voiceConnectedChanged.emit(True)
+                self.downloadStatusChanged.emit("")
+            except Exception as e:
+                self.downloadStatusChanged.emit(f"Failed to connect: {str(e)}")
+                return
+
+        asyncio.run_coroutine_threadsafe(connect_wrapper(), self.bot.loop)
+
+    def get_playlists_directory(self):
+        """Get platform-specific directory for storing playlists"""
+        system = platform.system()
+        if system == "Windows":
+            base_dir = os.path.join(os.environ.get("APPDATA"), "Boxy")
+        elif system == "Darwin":  # macOS
+            base_dir = os.path.join(os.path.expanduser("~"), "Library", "Application Support", "Boxy")
+        else:  # Linux and other Unix-like
+            base_dir = os.path.join(os.path.expanduser("~"), ".config", "Boxy")
+
+        # Create directory if it doesn't exist
+        if not os.path.exists(base_dir):
+            os.makedirs(base_dir)
+
+        return base_dir
+
+    @Slot(str, list)
+    def save_playlist(self, name, items):
+        try:
+            playlists_dir = self.get_playlists_directory()
+            playlist_file = os.path.join(playlists_dir, f"{name}.json")
+
+            with open(playlist_file, "w", encoding="utf-8") as f:
+                json.dump(items, f, ensure_ascii=False, indent=2)
+
+            self.playlistSaved.emit(f"Playlist '{name}' saved successfully")
+        except Exception as e:
+            self.playlistSaved.emit(f"Error saving playlist: {str(e)}")
+
+    @Slot()  # Changed to no parameters since we'll get filename from dialog
+    def load_playlist(self):
+        try:
+            playlists_dir = self.get_playlists_directory()
+            filename, _ = QFileDialog.getOpenFileName(None, "Load Playlist", playlists_dir, "JSON files (*.json)")
+            if filename:  # User selected a file
+                with open(filename, "r", encoding="utf-8") as f:
+                    playlist_data = json.load(f)
+                # Get playlist name from filename without extension
+                playlist_name = os.path.splitext(os.path.basename(filename))[0]
+                self.playlistLoaded.emit(playlist_data, playlist_name)
+                print(playlist_data, playlist_name)
+        except Exception as e:
+            self.playlistSaved.emit(f"Error loading playlist: {str(e)}")
+
+    @Slot(int, str)
+    def resolve_title(self, index, user_input):
+        async def resolver():
+            try:
+                self.downloadStatusChanged.emit(f"Resolving title for item {index}...")
+
+                if user_input.startswith("http"):
+                    # Direct URL, just fetch title
+                    with yt_dlp.YoutubeDL() as ydl:
+                        info = ydl.extract_info(user_input, download=False)
+                        title = info.get("title", "Unknown Title")
+                        self.titleResolved.emit(index, title, user_input)
+                else:
+                    # Search query, need to resolve URL first
+                    url = get_first_video_url(user_input)
+                    if url:
+                        with yt_dlp.YoutubeDL() as ydl:
+                            info = ydl.extract_info(url, download=False)
+                            title = info.get("title", "Unknown Title")
+                            self.titleResolved.emit(index, title, url)
+                    else:
+                        self.titleResolved.emit(index, "No video found", "")
+
+                self.downloadStatusChanged.emit("")
+
+            except Exception as e:
+                print(f"Error resolving title: {e}")
+                self.titleResolved.emit(index, f"Error: {str(e)}", "")
+                self.downloadStatusChanged.emit("")
+
+        asyncio.run_coroutine_threadsafe(resolver(), self.bot.loop)
 
     @Property(str, notify=channelNameChanged)
     def current_channel_name(self):
@@ -619,7 +757,7 @@ def run_bot_with_gui():
         print("Token was rejected by Discord")
         sys.exit(1)
 
-    app = QGuiApplication(sys.argv)
+    app = QApplication(sys.argv)
     engine = QQmlApplicationEngine()
 
     bot = BoxyBot(command_prefix="/", intents=intents)

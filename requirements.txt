@@ -22,4 +22,4 @@ shiboken6==6.8.1.1
 urllib3==2.3.0
 yarl==1.18.3
 youtube-search==2.1.2
-yt-dlp==2024.12.23
+yt-dlp==2025.1.12
