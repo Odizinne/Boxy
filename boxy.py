@@ -17,6 +17,7 @@ import yt_dlp
 from youtube_search import YoutubeSearch
 import signal
 
+
 intents = discord.Intents.default()
 intents.message_content = True
 intents.voice_states = True
