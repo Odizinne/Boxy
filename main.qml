@@ -17,6 +17,7 @@ ApplicationWindow {
     Universal.theme: Universal.System
     Universal.accent: Universal.Green
     property bool songLoaded: false
+    property var shufflePlayedIndices: []
 
     function formatTime(seconds) {
         var minutes = Math.floor(seconds / 60)
@@ -82,10 +83,40 @@ ApplicationWindow {
             // Only auto-advance if we're not manually navigating
             if (!loaded && !botBridge.repeat_mode && stopPlaylistButton.isPlaying && !playlistView.manualNavigation) {
                 if (playlistView.currentIndex < playlistModel.count - 1) {
-                    // Auto-play next song
-                    playlistView.currentIndex++
-                    let item = playlistModel.get(playlistView.currentIndex)
-                    botBridge.play_url(item.url || item.userTyped)
+                    if (shuffleButton.checked) {
+                        // Get available indices (not played yet)
+                        let availableIndices = []
+                        for (let i = 0; i < playlistModel.count; i++) {
+                            if (!shufflePlayedIndices.includes(i)) {
+                                availableIndices.push(i)
+                            }
+                        }
+
+                        // If all songs were played, clear the shuffle list and stop playing
+                        if (availableIndices.length === 0) {
+                            shufflePlayedIndices = []
+                            stopPlaylistButton.isPlaying = false
+                            playlistView.currentIndex = 0
+                            return
+                        }
+
+                        // Pick random index from available ones
+                        const randomIndex = Math.floor(Math.random() * availableIndices.length)
+                        const nextIndex = availableIndices[randomIndex]
+
+                        // Add to played indices
+                        shufflePlayedIndices.push(nextIndex)
+
+                        // Play the song
+                        playlistView.currentIndex = nextIndex
+                        let item = playlistModel.get(nextIndex)
+                        botBridge.play_url(item.url || item.userTyped)
+                    } else {
+                        // Normal sequential play
+                        playlistView.currentIndex++
+                        let item = playlistModel.get(playlistView.currentIndex)
+                        botBridge.play_url(item.url || item.userTyped)
+                    }
                 } else {
                     // We're at the last song and it finished
                     stopPlaylistButton.isPlaying = false
@@ -189,13 +220,16 @@ ApplicationWindow {
                         height: 50
                         enabled: !downloadProgress.visible
 
-                        // Add mouse area to handle double clicks
                         MouseArea {
                             anchors.fill: parent
                             onDoubleClicked: {
                                 playlistView.manualNavigation = true
                                 playlistView.currentIndex = model.index
                                 let item = playlistModel.get(model.index)
+
+                                if (shuffleButton.checked) {
+                                    shufflePlayedIndices = [model.index]
+                                }
                                 if (!stopPlaylistButton.isPlaying) {
                                     stopPlaylistButton.isPlaying = true
                                 }
@@ -204,7 +238,6 @@ ApplicationWindow {
                         }
 
                         Rectangle {
-                            // Playing indicator bar
                             width: 3
                             height: parent.height / 2
                             color: Universal.accent
@@ -464,15 +497,17 @@ ApplicationWindow {
                 spacing: 10
 
                 Button {
-                    id: stopPlaylistButton
-                    icon.source: "icons/stop.png"
+                    id: shuffleButton
                     Layout.preferredWidth: height
-                    property bool isPlaying: false
-                    enabled: isPlaying
-                    onClicked: {
-                        botBridge.stop_playing()
-                        playlistView.currentIndex = 0
-                        isPlaying = false
+                    icon.source: "icons/shuffle.png"
+                    icon.width: 16
+                    icon.height: 16
+                    checkable: true
+                    enabled: statusLabel.text === "Connected"
+                    onCheckedChanged: {
+                        if (checked && repeatButton.checked) {
+                            repeatButton.checked = false
+                        }
                     }
                 }
 
@@ -486,11 +521,24 @@ ApplicationWindow {
                     Layout.preferredWidth: height
                     enabled: playlistView.currentIndex > 0 && stopPlaylistButton.isPlaying && !downloadProgress.visible
                     onClicked: {
-                        if (playlistView.currentIndex > 0) {
-                            playlistView.manualNavigation = true  // Set flag for manual navigation
-                            playlistView.currentIndex--
-                            let item = playlistModel.get(playlistView.currentIndex)
-                            botBridge.play_url(item.url || item.userTyped)
+                        if (shuffleButton.checked) {
+                            // Find current index position in shuffle list
+                            const currentPos = shufflePlayedIndices.indexOf(playlistView.currentIndex)
+                            if (currentPos > 0) {
+                                playlistView.manualNavigation = true
+                                // Get previous played index from shuffle list
+                                const prevIndex = shufflePlayedIndices[currentPos - 1]
+                                playlistView.currentIndex = prevIndex
+                                let item = playlistModel.get(prevIndex)
+                                botBridge.play_url(item.url || item.userTyped)
+                            }
+                        } else {
+                            if (playlistView.currentIndex > 0) {
+                                playlistView.manualNavigation = true
+                                playlistView.currentIndex--
+                                let item = playlistModel.get(playlistView.currentIndex)
+                                botBridge.play_url(item.url || item.userTyped)
+                            }
                         }
                     }
                 }
@@ -521,12 +569,39 @@ ApplicationWindow {
                     Layout.preferredWidth: height
                     enabled: playlistView.currentIndex < (playlistModel.count - 1) && stopPlaylistButton.isPlaying && !downloadProgress.visible
                     onClicked: {
-                        if (playlistView.currentIndex < (playlistModel.count - 1)) {
-                            let nextIndex = playlistView.currentIndex + 1
-                            playlistView.manualNavigation = true  // Set flag for manual navigation
+                        if (shuffleButton.checked) {
+                            // Get available indices (not played yet)
+                            let availableIndices = []
+                            for (let i = 0; i < playlistModel.count; i++) {
+                                if (!shufflePlayedIndices.includes(i)) {
+                                    availableIndices.push(i)
+                                }
+                            }
+
+                            // If all songs were played
+                            if (availableIndices.length === 0) {
+                                shufflePlayedIndices = []
+                                stopPlaylistButton.isPlaying = false
+                                playlistView.currentIndex = 0
+                                return
+                            }
+
+                            // Pick random index from available ones
+                            const randomIndex = Math.floor(Math.random() * availableIndices.length)
+                            const nextIndex = availableIndices[randomIndex]
+
+                            playlistView.manualNavigation = true
+                            shufflePlayedIndices.push(nextIndex)
+                            playlistView.currentIndex = nextIndex
                             let item = playlistModel.get(nextIndex)
                             botBridge.play_url(item.url || item.userTyped)
-                            playlistView.currentIndex = nextIndex
+                        } else {
+                            if (playlistView.currentIndex < (playlistModel.count - 1)) {
+                                playlistView.manualNavigation = true
+                                playlistView.currentIndex++
+                                let item = playlistModel.get(playlistView.currentIndex)
+                                botBridge.play_url(item.url || item.userTyped)
+                            }
                         }
                     }
                 }
@@ -546,6 +621,10 @@ ApplicationWindow {
                     enabled: statusLabel.text === "Connected"
                     onCheckedChanged: {
                         botBridge.set_repeat_mode(checked)
+
+                        if (checked && shuffleButton.checked) {
+                            shuffleButton.checked = false
+                        }
                     }
                 }
             }
@@ -648,17 +727,35 @@ ApplicationWindow {
                 }
             }
 
-            Button {
-                id: disconnectButton
-
-                text: botBridge.voiceConnected ? "Disconnect from channel" : "Connect to channel"
+            RowLayout {
                 Layout.fillWidth: true
-                enabled: statusLabel.text === "Connected" && channelComboBox.currentValue
-                onClicked: {
-                    if (botBridge.voiceConnected) {
-                        botBridge.disconnect_voice()
-                    } else {
-                        botBridge.connect_to_channel()
+                spacing: 10
+
+                Button {
+                    id: stopPlaylistButton
+                    icon.source: "icons/stop.png"
+                    Layout.preferredWidth: height
+                    property bool isPlaying: false
+                    enabled: isPlaying
+                    onClicked: {
+                        botBridge.stop_playing()
+                        playlistView.currentIndex = 0
+                        isPlaying = false
+                    }
+                }
+
+                Button {
+                    id: disconnectButton
+
+                    text: botBridge.voiceConnected ? "Disconnect from channel" : "Connect to channel"
+                    Layout.fillWidth: true
+                    enabled: statusLabel.text === "Connected" && channelComboBox.currentValue
+                    onClicked: {
+                        if (botBridge.voiceConnected) {
+                            botBridge.disconnect_voice()
+                        } else {
+                            botBridge.connect_to_channel()
+                        }
                     }
                 }
             }
