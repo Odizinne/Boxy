@@ -216,7 +216,7 @@ ApplicationWindow {
                         id: editButton
                         text: "Edit"
                         checkable: true
-                        enabled: playlistModel.count >= 2
+                        enabled: checked ? true : playlistModel.count >= 2
                     }
                 }
 
@@ -416,6 +416,7 @@ ApplicationWindow {
                                     icon.width: width / 3
                                     icon.height: height / 3
                                     Layout.rightMargin: 15
+                                    visible: editButton.checked
                                     onClicked: playlistModel.remove(model.index)
                                     flat: true
                                 }
