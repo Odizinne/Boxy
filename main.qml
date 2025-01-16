@@ -241,7 +241,9 @@ ApplicationWindow {
                             }
 
                             Button {
-                                icon.source: Universal.theme === Universal.Dark ? "icons/delete_light.png" : "icons/delete_dark.png"
+                                icon.source: "icons/delete.png"
+                                icon.width: width / 3
+                                icon.height: height / 3
                                 Layout.rightMargin: 15
                                 onClicked: playlistModel.remove(model.index)
                                 flat: true
@@ -282,8 +284,7 @@ ApplicationWindow {
 
                 Button {
                     id: addButton
-                    //text: "Add"
-                    icon.source: Universal.theme === Universal.Dark ? "icons/plus_light.png" : "icons/plus_dark.png"
+                    icon.source: "icons/plus.png"
                     Layout.preferredWidth: height
                     enabled: newItemInput.text.trim() !== ""
                     onClicked: {
@@ -387,6 +388,7 @@ ApplicationWindow {
                         }
                     }
                 }
+
                 Image {
                     id: thumbnailImage
                     Layout.rowSpan: 2
@@ -465,7 +467,7 @@ ApplicationWindow {
 
                 Button {
                     id: stopPlaylistButton
-                    icon.source: Universal.theme === Universal.Dark ? "icons/stop_light.png" : "icons/stop_dark.png"
+                    icon.source: "icons/stop.png"
                     Layout.preferredWidth: height
                     property bool isPlaying: false
                     enabled: isPlaying
@@ -482,7 +484,7 @@ ApplicationWindow {
 
                 Button {
                     id: playPrevButton
-                    icon.source:  Universal.theme === Universal.Dark ? "icons/prev_light.png" : "icons/prev_dark.png"
+                    icon.source: "icons/prev.png"
                     Layout.preferredWidth: height
                     enabled: playlistView.currentIndex > 0 && stopPlaylistButton.isPlaying && !downloadProgress.visible
                     onClicked: {
@@ -499,9 +501,7 @@ ApplicationWindow {
                     id: pauseButton
                     Layout.preferredWidth: height
                     enabled: songLoaded && !downloadProgress.visible
-
-                    // Initial icon state
-                    icon.source: Universal.theme === Universal.Dark ? "icons/play_light.png" : "icons/play_dark.png"
+                    icon.source: "icons/play.png"
                     icon.width: 24
                     icon.height: 24
 
@@ -512,16 +512,14 @@ ApplicationWindow {
                     Connections {
                         target: botBridge
                         function onPlayStateChanged(isPlaying) {
-                            pauseButton.icon.source = isPlaying ?
-                                (Universal.theme === Universal.Dark ? "icons/pause_light.png" : "icons/pause_dark.png") :
-                                (Universal.theme === Universal.Dark ? "icons/play_light.png" : "icons/play_dark.png")
+                            pauseButton.icon.source = isPlaying ? "icons/pause.png" : "icons/play.png"
                         }
                     }
                 }
 
                 Button {
                     id: playNextButton
-                    icon.source: Universal.theme === Universal.Dark ? "icons/next_light.png" : "icons/next_dark.png"
+                    icon.source: "icons/next.png"
                     Layout.preferredWidth: height
                     enabled: playlistView.currentIndex < (playlistModel.count - 1) && stopPlaylistButton.isPlaying && !downloadProgress.visible
                     onClicked: {
@@ -543,7 +541,7 @@ ApplicationWindow {
                     id: repeatButton
 
                     Layout.preferredWidth: height
-                    icon.source: Universal.theme === Universal.Dark ? "icons/repeat_light.png" : "icons/repeat_dark.png"
+                    icon.source: "icons/repeat.png"
                     icon.width: 16
                     icon.height: 16
                     checkable: true
