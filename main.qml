@@ -18,8 +18,6 @@ ApplicationWindow {
     Universal.accent: Universal.Green
     property bool songLoaded: false
 
-    color: Universal.theme === Universal.Dark ? "#121212" : "#f5f5f5"
-
     function formatTime(seconds) {
         var minutes = Math.floor(seconds / 60)
         var remainingSeconds = Math.floor(seconds % 60)
@@ -180,7 +178,7 @@ ApplicationWindow {
                     model: ListModel { id: playlistModel }
                     spacing: 5
                     property bool manualNavigation: false
-
+                    boundsBehavior: Flickable.StopAtBounds
                     ScrollBar.vertical: ScrollBar {
                         policy: playlistView.contentHeight > playlistView.height ?
                                ScrollBar.AlwaysOn : ScrollBar.AsNeeded
