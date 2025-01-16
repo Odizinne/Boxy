@@ -78,14 +78,14 @@ ApplicationWindow {
             playlistName.text = title
             items.forEach(function(item) {
                 playlistModel.append({
-                                         "userTyped": item.userTyped,
-                                         "url": item.url || "",
-                                         "resolvedTitle": item.resolvedTitle || "",
-                                         "channelName": item.channelName || "",
-                                         "isResolving": !item.resolvedTitle
-                                     })
+                    "userTyped": item.userTyped,
+                    "url": item.url || "",
+                    "resolvedTitle": item.resolvedTitle || "",
+                    "channelName": item.channelName || "",
+                    "isResolving": !item.resolvedTitle || !item.url || !item.channelName
+                })
 
-                if (!item.resolvedTitle) {
+                if (!item.resolvedTitle || !item.url || !item.channelName) {
                     let idx = playlistModel.count - 1
                     botBridge.resolve_title(idx, item.userTyped)
                 }
@@ -200,7 +200,7 @@ ApplicationWindow {
                     Button {
                         id: saveButton
                         text: "Save"
-                        enabled: playlistName.text.trim() !== "" && playlistModel.count > 0 && !titleFetchingIndicator.visible
+                        enabled: playlistName.text.trim() !== "" && playlistModel.count > 0
                         onClicked: root.savePlaylist
                     }
 
@@ -216,7 +216,7 @@ ApplicationWindow {
                         id: editButton
                         text: "Edit"
                         checkable: true
-                        enabled: playlistModel.count >= 2 && !titleFetchingIndicator.visible
+                        enabled: playlistModel.count >= 2
                     }
                 }
 
