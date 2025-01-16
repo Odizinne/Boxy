@@ -4,7 +4,6 @@ import sys
 import threading
 import argparse
 import concurrent.futures
-
 import discord
 from discord.ext import commands
 from PySide6.QtCore import QObject, Signal, Slot, QUrl, Property, QTimer
