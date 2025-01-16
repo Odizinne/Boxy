@@ -71,10 +71,194 @@ ApplicationWindow {
 
     RowLayout {
         anchors.fill: parent
-        spacing: 10
+        spacing: 14
         anchors.margins: 14
         id: appLayout
 
+        ColumnLayout {
+            Layout.fillHeight: true
+            Layout.preferredWidth: parent.width * 0.6
+            spacing: 10
+            Layout.fillWidth: true
+
+            // Playlist content
+            RowLayout {
+                Layout.fillWidth: true
+                spacing: 10
+
+                Button {
+                    text: "Load"
+                    onClicked: botBridge.load_playlist()
+                    enabled: statusLabel.text === "Connected"
+                }
+
+                Button {
+                    text: "Save"
+                    enabled: playlistName.text.trim() !== "" && playlistModel.count > 0
+                    onClicked: {
+                        let items = []
+                        for (let i = 0; i < playlistModel.count; i++) {
+                            let item = playlistModel.get(i)
+                            items.push({
+                                           "userTyped": item.userTyped,
+                                           "url": item.url || "",
+                                           "resolvedTitle": item.resolvedTitle || ""
+                                       })
+                        }
+                        botBridge.save_playlist(playlistName.text, items)
+                        savePopup.visible = true
+                        hideTimer.start()
+                    }
+                }
+
+                TextField {
+                    id: playlistName
+                    text: ""
+                    placeholderText: "Super playlist"
+                    Layout.fillWidth: true
+                }
+            }
+
+            ScrollView {
+                Layout.fillWidth: true
+                Layout.fillHeight: true
+                clip: true
+
+                ListView {
+                    id: playlistView
+                    anchors.fill: parent
+                    model: ListModel { id: playlistModel }
+                    spacing: 5
+                    property bool manualNavigation: false  // Add this property
+
+                    delegate: ItemDelegate {
+                        width: ListView.view.width
+                        height: 50
+                        enabled: !downloadProgress.visible
+
+                        // Add mouse area to handle double clicks
+                        MouseArea {
+                            anchors.fill: parent
+                            onDoubleClicked: {
+                                playlistView.manualNavigation = true
+                                playlistView.currentIndex = model.index
+                                let item = playlistModel.get(model.index)
+                                if (!stopPlaylistButton.isPlaying) {
+                                    stopPlaylistButton.isPlaying = true
+                                }
+                                botBridge.play_url(item.url || item.userTyped)
+                            }
+                        }
+
+                        Rectangle {
+                            // Playing indicator bar
+                            width: 3
+                            height: parent.height / 2
+                            color: Universal.accent
+                            visible: model.index === playlistView.currentIndex
+                            anchors.verticalCenter: parent.verticalCenter  // Center vertically
+                        }
+
+                        RowLayout {
+                            anchors.fill: parent
+                            anchors.margins: 5
+                            anchors.leftMargin: 8
+                            spacing: 10
+
+                            ColumnLayout {
+                                Layout.fillWidth: true
+                                spacing: 2
+
+                                Label {
+                                    text: model.resolvedTitle || model.userTyped
+                                    font.bold: model.resolvedTitle ? true : false
+                                    Layout.fillWidth: true
+                                    elide: Text.ElideRight
+                                }
+                            }
+
+                            BusyIndicator {
+                                id: titleFetchingIndicator
+                                visible: model.isResolving
+                                running: visible
+                                height: 32
+                                width: 32
+                            }
+
+                            Button {
+                                //text: "-"
+                                Layout.rightMargin: 15
+                                onClicked: playlistModel.remove(model.index)
+                                flat: true
+
+                                Image {
+                                    anchors.centerIn: parent
+                                    height: 16
+                                    width: 16
+                                    source: Universal.theme === Universal.Dark ? "icons/delete_light.png" : "icons/delete_dark.png"
+                                }
+                            }
+
+
+                        }
+                    }
+                }
+            }
+
+            ProgressBar {
+                id: downloadProgress
+                Layout.fillWidth: true
+                indeterminate: true
+                Layout.bottomMargin: -5
+                visible: newItemInput.placeholderText !== "Enter YouTube URL or search term"
+            }
+
+            RowLayout {
+                Layout.fillWidth: true
+                spacing: 10
+
+                TextField {
+                    id: newItemInput
+                    Layout.fillWidth: true
+                    placeholderText: "Enter YouTube URL or search term"
+                    enabled: statusLabel.text === "Connected"
+
+                    onAccepted: addButton.clicked()
+                    Connections {
+                        target: botBridge
+                        function onDownloadStatusChanged(status) {
+                            newItemInput.placeholderText = status === "" ?
+                                        "Enter YouTube URL or search term" : status
+                        }
+                    }
+                }
+
+                Button {
+                    id: addButton
+                    text: "Add"
+                    enabled: newItemInput.text.trim() !== ""
+                    onClicked: {
+                        if (newItemInput.text.trim() !== "") {
+                            let idx = playlistModel.count
+                            playlistModel.append({
+                                                     "userTyped": newItemInput.text.trim(),
+                                                     "url": "",
+                                                     "resolvedTitle": "",
+                                                     "isResolving": true
+                                                 })
+                            botBridge.resolve_title(idx, newItemInput.text.trim())
+                            newItemInput.text = ""
+                        }
+                    }
+                }
+            }
+        }
+
+        ToolSeparator {
+            Layout.leftMargin: -14
+            Layout.rightMargin: -14
+            Layout.fillHeight: true
+        }
 
         ColumnLayout {
             id: colLayout
@@ -236,12 +420,18 @@ ApplicationWindow {
                     id: stopPlaylistButton
                     Layout.preferredWidth: repeatButton.width
                     property bool isPlaying: false
-                    text: "s"
                     enabled: isPlaying
                     onClicked: {
                         botBridge.stop_playing()
                         playlistView.currentIndex = 0
                         isPlaying = false
+                    }
+
+                    Image {
+                        anchors.centerIn: parent
+                        height: 24
+                        width: 24
+                        source: Universal.theme === Universal.Dark ? "icons/stop_light.png" : "icons/stop_dark.png"
                     }
                 }
 
@@ -251,7 +441,6 @@ ApplicationWindow {
 
                 Button {
                     id: playPrevButton
-                    text: "<"
                     enabled: playlistView.currentIndex > 0 && stopPlaylistButton.isPlaying && !downloadProgress.visible
                     onClicked: {
                         if (playlistView.currentIndex > 0) {
@@ -260,6 +449,13 @@ ApplicationWindow {
                             let item = playlistModel.get(playlistView.currentIndex)
                             botBridge.play_url(item.url || item.userTyped)
                         }
+                    }
+
+                    Image {
+                        anchors.centerIn: parent
+                        height: 24
+                        width: 24
+                        source: Universal.theme === Universal.Dark ? "icons/prev_light.png" : "icons/prev_dark.png"
                     }
                 }
 
@@ -304,7 +500,6 @@ ApplicationWindow {
 
                 Button {
                     id: playNextButton
-                    text: ">"
                     enabled: playlistView.currentIndex < (playlistModel.count - 1) && stopPlaylistButton.isPlaying && !downloadProgress.visible
                     onClicked: {
                         if (playlistView.currentIndex < (playlistModel.count - 1)) {
@@ -313,6 +508,13 @@ ApplicationWindow {
                             let item = playlistModel.get(playlistView.currentIndex)
                             botBridge.play_url(item.url || item.userTyped)
                         }
+                    }
+
+                    Image {
+                        anchors.centerIn: parent
+                        height: 24
+                        width: 24
+                        source: Universal.theme === Universal.Dark ? "icons/next_light.png" : "icons/next_dark.png"
                     }
                 }
 
@@ -447,179 +649,9 @@ ApplicationWindow {
             }
         }
 
-        ToolSeparator {
-            Layout.fillHeight: true
-        }
-
-        ColumnLayout {
-            Layout.fillHeight: true
-            Layout.preferredWidth: parent.width * 0.6
-            spacing: 10
-            Layout.fillWidth: true
-
-            // Playlist content
-            RowLayout {
-                Layout.fillWidth: true
-                spacing: 10
-
-                Button {
-                    text: "Load"
-                    onClicked: botBridge.load_playlist()
-                    enabled: statusLabel.text === "Connected"
-                }
-
-                Button {
-                    text: "Save"
-                    enabled: playlistName.text.trim() !== "" && playlistModel.count > 0
-                    onClicked: {
-                        let items = []
-                        for (let i = 0; i < playlistModel.count; i++) {
-                            let item = playlistModel.get(i)
-                            items.push({
-                                           "userTyped": item.userTyped,
-                                           "url": item.url || "",
-                                           "resolvedTitle": item.resolvedTitle || ""
-                                       })
-                        }
-                        botBridge.save_playlist(playlistName.text, items)
-                        savePopup.visible = true
-                        hideTimer.start()
-                    }
-                }
-
-                TextField {
-                    id: playlistName
-                    text: ""
-                    placeholderText: "Super playlist"
-                    Layout.fillWidth: true
-                }
-            }
-
-            ScrollView {
-                Layout.fillWidth: true
-                Layout.fillHeight: true
-                clip: true
-
-                ListView {
-                    id: playlistView
-                    anchors.fill: parent
-                    model: ListModel { id: playlistModel }
-                    spacing: 5
-                    property bool manualNavigation: false  // Add this property
 
 
-                    delegate: ItemDelegate {
-                        width: ListView.view.width
-                        height: 50
-                        enabled: !downloadProgress.visible
 
-                        // Add mouse area to handle double clicks
-                        MouseArea {
-                            anchors.fill: parent
-                            onDoubleClicked: {
-                                playlistView.manualNavigation = true
-                                playlistView.currentIndex = model.index
-                                let item = playlistModel.get(model.index)
-                                if (!stopPlaylistButton.isPlaying) {
-                                    stopPlaylistButton.isPlaying = true
-                                }
-                                botBridge.play_url(item.url || item.userTyped)
-                            }
-                        }
-
-                        Rectangle {
-                            // Playing indicator bar
-                            width: 3
-                            height: parent.height / 2
-                            color: Universal.accent
-                            visible: model.index === playlistView.currentIndex
-                            anchors.verticalCenter: parent.verticalCenter  // Center vertically
-                        }
-
-                        RowLayout {
-                            anchors.fill: parent
-                            anchors.margins: 5
-                            anchors.leftMargin: 8
-                            spacing: 10
-
-                            ColumnLayout {
-                                Layout.fillWidth: true
-                                spacing: 2
-
-                                Label {
-                                    text: model.resolvedTitle || model.userTyped
-                                    font.bold: model.resolvedTitle ? true : false
-                                    Layout.fillWidth: true
-                                    elide: Text.ElideRight
-                                }
-                            }
-
-                            BusyIndicator {
-                                id: titleFetchingIndicator
-                                visible: model.isResolving
-                                running: visible
-                                height: 32
-                                width: 32
-                            }
-
-                            Button {
-                                text: "-"
-                                Layout.rightMargin: 15
-                                onClicked: playlistModel.remove(model.index)
-                            }
-                        }
-                    }
-                }
-            }
-
-            ProgressBar {
-                id: downloadProgress
-                Layout.fillWidth: true
-                indeterminate: true
-                Layout.bottomMargin: -5
-                visible: newItemInput.placeholderText !== "Enter YouTube URL or search term"
-            }
-
-            RowLayout {
-                Layout.fillWidth: true
-                spacing: 10
-
-                TextField {
-                    id: newItemInput
-                    Layout.fillWidth: true
-                    placeholderText: "Enter YouTube URL or search term"
-                    enabled: statusLabel.text === "Connected"
-
-                    onAccepted: addButton.clicked()
-                    Connections {
-                        target: botBridge
-                        function onDownloadStatusChanged(status) {
-                            newItemInput.placeholderText = status === "" ?
-                                        "Enter YouTube URL or search term" : status
-                        }
-                    }
-                }
-
-                Button {
-                    id: addButton
-                    text: "Add"
-                    enabled: newItemInput.text.trim() !== ""
-                    onClicked: {
-                        if (newItemInput.text.trim() !== "") {
-                            let idx = playlistModel.count
-                            playlistModel.append({
-                                                     "userTyped": newItemInput.text.trim(),
-                                                     "url": "",
-                                                     "resolvedTitle": "",
-                                                     "isResolving": true
-                                                 })
-                            botBridge.resolve_title(idx, newItemInput.text.trim())
-                            newItemInput.text = ""
-                        }
-                    }
-                }
-            }
-        }
     }
 
     // Add popup at root level

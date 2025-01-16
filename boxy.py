@@ -6,7 +6,7 @@ import argparse
 import discord
 from discord.ext import commands
 from PySide6.QtCore import QObject, Signal, Slot, QUrl, Property, QTimer
-from PySide6.QtGui import QGuiApplication
+from PySide6.QtGui import QGuiApplication, QIcon
 from PySide6.QtQml import QQmlApplicationEngine
 from PySide6.QtWidgets import QFileDialog, QApplication
 from PySide6.QtQuickControls2 import QQuickStyle
@@ -767,6 +767,8 @@ def run_bot_with_gui():
     def cleanup():
         asyncio.run_coroutine_threadsafe(bridge.cleanup(), bot.loop).result()
 
+    icon = os.path.join(get_script_dir(), "boxy-orange.png")
+    app.setWindowIcon(QIcon(icon))
     app.aboutToQuit.connect(cleanup)
 
     engine.rootContext().setContextProperty("botBridge", bridge)
