@@ -3,3 +3,4 @@ dist/
 .venv/
 downloaded_audio.webm
 token.txt
+__pycache__/

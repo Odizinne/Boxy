@@ -8,8 +8,6 @@ from discord.ext import commands
 from PySide6.QtCore import QObject, Signal, Slot, QUrl, Property, QTimer
 from PySide6.QtGui import QGuiApplication, QIcon
 from PySide6.QtQml import QQmlApplicationEngine
-from PySide6.QtWidgets import QFileDialog, QApplication
-from PySide6.QtQuickControls2 import QQuickStyle
 import json
 import platform
 import yt_dlp
@@ -154,11 +152,9 @@ class BotBridge(QObject):
         except Exception as e:
             self.playlistSaved.emit(f"Error saving playlist: {str(e)}")
 
-    @Slot()  # Changed to no parameters since we'll get filename from dialog
-    def load_playlist(self):
+    @Slot(str)
+    def load_playlist(self, filename):
         try:
-            playlists_dir = self.get_playlists_directory()
-            filename, _ = QFileDialog.getOpenFileName(None, "Load Playlist", playlists_dir, "JSON files (*.json)")
             if filename:  # User selected a file
                 with open(filename, "r", encoding="utf-8") as f:
                     playlist_data = json.load(f)
@@ -757,7 +753,7 @@ def run_bot_with_gui():
         print("Token was rejected by Discord")
         sys.exit(1)
 
-    app = QApplication(sys.argv)
+    app = QGuiApplication(sys.argv)
     engine = QQmlApplicationEngine()
 
     bot = BoxyBot(command_prefix="/", intents=intents)

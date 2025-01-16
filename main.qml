@@ -2,25 +2,53 @@ import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
 import QtQuick.Controls.Universal
+import Qt.labs.platform as Platform
 
 ApplicationWindow {
     visible: true
     id: root
     width: 800
-    height: appLayout.implicitHeight + 28
+    height: 480
     minimumWidth: 800
-    minimumHeight: appLayout.implicitHeight + 28
+    minimumHeight: 480
     maximumWidth: 800
-    maximumHeight: appLayout.implicitHeight + 28
+    maximumHeight: 480
     title: "Boxy GUI"
     Universal.theme: Universal.System
     Universal.accent: Universal.Green
     property bool songLoaded: false
 
+    color: Universal.theme === Universal.Dark ? "#121212" : "#f5f5f5"
+
     function formatTime(seconds) {
         var minutes = Math.floor(seconds / 60)
         var remainingSeconds = Math.floor(seconds % 60)
         return minutes + ":" + (remainingSeconds < 10 ? "0" : "") + remainingSeconds
+    }
+
+    Shortcut {
+        sequence: StandardKey.Open  // Ctrl+O / Cmd+O
+        enabled: statusLabel.text === "Connected"  // Same condition as Load button
+        onActivated: fileDialog.open()
+    }
+
+    Shortcut {
+        sequence: StandardKey.Save  // Ctrl+S / Cmd+S
+        enabled: playlistName.text.trim() !== "" && playlistModel.count > 0  // Same condition as Save button
+        onActivated: {
+            let items = []
+            for (let i = 0; i < playlistModel.count; i++) {
+                let item = playlistModel.get(i)
+                items.push({
+                    "userTyped": item.userTyped,
+                    "url": item.url || "",
+                    "resolvedTitle": item.resolvedTitle || ""
+                })
+            }
+            botBridge.save_playlist(playlistName.text, items)
+            savePopup.visible = true
+            hideTimer.start()
+        }
     }
 
     Connections {
@@ -53,7 +81,8 @@ ApplicationWindow {
         }
 
         function onSongLoadedChanged(loaded) {
-            if (!loaded && !botBridge.repeat_mode && stopPlaylistButton.isPlaying) {
+            // Only auto-advance if we're not manually navigating
+            if (!loaded && !botBridge.repeat_mode && stopPlaylistButton.isPlaying && !playlistView.manualNavigation) {
                 if (playlistView.currentIndex < playlistModel.count - 1) {
                     // Auto-play next song
                     playlistView.currentIndex++
@@ -64,8 +93,9 @@ ApplicationWindow {
                     stopPlaylistButton.isPlaying = false
                     playlistView.currentIndex = 0
                 }
-                playlistView.manualNavigation = false
             }
+            // Reset the manual navigation flag after handling
+            playlistView.manualNavigation = false
         }
     }
 
@@ -76,6 +106,7 @@ ApplicationWindow {
         id: appLayout
 
         ColumnLayout {
+            id: playListViewLayout
             Layout.fillHeight: true
             Layout.preferredWidth: parent.width * 0.6
             spacing: 10
@@ -88,12 +119,30 @@ ApplicationWindow {
 
                 Button {
                     text: "Load"
-                    onClicked: botBridge.load_playlist()
+                    onClicked: fileDialog.open()
                     enabled: statusLabel.text === "Connected"
+                }
+
+                Platform.FileDialog {
+                    id: fileDialog
+                    title: "Load Playlist"
+                    nameFilters: ["JSON files (*.json)"]
+                    folder: botBridge.get_playlists_directory()
+
+                    onAccepted: {
+                        // Convert the URL to a local file path
+                        var path = fileDialog.file.toString()
+                        // Remove "file:///" prefix
+                        path = path.replace(/^(file:\/{3})/,"")
+                        // Decode URI component for special characters
+                        path = decodeURIComponent(path)
+                        botBridge.load_playlist(path)
+                    }
                 }
 
                 Button {
                     text: "Save"
+
                     enabled: playlistName.text.trim() !== "" && playlistModel.count > 0
                     onClicked: {
                         let items = []
@@ -113,6 +162,7 @@ ApplicationWindow {
 
                 TextField {
                     id: playlistName
+                    Layout.preferredHeight: addButton.height
                     text: ""
                     placeholderText: "Super playlist"
                     Layout.fillWidth: true
@@ -181,8 +231,8 @@ ApplicationWindow {
                                 id: titleFetchingIndicator
                                 visible: model.isResolving
                                 running: visible
-                                height: 32
-                                width: 32
+                                height: 16
+                                width: 16
                             }
 
                             Button {
@@ -219,6 +269,7 @@ ApplicationWindow {
 
                 TextField {
                     id: newItemInput
+                    Layout.preferredHeight: addButton.height
                     Layout.fillWidth: true
                     placeholderText: "Enter YouTube URL or search term"
                     enabled: statusLabel.text === "Connected"
@@ -236,6 +287,7 @@ ApplicationWindow {
                 Button {
                     id: addButton
                     text: "Add"
+
                     enabled: newItemInput.text.trim() !== ""
                     onClicked: {
                         if (newItemInput.text.trim() !== "") {
@@ -418,7 +470,8 @@ ApplicationWindow {
 
                 Button {
                     id: stopPlaylistButton
-                    Layout.preferredWidth: repeatButton.width
+
+                    Layout.preferredWidth: height
                     property bool isPlaying: false
                     enabled: isPlaying
                     onClicked: {
@@ -441,6 +494,9 @@ ApplicationWindow {
 
                 Button {
                     id: playPrevButton
+
+                    Layout.preferredWidth: height
+                    //icon.name: "skip_previous"
                     enabled: playlistView.currentIndex > 0 && stopPlaylistButton.isPlaying && !downloadProgress.visible
                     onClicked: {
                         if (playlistView.currentIndex > 0) {
@@ -461,7 +517,8 @@ ApplicationWindow {
 
                 Button {
                     id: pauseButton
-                    Layout.preferredWidth: pauseButton.height
+
+                    Layout.preferredWidth: height
                     enabled: songLoaded && !downloadProgress.visible
                     onClicked: {
                         botBridge.toggle_playback()
@@ -500,13 +557,16 @@ ApplicationWindow {
 
                 Button {
                     id: playNextButton
+
+                    Layout.preferredWidth: height
                     enabled: playlistView.currentIndex < (playlistModel.count - 1) && stopPlaylistButton.isPlaying && !downloadProgress.visible
                     onClicked: {
                         if (playlistView.currentIndex < (playlistModel.count - 1)) {
+                            let nextIndex = playlistView.currentIndex + 1
                             playlistView.manualNavigation = true  // Set flag for manual navigation
-                            playlistView.currentIndex++
-                            let item = playlistModel.get(playlistView.currentIndex)
+                            let item = playlistModel.get(nextIndex)
                             botBridge.play_url(item.url || item.userTyped)
+                            playlistView.currentIndex = nextIndex
                         }
                     }
 
@@ -524,10 +584,11 @@ ApplicationWindow {
 
                 Button {
                     id: repeatButton
+
+                    Layout.preferredWidth: height
                     icon.source: Universal.theme === Universal.Dark ? "icons/repeat_light.png" : "icons/repeat_dark.png"
                     icon.width: 16
                     icon.height: 16
-                    Layout.preferredWidth: pauseButton.width
                     checkable: true
                     enabled: statusLabel.text === "Connected"
                     onCheckedChanged: {
@@ -537,12 +598,13 @@ ApplicationWindow {
                 }
             }
 
-            MenuSeparator {
+            ToolSeparator {
                 Layout.fillWidth: true
                 Layout.topMargin: 14
                 Layout.bottomMargin: 14
                 Layout.leftMargin: -14
                 Layout.rightMargin: -14
+                orientation: Qt.Horizontal
             }
 
             RowLayout {
@@ -636,6 +698,7 @@ ApplicationWindow {
 
             Button {
                 id: disconnectButton
+
                 text: botBridge.voiceConnected ? "Disconnect from channel" : "Connect to channel"
                 Layout.fillWidth: true
                 enabled: statusLabel.text === "Connected" && channelComboBox.currentValue
@@ -648,19 +711,14 @@ ApplicationWindow {
                 }
             }
         }
-
-
-
-
     }
 
     // Add popup at root level
     Popup {
         id: savePopup
-        x: (parent.width - width) / 2
-        y: parent.height - height - 50
-        width: saveLabel.width + 20
-        height: saveLabel.height + 20
+        anchors.centerIn: parent
+        width: saveLabel.width + 40
+        height: saveLabel.height + 30
         opacity: 0.8
 
         Label {
@@ -671,7 +729,7 @@ ApplicationWindow {
 
         Timer {
             id: hideTimer
-            interval: 1500
+            interval: 2000
             onTriggered: savePopup.close()
         }
     }
