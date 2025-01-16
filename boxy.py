@@ -39,7 +39,7 @@ class BotBridge(QObject):
     stopTimerSignal = Signal()
     thumbnailChanged = Signal(str)
     channelNameChanged = Signal(str)
-    titleResolved = Signal(int, str, str)
+    titleResolved = Signal(int, str, str, str)
     playlistLoaded = Signal(list, str)
     playlistSaved = Signal(str)
 
@@ -168,9 +168,13 @@ class BotBridge(QObject):
             if filename:
                 with open(filename, "r", encoding="utf-8") as f:
                     playlist_data = json.load(f)
-                playlist_name = os.path.splitext(os.path.basename(filename))[0]
-                self.playlistLoaded.emit(playlist_data, playlist_name)
-                print(playlist_data, playlist_name)
+                    # Update playlist items to ensure they have channelName field
+                    for item in playlist_data:
+                        if "channelName" not in item:
+                            item["channelName"] = ""
+                    playlist_name = os.path.splitext(os.path.basename(filename))[0]
+                    self.playlistLoaded.emit(playlist_data, playlist_name)
+                    print(playlist_data, playlist_name)
         except Exception as e:
             self.playlistSaved.emit(f"Error loading playlist: {str(e)}")
 
@@ -200,9 +204,10 @@ class BotBridge(QObject):
                     info = await extract_url_info()
                     if info:
                         title = info.get("title", "Unknown Title")
-                        self.titleResolved.emit(index, title, user_input)
+                        channel_name = info.get("channel", "") or info.get("uploader", "")
+                        self.titleResolved.emit(index, title, user_input, channel_name)
                     else:
-                        self.titleResolved.emit(index, "Error fetching title", "")
+                        self.titleResolved.emit(index, "Error fetching title", "", "")
                 else:
 
                     async def perform_search():
@@ -224,17 +229,18 @@ class BotBridge(QObject):
                         info = await extract_search_info()
                         if info:
                             title = info.get("title", "Unknown Title")
-                            self.titleResolved.emit(index, title, url)
+                            channel_name = info.get("channel", "") or info.get("uploader", "")
+                            self.titleResolved.emit(index, title, url, channel_name)
                         else:
-                            self.titleResolved.emit(index, "Error fetching title", "")
+                            self.titleResolved.emit(index, "Error fetching title", "", "")
                     else:
-                        self.titleResolved.emit(index, "No video found", "")
+                        self.titleResolved.emit(index, "No video found", "", "")
 
                 self.downloadStatusChanged.emit("")
 
             except Exception as e:
                 print(f"Error resolving title: {e}")
-                self.titleResolved.emit(index, f"Error: {str(e)}", "")
+                self.titleResolved.emit(index, f"Error: {str(e)}", "", "")
                 self.downloadStatusChanged.emit("")
 
         asyncio.run_coroutine_threadsafe(resolver(), self.bot.loop)
