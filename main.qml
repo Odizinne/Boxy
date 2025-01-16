@@ -8,11 +8,11 @@ ApplicationWindow {
     visible: true
     id: root
     width: 800
-    height: 480
+    height: 490
     minimumWidth: 800
-    minimumHeight: 480
+    minimumHeight: 490
     maximumWidth: 800
-    maximumHeight: 480
+    maximumHeight: 490
     title: "Boxy GUI"
     Universal.theme: Universal.System
     Universal.accent: Universal.Green
@@ -108,7 +108,7 @@ ApplicationWindow {
         ColumnLayout {
             id: playListViewLayout
             Layout.fillHeight: true
-            Layout.preferredWidth: parent.width * 0.6
+            Layout.preferredWidth: parent.width * 0.55
             spacing: 10
             Layout.fillWidth: true
 
@@ -179,7 +179,12 @@ ApplicationWindow {
                     anchors.fill: parent
                     model: ListModel { id: playlistModel }
                     spacing: 5
-                    property bool manualNavigation: false  // Add this property
+                    property bool manualNavigation: false
+
+                    ScrollBar.vertical: ScrollBar {
+                        policy: playlistView.contentHeight > playlistView.height ?
+                               ScrollBar.AlwaysOn : ScrollBar.AsNeeded
+                    }
 
                     delegate: ItemDelegate {
                         width: ListView.view.width
@@ -315,7 +320,7 @@ ApplicationWindow {
         ColumnLayout {
             id: colLayout
             Layout.fillWidth: true
-            Layout.preferredWidth: parent.width * 0.4
+            Layout.preferredWidth: parent.width * 0.45
             spacing: 10
 
             Label {
@@ -353,7 +358,7 @@ ApplicationWindow {
                         font.pixelSize: 14
                         font.bold: true
                         wrapMode: Text.Wrap
-                        maximumLineCount: 1
+                        maximumLineCount: 2
                         Connections {
                             target: botBridge
                             function onSongChanged(songTitle) {
