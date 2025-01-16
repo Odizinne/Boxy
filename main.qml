@@ -15,7 +15,7 @@ ApplicationWindow {
     //maximumHeight: 446
     title: "Boxy GUI"
     Universal.theme: Universal.System
-    Universal.accent: Universal.Green
+    Universal.accent: Universal.Orange
     property bool songLoaded: false
     property var shufflePlayedIndices: []
     property bool connectedToAPI: false
