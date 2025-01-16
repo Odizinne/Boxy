@@ -667,24 +667,45 @@ ApplicationWindow {
         }
     }
 
-    // Add popup at root level
     Popup {
         id: savePopup
+        parent: playlistView
         anchors.centerIn: parent
         width: saveLabel.width + 40
         height: saveLabel.height + 30
-        opacity: 0.8
+        opacity: 0
+
+        enter: Transition {
+            NumberAnimation {
+                property: "opacity"
+                from: 0.0
+                to: 1.0
+                duration: 200
+            }
+        }
+
+        exit: Transition {
+            NumberAnimation {
+                property: "opacity"
+                from: 1.0
+                to: 0.0
+                duration: 200
+            }
+        }
 
         Label {
             id: saveLabel
+            font.pixelSize: 14
             anchors.centerIn: parent
             text: "Playlist saved successfully"
         }
 
         Timer {
             id: hideTimer
-            interval: 2000
+            interval: 2500
             onTriggered: savePopup.close()
         }
+
+        onOpened: hideTimer.start()
     }
 }
