@@ -3,6 +3,8 @@ import os
 import sys
 import threading
 import argparse
+import concurrent.futures
+
 import discord
 from discord.ext import commands
 from PySide6.QtCore import QObject, Signal, Slot, QUrl, Property, QTimer
@@ -67,6 +69,12 @@ class BotBridge(QObject):
 
         self.startTimerSignal.connect(self._position_timer.start)
         self.stopTimerSignal.connect(self._position_timer.stop)
+
+        self._yt_pool = concurrent.futures.ThreadPoolExecutor(max_workers=2, thread_name_prefix="yt_worker")
+
+    def __del__(self):
+        if hasattr(self, "_yt_pool"):
+            self._yt_pool.shutdown(wait=False)
 
     @Slot()
     def stop_playing(self):
@@ -172,34 +180,48 @@ class BotBridge(QObject):
             try:
                 self.downloadStatusChanged.emit(f"Resolving title for item {index}...")
 
+                title_ydl_opts = {
+                    "quiet": True,
+                    "no_warnings": True,
+                    "extract_flat": True,
+                    "skip_download": True,
+                    "format": None,
+                }
+
                 if user_input.startswith("http"):
-                    # Direct URL, just fetch title
-                    loop = asyncio.get_event_loop()
 
-                    def extract_url_info():
-                        with yt_dlp.YoutubeDL() as ydl:
-                            return ydl.extract_info(user_input, download=False)
+                    async def extract_url_info():
+                        print("Resolve operation using thread pool:", id(self._yt_pool))
+                        with yt_dlp.YoutubeDL(title_ydl_opts) as ydl:
+                            return await asyncio.get_event_loop().run_in_executor(
+                                self._yt_pool, lambda: ydl.extract_info(user_input, download=False, process=False)
+                            )
 
-                    info = await loop.run_in_executor(None, extract_url_info)
-
+                    info = await extract_url_info()
                     if info:
                         title = info.get("title", "Unknown Title")
                         self.titleResolved.emit(index, title, user_input)
                     else:
                         self.titleResolved.emit(index, "Error fetching title", "")
                 else:
-                    # Search query, need to resolve URL first
-                    loop = asyncio.get_event_loop()
-                    url = await loop.run_in_executor(None, get_first_video_url, user_input)
 
-                    if url:
+                    async def perform_search():
+                        return await asyncio.get_event_loop().run_in_executor(
+                            self._yt_pool, lambda: YoutubeSearch(user_input, max_results=1).to_dict()
+                        )
 
-                        def extract_search_info():
-                            with yt_dlp.YoutubeDL() as ydl:
-                                return ydl.extract_info(url, download=False)
+                    results = await perform_search()
+                    if results:
+                        first_result = results[0]
+                        url = f"https://www.youtube.com{first_result['url_suffix']}"
 
-                        info = await loop.run_in_executor(None, extract_search_info)
+                        async def extract_search_info():
+                            with yt_dlp.YoutubeDL(title_ydl_opts) as ydl:
+                                return await asyncio.get_event_loop().run_in_executor(
+                                    self._yt_pool, lambda: ydl.extract_info(url, download=False, process=False)
+                                )
 
+                        info = await extract_search_info()
                         if info:
                             title = info.get("title", "Unknown Title")
                             self.titleResolved.emit(index, title, url)
