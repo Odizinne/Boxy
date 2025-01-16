@@ -156,15 +156,19 @@ ApplicationWindow {
                     id: fileDialog
                     title: "Load Playlist"
                     nameFilters: ["JSON files (*.json)"]
-                    folder: botBridge.get_playlists_directory()
+                    folder: "file:///" + botBridge.get_playlists_directory().replace(/\\/g, '/')
 
                     onAccepted: {
                         // Convert the URL to a local file path
                         var path = fileDialog.file.toString()
-                        // Remove "file:///" prefix
-                        path = path.replace(/^(file:\/{3})/,"")
+                        // Remove "file:///" prefix on Windows
+                        path = path.replace(/^(file:\/{2,3})/,"")
                         // Decode URI component for special characters
                         path = decodeURIComponent(path)
+                        // Handle Windows drive letters
+                        if (/^[A-Za-z]:/.test(path)) {
+                            path = path.replace(/^\//, '')
+                        }
                         botBridge.load_playlist(path)
                     }
                 }
@@ -749,7 +753,7 @@ ApplicationWindow {
 
                     text: botBridge.voiceConnected ? "Disconnect from channel" : "Connect to channel"
                     Layout.fillWidth: true
-                    enabled: statusLabel.text === "Connected" && channelComboBox.currentValue
+                    enabled: statusLabel.text === "Connected" && channelComboBox.currentValue !== undefined && channelComboBox.currentValue !== null
                     onClicked: {
                         if (botBridge.voiceConnected) {
                             botBridge.disconnect_voice()

@@ -12,6 +12,7 @@ import json
 import platform
 import yt_dlp
 from youtube_search import YoutubeSearch
+import signal
 
 intents = discord.Intents.default()
 intents.message_content = True
@@ -123,15 +124,16 @@ class BotBridge(QObject):
 
         asyncio.run_coroutine_threadsafe(connect_wrapper(), self.bot.loop)
 
+    @Slot(result=str)
     def get_playlists_directory(self):
         """Get platform-specific directory for storing playlists"""
         system = platform.system()
         if system == "Windows":
-            base_dir = os.path.join(os.environ.get("APPDATA"), "Boxy")
+            base_dir = os.path.normpath(os.path.join(os.environ.get("APPDATA"), "Boxy"))
         elif system == "Darwin":  # macOS
-            base_dir = os.path.join(os.path.expanduser("~"), "Library", "Application Support", "Boxy")
+            base_dir = os.path.normpath(os.path.join(os.path.expanduser("~"), "Library", "Application Support", "Boxy"))
         else:  # Linux and other Unix-like
-            base_dir = os.path.join(os.path.expanduser("~"), ".config", "Boxy")
+            base_dir = os.path.normpath(os.path.join(os.path.expanduser("~"), ".config", "Boxy"))
 
         # Create directory if it doesn't exist
         if not os.path.exists(base_dir):
@@ -155,10 +157,9 @@ class BotBridge(QObject):
     @Slot(str)
     def load_playlist(self, filename):
         try:
-            if filename:  # User selected a file
+            if filename:
                 with open(filename, "r", encoding="utf-8") as f:
                     playlist_data = json.load(f)
-                # Get playlist name from filename without extension
                 playlist_name = os.path.splitext(os.path.basename(filename))[0]
                 self.playlistLoaded.emit(playlist_data, playlist_name)
                 print(playlist_data, playlist_name)
@@ -173,18 +174,37 @@ class BotBridge(QObject):
 
                 if user_input.startswith("http"):
                     # Direct URL, just fetch title
-                    with yt_dlp.YoutubeDL() as ydl:
-                        info = ydl.extract_info(user_input, download=False)
+                    loop = asyncio.get_event_loop()
+
+                    def extract_url_info():
+                        with yt_dlp.YoutubeDL() as ydl:
+                            return ydl.extract_info(user_input, download=False)
+
+                    info = await loop.run_in_executor(None, extract_url_info)
+
+                    if info:
                         title = info.get("title", "Unknown Title")
                         self.titleResolved.emit(index, title, user_input)
+                    else:
+                        self.titleResolved.emit(index, "Error fetching title", "")
                 else:
                     # Search query, need to resolve URL first
-                    url = get_first_video_url(user_input)
+                    loop = asyncio.get_event_loop()
+                    url = await loop.run_in_executor(None, get_first_video_url, user_input)
+
                     if url:
-                        with yt_dlp.YoutubeDL() as ydl:
-                            info = ydl.extract_info(url, download=False)
+
+                        def extract_search_info():
+                            with yt_dlp.YoutubeDL() as ydl:
+                                return ydl.extract_info(url, download=False)
+
+                        info = await loop.run_in_executor(None, extract_search_info)
+
+                        if info:
                             title = info.get("title", "Unknown Title")
                             self.titleResolved.emit(index, title, url)
+                        else:
+                            self.titleResolved.emit(index, "Error fetching title", "")
                     else:
                         self.titleResolved.emit(index, "No video found", "")
 
@@ -689,13 +709,15 @@ async def delete_file(file_path):
 
 
 def get_first_video_url(keywords):
-    results = YoutubeSearch(keywords, max_results=1).to_dict()
-    if results:
-        first_result = results[0]
-        video_url = f"https://www.youtube.com{first_result['url_suffix']}"
-        return video_url
-    else:
-        return None
+    try:
+        results = YoutubeSearch(keywords, max_results=1).to_dict()
+        if results:
+            first_result = results[0]
+            video_url = f"https://www.youtube.com{first_result['url_suffix']}"
+            return video_url
+    except Exception as e:
+        print(f"Error searching video: {e}")
+    return None
 
 
 def get_token():
@@ -755,6 +777,12 @@ def run_bot_with_gui():
 
     app = QGuiApplication(sys.argv)
     engine = QQmlApplicationEngine()
+
+    def signal_handler(signum, frame):
+        print("\nCtrl+C received. Cleaning up...")
+        app.quit()
+
+    signal.signal(signal.SIGINT, signal_handler)
 
     bot = BoxyBot(command_prefix="/", intents=intents)
     bridge = BotBridge(bot)
