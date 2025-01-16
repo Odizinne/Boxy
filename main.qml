@@ -169,7 +169,7 @@ ApplicationWindow {
                 }
             }
 
-            ScrollView {
+            Item {
                 Layout.fillWidth: true
                 Layout.fillHeight: true
                 clip: true
@@ -241,20 +241,11 @@ ApplicationWindow {
                             }
 
                             Button {
-                                //text: "-"
+                                icon.source: Universal.theme === Universal.Dark ? "icons/delete_light.png" : "icons/delete_dark.png"
                                 Layout.rightMargin: 15
                                 onClicked: playlistModel.remove(model.index)
                                 flat: true
-
-                                Image {
-                                    anchors.centerIn: parent
-                                    height: 16
-                                    width: 16
-                                    source: Universal.theme === Universal.Dark ? "icons/delete_light.png" : "icons/delete_dark.png"
-                                }
                             }
-
-
                         }
                     }
                 }
@@ -291,8 +282,9 @@ ApplicationWindow {
 
                 Button {
                     id: addButton
-                    text: "Add"
-
+                    //text: "Add"
+                    icon.source: Universal.theme === Universal.Dark ? "icons/plus_light.png" : "icons/plus_dark.png"
+                    Layout.preferredWidth: height
                     enabled: newItemInput.text.trim() !== ""
                     onClicked: {
                         if (newItemInput.text.trim() !== "") {
@@ -417,8 +409,6 @@ ApplicationWindow {
                     clip: true
                     asynchronous: true
                     cache: false
-
-
                 }
             }
 
@@ -475,7 +465,7 @@ ApplicationWindow {
 
                 Button {
                     id: stopPlaylistButton
-
+                    icon.source: Universal.theme === Universal.Dark ? "icons/stop_light.png" : "icons/stop_dark.png"
                     Layout.preferredWidth: height
                     property bool isPlaying: false
                     enabled: isPlaying
@@ -483,13 +473,6 @@ ApplicationWindow {
                         botBridge.stop_playing()
                         playlistView.currentIndex = 0
                         isPlaying = false
-                    }
-
-                    Image {
-                        anchors.centerIn: parent
-                        height: 24
-                        width: 24
-                        source: Universal.theme === Universal.Dark ? "icons/stop_light.png" : "icons/stop_dark.png"
                     }
                 }
 
@@ -499,9 +482,8 @@ ApplicationWindow {
 
                 Button {
                     id: playPrevButton
-
+                    icon.source:  Universal.theme === Universal.Dark ? "icons/prev_light.png" : "icons/prev_dark.png"
                     Layout.preferredWidth: height
-                    //icon.name: "skip_previous"
                     enabled: playlistView.currentIndex > 0 && stopPlaylistButton.isPlaying && !downloadProgress.visible
                     onClicked: {
                         if (playlistView.currentIndex > 0) {
@@ -511,58 +493,35 @@ ApplicationWindow {
                             botBridge.play_url(item.url || item.userTyped)
                         }
                     }
-
-                    Image {
-                        anchors.centerIn: parent
-                        height: 24
-                        width: 24
-                        source: Universal.theme === Universal.Dark ? "icons/prev_light.png" : "icons/prev_dark.png"
-                    }
                 }
 
                 Button {
                     id: pauseButton
-
                     Layout.preferredWidth: height
                     enabled: songLoaded && !downloadProgress.visible
+
+                    // Initial icon state
+                    icon.source: Universal.theme === Universal.Dark ? "icons/play_light.png" : "icons/play_dark.png"
+                    icon.width: 24
+                    icon.height: 24
+
                     onClicked: {
                         botBridge.toggle_playback()
                     }
 
-                    Image {
-                        id:pauseImage
-                        anchors.centerIn: parent
-                        height: 24
-                        width: 24
-                        source: Universal.theme === Universal.Dark ? "icons/pause_light.png" : "icons/pause_dark.png"
-                        visible: false
-                        Connections {
-                            target: botBridge
-                            function onPlayStateChanged(isPlaying) {
-                                pauseImage.visible = isPlaying
-                            }
-                        }
-                    }
-
-                    Image {
-                        id:playImage
-                        anchors.centerIn: parent
-                        height: 24
-                        width: 24
-                        source: Universal.theme === Universal.Dark ? "icons/play_light.png" : "icons/play_dark.png"
-                        visible: true
-                        Connections {
-                            target: botBridge
-                            function onPlayStateChanged(isPlaying) {
-                                playImage.visible = !isPlaying
-                            }
+                    Connections {
+                        target: botBridge
+                        function onPlayStateChanged(isPlaying) {
+                            pauseButton.icon.source = isPlaying ?
+                                (Universal.theme === Universal.Dark ? "icons/pause_light.png" : "icons/pause_dark.png") :
+                                (Universal.theme === Universal.Dark ? "icons/play_light.png" : "icons/play_dark.png")
                         }
                     }
                 }
 
                 Button {
                     id: playNextButton
-
+                    icon.source: Universal.theme === Universal.Dark ? "icons/next_light.png" : "icons/next_dark.png"
                     Layout.preferredWidth: height
                     enabled: playlistView.currentIndex < (playlistModel.count - 1) && stopPlaylistButton.isPlaying && !downloadProgress.visible
                     onClicked: {
@@ -573,13 +532,6 @@ ApplicationWindow {
                             botBridge.play_url(item.url || item.userTyped)
                             playlistView.currentIndex = nextIndex
                         }
-                    }
-
-                    Image {
-                        anchors.centerIn: parent
-                        height: 24
-                        width: 24
-                        source: Universal.theme === Universal.Dark ? "icons/next_light.png" : "icons/next_dark.png"
                     }
                 }
 
@@ -598,7 +550,6 @@ ApplicationWindow {
                     enabled: statusLabel.text === "Connected"
                     onCheckedChanged: {
                         botBridge.set_repeat_mode(checked)
-
                     }
                 }
             }
