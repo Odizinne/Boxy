@@ -8,16 +8,17 @@ ApplicationWindow {
     visible: true
     id: root
     width: 800
-    height: 490
+    height: 446
     minimumWidth: 800
-    minimumHeight: 490
+    minimumHeight: 446
     maximumWidth: 800
-    maximumHeight: 490
+    maximumHeight: 446
     title: "Boxy GUI"
     Universal.theme: Universal.System
     Universal.accent: Universal.Green
     property bool songLoaded: false
     property var shufflePlayedIndices: []
+    property bool connectedToAPI: false
 
     function formatTime(seconds) {
         var minutes = Math.floor(seconds / 60)
@@ -27,7 +28,7 @@ ApplicationWindow {
 
     Shortcut {
         sequence: StandardKey.Open  // Ctrl+O / Cmd+O
-        enabled: statusLabel.text === "Connected"  // Same condition as Load button
+        enabled: root.connectedToAPI  // Same condition as Load button
         onActivated: fileDialog.open()
     }
 
@@ -52,6 +53,14 @@ ApplicationWindow {
 
     Connections {
         target: botBridge
+
+        function onStatusChanged(status) {
+            if (status === "Connected") {
+                root.connectedToAPI = true
+            } else {
+                root.connectedToAPI = false
+            }
+        }
 
         function onTitleResolved(index, title, url) {
             playlistModel.setProperty(index, "resolvedTitle", title)
@@ -149,7 +158,7 @@ ApplicationWindow {
                 Button {
                     text: "Load"
                     onClicked: fileDialog.open()
-                    enabled: statusLabel.text === "Connected"
+                    enabled: root.connectedToAPI
                 }
 
                 Platform.FileDialog {
@@ -197,7 +206,7 @@ ApplicationWindow {
                     id: playlistName
                     Layout.preferredHeight: addButton.height
                     text: ""
-                    placeholderText: "Super playlist"
+                    placeholderText: "My super playlist"
                     Layout.fillWidth: true
                 }
             }
@@ -206,6 +215,33 @@ ApplicationWindow {
                 Layout.fillWidth: true
                 Layout.fillHeight: true
                 clip: true
+
+                ColumnLayout {
+                    visible: !root.connectedToAPI
+                    anchors.fill: parent
+                    spacing: 14
+
+                    Item {
+                        Layout.fillHeight: true
+                    }
+
+                    BusyIndicator {
+                        id: connectIndicator
+                        Layout.preferredHeight: 60
+                        Layout.preferredWidth: 60
+                        Layout.alignment: Qt.AlignHCenter
+                    }
+
+                    Label {
+                        text: "Connecting to Discord API..."
+                        Layout.alignment: Qt.AlignHCenter
+                        font.pixelSize: 18
+                    }
+
+                    Item {
+                        Layout.fillHeight: true
+                    }
+                }
 
                 ListView {
                     id: playlistView
@@ -305,7 +341,7 @@ ApplicationWindow {
                     Layout.preferredHeight: addButton.height
                     Layout.fillWidth: true
                     placeholderText: "Enter YouTube URL or search term"
-                    enabled: statusLabel.text === "Connected"
+                    enabled: root.connectedToAPI
 
                     onAccepted: addButton.clicked()
                     Connections {
@@ -351,26 +387,10 @@ ApplicationWindow {
             Layout.preferredWidth: parent.width * 0.45
             spacing: 10
 
-            Label {
-                id: statusLabel
-                text: "Connecting..."
-                color: text === "Connecting..." ? Universal.foreground : Universal.accent
-                font.pixelSize: 18
-                font.bold: true
-                Layout.alignment: Qt.AlignHCenter
-                Connections {
-                    target: botBridge
-                    function onStatusChanged(status) {
-                        statusLabel.text = status
-                    }
-                }
-            }
-
-
             RowLayout {
                 Layout.fillWidth: true
                 spacing: 10
-                Layout.topMargin: 14
+                //Layout.topMargin: 14
 
                 ColumnLayout {
                     Layout.fillWidth: true
@@ -507,7 +527,7 @@ ApplicationWindow {
                     icon.width: 16
                     icon.height: 16
                     checkable: true
-                    enabled: statusLabel.text === "Connected"
+                    enabled: root.connectedToAPI
                     onCheckedChanged: {
                         if (checked && repeatButton.checked) {
                             repeatButton.checked = false
@@ -622,7 +642,7 @@ ApplicationWindow {
                     icon.width: 16
                     icon.height: 16
                     checkable: true
-                    enabled: statusLabel.text === "Connected"
+                    enabled: root.connectedToAPI
                     onCheckedChanged: {
                         botBridge.set_repeat_mode(checked)
 
@@ -655,7 +675,7 @@ ApplicationWindow {
                 ComboBox {
                     id: serverComboBox
                     Layout.fillWidth: true
-                    enabled: statusLabel.text === "Connected"
+                    enabled: root.connectedToAPI
                     textRole: "name"
                     valueRole: "id"
                     model: []
@@ -678,7 +698,7 @@ ApplicationWindow {
                     }
 
                     Text {
-                        visible: parent.model.length === 0 && statusLabel.text === "Connected"
+                        visible: parent.model.length === 0 && root.connectedToAPI
                         anchors.centerIn: parent
                         text: "No servers available"
                         color: "gray"
@@ -700,7 +720,7 @@ ApplicationWindow {
                 ComboBox {
                     id: channelComboBox
                     Layout.fillWidth: true
-                    enabled: statusLabel.text === "Connected" && model.length > 0
+                    enabled: root.connectedToAPI && model.length > 0
                     textRole: "name"
                     valueRole: "id"
                     model: []
@@ -723,7 +743,7 @@ ApplicationWindow {
                     }
 
                     Text {
-                        visible: parent.model.length === 0 && statusLabel.text === "Connected"
+                        visible: parent.model.length === 0 && root.connectedToAPI
                         anchors.centerIn: parent
                         text: "No channels available"
                         color: "gray"
@@ -753,7 +773,7 @@ ApplicationWindow {
 
                     text: botBridge.voiceConnected ? "Disconnect from channel" : "Connect to channel"
                     Layout.fillWidth: true
-                    enabled: statusLabel.text === "Connected" && channelComboBox.currentValue !== undefined && channelComboBox.currentValue !== null
+                    enabled: root.connectedToAPI && channelComboBox.currentValue !== undefined && channelComboBox.currentValue !== null
                     onClicked: {
                         if (botBridge.voiceConnected) {
                             botBridge.disconnect_voice()

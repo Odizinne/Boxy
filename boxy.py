@@ -40,8 +40,8 @@ class BotBridge(QObject):
     thumbnailChanged = Signal(str)
     channelNameChanged = Signal(str)
     titleResolved = Signal(int, str, str)
-    playlistLoaded = Signal(list, str)  # List of playlist items
-    playlistSaved = Signal(str)  # Success/error message
+    playlistLoaded = Signal(list, str)
+    playlistSaved = Signal(str)
 
     def __init__(self, bot):
         super().__init__()
@@ -369,13 +369,45 @@ class BotBridge(QObject):
 
     @Slot(float)
     def seek(self, position):
-        if self.bot.voice_client and self.bot.voice_client.is_playing():
+        if self.bot.voice_client and (self.bot.voice_client.is_playing() or self.bot.voice_client.is_paused()):
+            # Store the current state
+            was_playing = self.bot.voice_client.is_playing()
+
+            # Create new audio source with the seek position
             position_ms = int(position * 1000)
-            self.bot.voice_client.source = discord.PCMVolumeTransformer(
-                discord.FFmpegPCMAudio(self.current_audio_file, before_options=f"-ss {position_ms}ms")
-            )
+            new_source = discord.FFmpegPCMAudio(self.current_audio_file, before_options=f"-ss {position_ms}ms")
+
+            # Save the original after callback
+            original_after = getattr(self.bot.voice_client, "_player", None)
+            if original_after:
+                original_after = original_after.after
+
+            # Create a dummy callback to prevent state changes
+            def dummy_callback(error):
+                pass
+
+            if hasattr(self.bot.voice_client, "_player") and self.bot.voice_client._player:
+                self.bot.voice_client._player.after = dummy_callback
+
+            # Replace the source
+            self.bot.voice_client.source = new_source
+
+            # Restore the original callback if it existed
+            if hasattr(self.bot.voice_client, "_player") and self.bot.voice_client._player:
+                if original_after:
+                    self.bot.voice_client._player.after = original_after
+                else:
+                    self.bot.voice_client._player.after = lambda e: self.on_playback_finished(
+                        e, self.current_audio_file
+                    )
+
+            # Update position
             self._position = position
             self.positionChanged.emit(position)
+
+            # If it was paused, pause the new source
+            if not was_playing:
+                self.bot.voice_client.pause()
 
     @Slot(str)
     def play_url(self, url):
