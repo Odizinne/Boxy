@@ -26,6 +26,21 @@ ApplicationWindow {
         return minutes + ":" + (remainingSeconds < 10 ? "0" : "") + remainingSeconds
     }
 
+    function savePlaylist() {
+        let items = []
+        for (let i = 0; i < playlistModel.count; i++) {
+            let item = playlistModel.get(i)
+            items.push({
+                "userTyped": item.userTyped,
+                "url": item.url || "",
+                "resolvedTitle": item.resolvedTitle || "",
+                "channelName": item.channelName || ""
+            })
+        }
+        botBridge.save_playlist(playlistName.text, items)
+        savePopup.visible = true
+        hideTimer.start()
+    }
     Shortcut {
         sequence: StandardKey.Open
         enabled: root.connectedToAPI
@@ -35,20 +50,7 @@ ApplicationWindow {
     Shortcut {
         sequence: StandardKey.Save
         enabled: playlistName.text.trim() !== "" && playlistModel.count > 0
-        onActivated: {
-            let items = []
-            for (let i = 0; i < playlistModel.count; i++) {
-                let item = playlistModel.get(i)
-                items.push({
-                               "userTyped": item.userTyped,
-                               "url": item.url || "",
-                               "resolvedTitle": item.resolvedTitle || ""
-                           })
-            }
-            botBridge.save_playlist(playlistName.text, items)
-            savePopup.visible = true
-            hideTimer.start()
-        }
+        onActivated: root.savePlaylist()
     }
 
     Connections {
@@ -79,7 +81,7 @@ ApplicationWindow {
                                          "userTyped": item.userTyped,
                                          "url": item.url || "",
                                          "resolvedTitle": item.resolvedTitle || "",
-                                         "channelName": item.channelName || "",  // Add this line
+                                         "channelName": item.channelName || "",
                                          "isResolving": !item.resolvedTitle
                                      })
 
@@ -196,23 +198,10 @@ ApplicationWindow {
                     }
 
                     Button {
+                        id: saveButton
                         text: "Save"
-                        enabled: playlistName.text.trim() !== "" && playlistModel.count > 0
-                        onClicked: {
-                            let items = []
-                            for (let i = 0; i < playlistModel.count; i++) {
-                                let item = playlistModel.get(i)
-                                items.push({
-                                               "userTyped": item.userTyped,
-                                               "url": item.url || "",
-                                               "resolvedTitle": item.resolvedTitle || "",
-                                               "channelName": item.channelName || ""
-                                           })
-                            }
-                            botBridge.save_playlist(playlistName.text, items)
-                            savePopup.visible = true
-                            hideTimer.start()
-                        }
+                        enabled: playlistName.text.trim() !== "" && playlistModel.count > 0 && !titleFetchingIndicator.visible
+                        onClicked: root.savePlaylist
                     }
 
                     TextField {
@@ -221,6 +210,13 @@ ApplicationWindow {
                         text: ""
                         placeholderText: "My super playlist"
                         Layout.fillWidth: true
+                    }
+
+                    Button {
+                        id: editButton
+                        text: "Edit"
+                        checkable: true
+                        enabled: playlistModel.count >= 2 && !titleFetchingIndicator.visible
                     }
                 }
 
@@ -295,7 +291,7 @@ ApplicationWindow {
                                 height: parent.height * 0.8
                                 color: Universal.accent
                                 visible: model.index === playlistView.currentIndex
-                                anchors.verticalCenter: parent.verticalCenter  // Center vertically
+                                anchors.verticalCenter: parent.verticalCenter
                             }
 
                             RowLayout {
@@ -303,6 +299,88 @@ ApplicationWindow {
                                 anchors.margins: 5
                                 anchors.leftMargin: 8
                                 spacing: 10
+
+                                ColumnLayout {
+                                    Layout.fillHeight: true
+                                    spacing: 4
+                                    visible: editButton.checked
+
+                                    Button {
+                                        id: moveUpButton
+                                        icon.source: "icons/up.png"
+                                        Layout.preferredHeight: width * 0.5
+                                        enabled: model.index > 0
+                                        onClicked: {
+                                            // Store the current item data
+                                            let currentItem = {
+                                                userTyped: playlistModel.get(model.index).userTyped,
+                                                url: playlistModel.get(model.index).url,
+                                                resolvedTitle: playlistModel.get(model.index).resolvedTitle,
+                                                channelName: playlistModel.get(model.index).channelName,
+                                                isResolving: playlistModel.get(model.index).isResolving
+                                            }
+
+                                            // Store the item above
+                                            let aboveIndex = model.index - 1
+                                            let aboveItem = {
+                                                userTyped: playlistModel.get(aboveIndex).userTyped,
+                                                url: playlistModel.get(aboveIndex).url,
+                                                resolvedTitle: playlistModel.get(aboveIndex).resolvedTitle,
+                                                channelName: playlistModel.get(aboveIndex).channelName,
+                                                isResolving: playlistModel.get(aboveIndex).isResolving
+                                            }
+
+                                            // Swap the items
+                                            playlistModel.set(aboveIndex, currentItem)
+                                            playlistModel.set(model.index, aboveItem)
+
+                                            // Update currentIndex if needed
+                                            if (playlistView.currentIndex === model.index) {
+                                                playlistView.currentIndex--
+                                            } else if (playlistView.currentIndex === model.index - 1) {
+                                                playlistView.currentIndex++
+                                            }
+                                        }
+                                    }
+
+                                    Button {
+                                        id: moveDownButton
+                                        icon.source: "icons/down.png"
+                                        Layout.preferredHeight: width * 0.5
+                                        enabled: model.index < playlistModel.count - 1
+                                        onClicked: {
+                                            // Store the current item data
+                                            let currentItem = {
+                                                userTyped: playlistModel.get(model.index).userTyped,
+                                                url: playlistModel.get(model.index).url,
+                                                resolvedTitle: playlistModel.get(model.index).resolvedTitle,
+                                                channelName: playlistModel.get(model.index).channelName,
+                                                isResolving: playlistModel.get(model.index).isResolving
+                                            }
+
+                                            // Store the item below
+                                            let belowIndex = model.index + 1
+                                            let belowItem = {
+                                                userTyped: playlistModel.get(belowIndex).userTyped,
+                                                url: playlistModel.get(belowIndex).url,
+                                                resolvedTitle: playlistModel.get(belowIndex).resolvedTitle,
+                                                channelName: playlistModel.get(belowIndex).channelName,
+                                                isResolving: playlistModel.get(belowIndex).isResolving
+                                            }
+
+                                            // Swap the items
+                                            playlistModel.set(belowIndex, currentItem)
+                                            playlistModel.set(model.index, belowItem)
+
+                                            // Update currentIndex if needed
+                                            if (playlistView.currentIndex === model.index) {
+                                                playlistView.currentIndex++
+                                            } else if (playlistView.currentIndex === model.index + 1) {
+                                                playlistView.currentIndex--
+                                            }
+                                        }
+                                    }
+                                }
 
                                 ColumnLayout {
                                     Layout.fillWidth: true
@@ -316,7 +394,7 @@ ApplicationWindow {
                                     }
 
                                     Label {
-                                        text: model.channelName || ""
+                                        text: model.channelName
                                         visible: model.channelName ? true : false
                                         Layout.fillWidth: true
                                         elide: Text.ElideRight
