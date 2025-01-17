@@ -3,6 +3,7 @@ import QtQuick.Controls
 import QtQuick.Layouts
 import QtQuick.Controls.Universal
 import Qt.labs.platform as Platform
+import QtCore
 
 ApplicationWindow {
     visible: true
@@ -19,6 +20,15 @@ ApplicationWindow {
     property bool songLoaded: false
     property var shufflePlayedIndices: []
     property bool connectedToAPI: false
+
+    Settings {
+        id: settings
+        //category: "Boxy"
+        property bool shuffle: false
+        property bool repeat: false
+        property string lastServer: ""
+        property string lastChannel: ""
+    }
 
     function formatTime(seconds) {
         var minutes = Math.floor(seconds / 60)
@@ -636,6 +646,10 @@ ApplicationWindow {
                                 if (checked && repeatButton.checked) {
                                     repeatButton.checked = false
                                 }
+                                settings.shuffle = checked
+                            }
+                            Component.onCompleted: {
+                                checked = settings.shuffle
                             }
                         }
 
@@ -740,7 +754,6 @@ ApplicationWindow {
 
                         Button {
                             id: repeatButton
-
                             Layout.preferredWidth: height
                             icon.source: "icons/repeat.png"
                             icon.width: 16
@@ -749,10 +762,13 @@ ApplicationWindow {
                             enabled: root.connectedToAPI
                             onCheckedChanged: {
                                 botBridge.set_repeat_mode(checked)
-
                                 if (checked && shuffleButton.checked) {
                                     shuffleButton.checked = false
                                 }
+                                settings.repeat = checked
+                            }
+                            Component.onCompleted: {
+                                checked = settings.repeat
                             }
                         }
                     }
@@ -788,22 +804,22 @@ ApplicationWindow {
                             }
                         }
 
+                        onActivated: {
+                            if (currentText) {
+                                settings.lastServer = currentText
+                            }
+                        }
+
                         Connections {
                             target: botBridge
                             function onServersChanged(servers) {
                                 serverComboBox.model = servers
                                 if (servers.length > 0) {
-                                    serverComboBox.currentIndex = 0
-                                    botBridge.set_current_server(servers[0].id)
+                                    let lastServerIndex = servers.findIndex(server => server.name === settings.lastServer)
+                                    serverComboBox.currentIndex = lastServerIndex >= 0 ? lastServerIndex : 0
+                                    botBridge.set_current_server(servers[serverComboBox.currentIndex].id)
                                 }
                             }
-                        }
-
-                        Text {
-                            visible: parent.model.length === 0 && root.connectedToAPI
-                            anchors.centerIn: parent
-                            text: "No servers available"
-                            color: "gray"
                         }
                     }
 
@@ -828,22 +844,22 @@ ApplicationWindow {
                             }
                         }
 
+                        onActivated: {
+                            if (currentText) {
+                                settings.lastChannel = currentText
+                            }
+                        }
+
                         Connections {
                             target: botBridge
                             function onChannelsChanged(channels) {
                                 channelComboBox.model = channels
                                 if (channels.length > 0) {
-                                    channelComboBox.currentIndex = 0
-                                    botBridge.set_current_channel(channels[0].id)
+                                    let lastChannelIndex = channels.findIndex(channel => channel.name === settings.lastChannel)
+                                    channelComboBox.currentIndex = lastChannelIndex >= 0 ? lastChannelIndex : 0
+                                    botBridge.set_current_channel(channels[channelComboBox.currentIndex].id)
                                 }
                             }
-                        }
-
-                        Text {
-                            visible: parent.model.length === 0 && root.connectedToAPI
-                            anchors.centerIn: parent
-                            text: "No channels available"
-                            color: "gray"
                         }
                     }
 

@@ -855,6 +855,8 @@ def run_bot_with_gui():
 
     icon = os.path.join(get_script_dir(), "boxy-orange.png")
     app.setWindowIcon(QIcon(icon))
+    app.setOrganizationName("Odizinne")
+    app.setApplicationName("Boxy")
     app.aboutToQuit.connect(cleanup)
 
     engine.rootContext().setContextProperty("botBridge", bridge)
