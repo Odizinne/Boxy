@@ -153,6 +153,7 @@ class BotBridge(QObject):
 
     @Slot(str, list)
     def save_playlist(self, name, items):
+        print("pass")
         try:
             playlists_dir = self.get_playlists_directory()
             playlist_file = os.path.join(playlists_dir, f"{name}.json")
@@ -179,6 +180,51 @@ class BotBridge(QObject):
                     print(playlist_data, playlist_name)
         except Exception as e:
             self.playlistSaved.emit(f"Error loading playlist: {str(e)}")
+
+    @Slot(str, result="QVariantList")
+    def extract_urls_from_playlist(self, playlist_url):
+        urls = []
+
+        async def extractor():
+            try:
+                self.downloadStatusChanged.emit("Extracting playlist info...")
+
+                ydl_opts = {
+                    "quiet": True,
+                    "no_warnings": True,
+                    "extract_flat": "in_playlist",
+                    "skip_download": True,
+                    "format": None,
+                    "playlist_items": "1-100",  # Limit to first 100 items for testing
+                }
+
+                async def get_playlist_info():
+                    with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+                        return await asyncio.get_event_loop().run_in_executor(
+                            self._yt_pool, lambda: ydl.extract_info(playlist_url, download=False)
+                        )
+
+                info = await get_playlist_info()
+                print("Extracted info:", info)  # Debug print
+
+                if info and "entries" in info:
+                    urls.extend(
+                        [
+                            f"https://www.youtube.com/watch?v={entry['id']}"
+                            for entry in info["entries"]
+                            if entry and "id" in entry
+                        ]
+                    )
+
+            except Exception as e:
+                print(f"Error extracting playlist: {e}")
+                self.downloadStatusChanged.emit(f"Error extracting playlist: {str(e)}")
+            finally:
+                self.downloadStatusChanged.emit("")
+
+        future = asyncio.run_coroutine_threadsafe(extractor(), self.bot.loop)
+        future.result()
+        return urls
 
     @Slot(int, str)
     def resolve_title(self, index, user_input):

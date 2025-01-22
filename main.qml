@@ -41,11 +41,11 @@ ApplicationWindow {
         for (let i = 0; i < playlistModel.count; i++) {
             let item = playlistModel.get(i)
             items.push({
-                "userTyped": item.userTyped,
-                "url": item.url || "",
-                "resolvedTitle": item.resolvedTitle || "",
-                "channelName": item.channelName || ""
-            })
+                           "userTyped": item.userTyped,
+                           "url": item.url || "",
+                           "resolvedTitle": item.resolvedTitle || "",
+                           "channelName": item.channelName || ""
+                       })
         }
         botBridge.save_playlist(playlistName.text, items)
         savePopup.visible = true
@@ -88,12 +88,12 @@ ApplicationWindow {
             playlistName.text = title
             items.forEach(function(item) {
                 playlistModel.append({
-                    "userTyped": item.userTyped,
-                    "url": item.url || "",
-                    "resolvedTitle": item.resolvedTitle || "",
-                    "channelName": item.channelName || "",
-                    "isResolving": !item.resolvedTitle || !item.url || !item.channelName
-                })
+                                         "userTyped": item.userTyped,
+                                         "url": item.url || "",
+                                         "resolvedTitle": item.resolvedTitle || "",
+                                         "channelName": item.channelName || "",
+                                         "isResolving": !item.resolvedTitle || !item.url || !item.channelName
+                                     })
 
                 if (!item.resolvedTitle || !item.url || !item.channelName) {
                     let idx = playlistModel.count - 1
@@ -211,7 +211,7 @@ ApplicationWindow {
                         id: saveButton
                         text: "Save"
                         enabled: playlistName.text.trim() !== "" && playlistModel.count > 0
-                        onClicked: root.savePlaylist
+                        onClicked: root.savePlaylist()
                     }
 
                     TextField {
@@ -419,6 +419,7 @@ ApplicationWindow {
                                     running: visible
                                     height: 16
                                     width: 16
+                                    Layout.rightMargin: 10
                                 }
 
                                 Button {
@@ -471,428 +472,430 @@ ApplicationWindow {
                         enabled: newItemInput.text.trim() !== ""
                         onClicked: {
                             if (newItemInput.text.trim() !== "") {
-                                let idx = playlistModel.count
-                                playlistModel.append({
-                                                         "userTyped": newItemInput.text.trim(),
-                                                         "url": "",
-                                                         "resolvedTitle": "",
-                                                         "channelName": "",
-                                                         "isResolving": true
-                                                     })
-                                botBridge.resolve_title(idx, newItemInput.text.trim())
-                                newItemInput.text = ""
+                                if (newItemInput.text.includes("&list=")) {
+                                    playlistPopup.open()
+                                } else {
+                                    let idx = playlistModel.count
+                                    playlistModel.append({
+                                        "userTyped": newItemInput.text.trim(),
+                                        "url": "",
+                                        "resolvedTitle": "",
+                                        "channelName": "",
+                                        "isResolving": true
+                                    })
+                                    botBridge.resolve_title(idx, newItemInput.text.trim(), false)
+                                    newItemInput.text = ""
+                                }
                             }
                         }
                     }
                 }
             }
-
         }
 
+        Frame {
+            Layout.fillHeight: true
+            Layout.fillWidth: true
+            Layout.preferredWidth: parent.width * 0.45
 
-            Frame {
-                Layout.fillHeight: true
-                Layout.fillWidth: true
-                Layout.preferredWidth: parent.width * 0.45
+            ColumnLayout {
+                id: colLayout
+                anchors.fill: parent
+                spacing: 10
 
-                ColumnLayout {
-                    id: colLayout
-                    anchors.fill: parent
+                RowLayout {
+                    Layout.fillWidth: true
+                    Layout.fillHeight: true
+                    spacing: 10
+                    //Layout.topMargin: 14
+
+                    ColumnLayout {
+                        Layout.fillWidth: true
+                        spacing: 10
+
+                        Label {
+                            id: songLabel
+                            text: "No song playing"
+                            Layout.fillWidth: true
+                            Layout.preferredWidth: parent.width * 0.85
+                            horizontalAlignment: Text.AlignLeft
+                            elide: Text.ElideRight
+                            font.pixelSize: 14
+                            font.bold: true
+                            wrapMode: Text.Wrap
+                            maximumLineCount: 2
+                            Connections {
+                                target: botBridge
+                                function onSongChanged(songTitle) {
+                                    if (songTitle !== "" ) {
+                                        songLabel.text = songTitle
+                                    } else {
+                                        songLabel.text = "No song playing"
+                                    }
+                                    songLoaded = songTitle !== ""
+                                }
+                            }
+                        }
+
+                        Label {
+                            id: channelLabel
+                            text: ""
+                            Layout.fillWidth: true
+                            Layout.preferredWidth: parent.width * 0.85
+                            horizontalAlignment: Text.AlignLeft
+                            elide: Text.ElideRight
+                            font.pixelSize: 14
+                            font.bold: false
+                            wrapMode: Text.Wrap
+                            maximumLineCount: 1
+                            Connections {
+                                target: botBridge
+                                function onChannelNameChanged(channelName) {
+                                    if (channelName !== "" ) {
+                                        channelLabel.text = channelName
+                                    } else {
+                                        channelLabel.text = ""
+                                    }
+                                }
+                            }
+                        }
+                    }
+
+                    Image {
+                        id: thumbnailImage
+                        Layout.rowSpan: 2
+                        Layout.preferredWidth: parent.width * 0.30
+                        Layout.preferredHeight: thumbnailImage.Layout.preferredWidth
+                        fillMode: Image.PreserveAspectCrop
+                        property string currentUrl: ""
+
+                        source: currentUrl || (Universal.theme === Universal.Dark ?
+                                                   "icons/placeholder_light.png" : "icons/placeholder_dark.png")
+
+                        Connections {
+                            target: botBridge
+                            function onThumbnailChanged(url) {
+                                thumbnailImage.currentUrl = url
+                            }
+                        }
+
+                        visible: true
+                        clip: true
+                        asynchronous: true
+                        cache: false
+                    }
+                }
+
+                RowLayout {
+                    Layout.fillWidth: true
+                    spacing: 10
+                    Layout.topMargin: 14
+
+                    Label {
+                        text: formatTime(timelineSlider.value)
+                        font.pixelSize: 14
+                        Layout.preferredWidth: pauseButton.width
+                        horizontalAlignment: Text.AlignHCenter
+                    }
+
+                    Slider {
+                        id: timelineSlider
+                        Layout.fillWidth: true
+                        from: 0
+                        to: 1
+                        enabled: songLoaded && !downloadProgress.visible
+
+                        onPressedChanged: {
+                            if (!pressed) {
+                                botBridge.seek(value)
+                            }
+                        }
+
+                        Connections {
+                            target: botBridge
+                            function onDurationChanged(duration) {
+                                timelineSlider.to = duration
+                            }
+                            function onPositionChanged(position) {
+                                if (!timelineSlider.pressed) {
+                                    timelineSlider.value = position
+                                }
+                            }
+                        }
+                    }
+
+                    Label {
+                        Layout.preferredWidth: pauseButton.width
+                        text: formatTime(timelineSlider.to)
+                        font.pixelSize: 14
+                        horizontalAlignment: Text.AlignHCenter
+                    }
+                }
+
+                RowLayout {
+                    Layout.fillWidth: true
+                    Layout.topMargin: 14
                     spacing: 10
 
-                    RowLayout {
-                        Layout.fillWidth: true
-                        Layout.fillHeight: true
-                        spacing: 10
-                        //Layout.topMargin: 14
-
-                        ColumnLayout {
-                            Layout.fillWidth: true
-                            spacing: 10
-
-                            Label {
-                                id: songLabel
-                                text: "No song playing"
-                                Layout.fillWidth: true
-                                Layout.preferredWidth: parent.width * 0.85
-                                horizontalAlignment: Text.AlignLeft
-                                elide: Text.ElideRight
-                                font.pixelSize: 14
-                                font.bold: true
-                                wrapMode: Text.Wrap
-                                maximumLineCount: 2
-                                Connections {
-                                    target: botBridge
-                                    function onSongChanged(songTitle) {
-                                        if (songTitle !== "" ) {
-                                            songLabel.text = songTitle
-                                        } else {
-                                            songLabel.text = "No song playing"
-                                        }
-                                        songLoaded = songTitle !== ""
-                                    }
-                                }
-                            }
-
-                            Label {
-                                id: channelLabel
-                                text: ""
-                                Layout.fillWidth: true
-                                Layout.preferredWidth: parent.width * 0.85
-                                horizontalAlignment: Text.AlignLeft
-                                elide: Text.ElideRight
-                                font.pixelSize: 14
-                                font.bold: false
-                                wrapMode: Text.Wrap
-                                maximumLineCount: 1
-                                Connections {
-                                    target: botBridge
-                                    function onChannelNameChanged(channelName) {
-                                        if (channelName !== "" ) {
-                                            channelLabel.text = channelName
-                                        } else {
-                                            channelLabel.text = ""
-                                        }
-                                    }
-                                }
-                            }
-                        }
-
-                        Image {
-                            id: thumbnailImage
-                            Layout.rowSpan: 2
-                            Layout.preferredWidth: parent.width * 0.30
-                            Layout.preferredHeight: thumbnailImage.Layout.preferredWidth
-                            fillMode: Image.PreserveAspectCrop
-                            property string currentUrl: ""
-
-                            source: currentUrl || (Universal.theme === Universal.Dark ?
-                                                       "icons/placeholder_light.png" : "icons/placeholder_dark.png")
-
-                            Connections {
-                                target: botBridge
-                                function onThumbnailChanged(url) {
-                                    thumbnailImage.currentUrl = url
-                                }
-                            }
-
-                            visible: true
-                            clip: true
-                            asynchronous: true
-                            cache: false
-                        }
-                    }
-
-                    RowLayout {
-                        Layout.fillWidth: true
-                        spacing: 10
-                        Layout.topMargin: 14
-
-                        Label {
-                            text: formatTime(timelineSlider.value)
-                            font.pixelSize: 14
-                            Layout.preferredWidth: pauseButton.width
-                            horizontalAlignment: Text.AlignHCenter
-                        }
-
-                        Slider {
-                            id: timelineSlider
-                            Layout.fillWidth: true
-                            from: 0
-                            to: 1
-                            enabled: songLoaded && !downloadProgress.visible
-
-                            onPressedChanged: {
-                                if (!pressed) {
-                                    botBridge.seek(value)
-                                }
-                            }
-
-                            Connections {
-                                target: botBridge
-                                function onDurationChanged(duration) {
-                                    timelineSlider.to = duration
-                                }
-                                function onPositionChanged(position) {
-                                    if (!timelineSlider.pressed) {
-                                        timelineSlider.value = position
-                                    }
-                                }
-                            }
-                        }
-
-                        Label {
-                            Layout.preferredWidth: pauseButton.width
-                            text: formatTime(timelineSlider.to)
-                            font.pixelSize: 14
-                            horizontalAlignment: Text.AlignHCenter
-                        }
-                    }
-
-                    RowLayout {
-                        Layout.fillWidth: true
-                        Layout.topMargin: 14
-                        spacing: 10
-
-                        Button {
-                            id: shuffleButton
-                            Layout.preferredWidth: height
-                            icon.source: "icons/shuffle.png"
-                            icon.width: 16
-                            icon.height: 16
-                            checkable: true
-                            enabled: root.connectedToAPI
-                            onCheckedChanged: {
-                                if (checked && repeatButton.checked) {
-                                    repeatButton.checked = false
-                                }
-                                settings.shuffle = checked
-                            }
-                            Component.onCompleted: {
-                                checked = settings.shuffle
-                            }
-                        }
-
-                        Item {
-                            Layout.fillWidth: true
-                        }
-
-                        Button {
-                            id: playPrevButton
-                            icon.source: "icons/prev.png"
-                            Layout.preferredWidth: height
-                            enabled: playlistView.currentIndex > 0 && stopPlaylistButton.isPlaying && !downloadProgress.visible
-                            onClicked: {
-                                if (shuffleButton.checked) {
-                                    // Find current index position in shuffle list
-                                    const currentPos = shufflePlayedIndices.indexOf(playlistView.currentIndex)
-                                    if (currentPos > 0) {
-                                        playlistView.manualNavigation = true
-                                        // Get previous played index from shuffle list
-                                        const prevIndex = shufflePlayedIndices[currentPos - 1]
-                                        playlistView.currentIndex = prevIndex
-                                        let item = playlistModel.get(prevIndex)
-                                        botBridge.play_url(item.url || item.userTyped)
-                                    }
-                                } else {
-                                    if (playlistView.currentIndex > 0) {
-                                        playlistView.manualNavigation = true
-                                        playlistView.currentIndex--
-                                        let item = playlistModel.get(playlistView.currentIndex)
-                                        botBridge.play_url(item.url || item.userTyped)
-                                    }
-                                }
-                            }
-                        }
-
-                        Button {
-                            id: pauseButton
-                            Layout.preferredWidth: height
-                            enabled: songLoaded && !downloadProgress.visible
-                            icon.source: "icons/play.png"
-                            icon.width: 24
-                            icon.height: 24
-
-                            onClicked: {
-                                botBridge.toggle_playback()
-                            }
-
-                            Connections {
-                                target: botBridge
-                                function onPlayStateChanged(isPlaying) {
-                                    pauseButton.icon.source = isPlaying ? "icons/pause.png" : "icons/play.png"
-                                }
-                            }
-                        }
-
-                        Button {
-                            id: playNextButton
-                            icon.source: "icons/next.png"
-                            Layout.preferredWidth: height
-                            enabled: playlistView.currentIndex < (playlistModel.count - 1) && stopPlaylistButton.isPlaying && !downloadProgress.visible
-                            onClicked: {
-                                if (shuffleButton.checked) {
-                                    // Get available indices (not played yet)
-                                    let availableIndices = []
-                                    for (let i = 0; i < playlistModel.count; i++) {
-                                        if (!shufflePlayedIndices.includes(i)) {
-                                            availableIndices.push(i)
-                                        }
-                                    }
-
-                                    // If all songs were played
-                                    if (availableIndices.length === 0) {
-                                        shufflePlayedIndices = []
-                                        stopPlaylistButton.isPlaying = false
-                                        playlistView.currentIndex = 0
-                                        return
-                                    }
-
-                                    // Pick random index from available ones
-                                    const randomIndex = Math.floor(Math.random() * availableIndices.length)
-                                    const nextIndex = availableIndices[randomIndex]
-
-                                    playlistView.manualNavigation = true
-                                    shufflePlayedIndices.push(nextIndex)
-                                    playlistView.currentIndex = nextIndex
-                                    let item = playlistModel.get(nextIndex)
-                                    botBridge.play_url(item.url || item.userTyped)
-                                } else {
-                                    if (playlistView.currentIndex < (playlistModel.count - 1)) {
-                                        playlistView.manualNavigation = true
-                                        playlistView.currentIndex++
-                                        let item = playlistModel.get(playlistView.currentIndex)
-                                        botBridge.play_url(item.url || item.userTyped)
-                                    }
-                                }
-                            }
-                        }
-
-                        Item {
-                            Layout.fillWidth: true
-                        }
-
-                        Button {
-                            id: repeatButton
-                            Layout.preferredWidth: height
-                            icon.source: "icons/repeat.png"
-                            icon.width: 16
-                            icon.height: 16
-                            checkable: true
-                            enabled: root.connectedToAPI
-                            onCheckedChanged: {
-                                botBridge.set_repeat_mode(checked)
-                                if (checked && shuffleButton.checked) {
-                                    shuffleButton.checked = false
-                                }
-                                settings.repeat = checked
-                            }
-                            Component.onCompleted: {
-                                checked = settings.repeat
-                            }
-                        }
-                    }
-                }
-            }
-
-            Frame {
-                Layout.preferredHeight: implicitHeight
-                Layout.fillWidth: true
-                GridLayout {
-                    anchors.fill: parent
-                    columnSpacing: 10
-                    rowSpacing: 10
-                    columns: 2
-
-                    Label {
-                        text: "Serv:"
-                        Layout.preferredWidth: pauseButton.width
-                        Layout.alignment: Qt.AlignVCenter
-                    }
-
-                    ComboBox {
-                        id: serverComboBox
-                        Layout.fillWidth: true
-                        enabled: root.connectedToAPI
-                        textRole: "name"
-                        valueRole: "id"
-                        model: []
-
-                        onCurrentValueChanged: {
-                            if (currentValue) {
-                                botBridge.set_current_server(currentValue)
-                            }
-                        }
-
-                        onActivated: {
-                            if (currentText) {
-                                settings.lastServer = currentText
-                            }
-                        }
-
-                        Connections {
-                            target: botBridge
-                            function onServersChanged(servers) {
-                                serverComboBox.model = servers
-                                if (servers.length > 0) {
-                                    let lastServerIndex = servers.findIndex(server => server.name === settings.lastServer)
-                                    serverComboBox.currentIndex = lastServerIndex >= 0 ? lastServerIndex : 0
-                                    botBridge.set_current_server(servers[serverComboBox.currentIndex].id)
-                                }
-                            }
-                        }
-                    }
-
-                    Label {
-                        id: channelListLabel
-                        text: "Chan:"
-                        Layout.preferredWidth: pauseButton.width
-                        Layout.alignment: Qt.AlignVCenter
-                    }
-
-                    ComboBox {
-                        id: channelComboBox
-                        Layout.fillWidth: true
-                        enabled: root.connectedToAPI && model.length > 0
-                        textRole: "name"
-                        valueRole: "id"
-                        model: []
-
-                        onCurrentValueChanged: {
-                            if (currentValue) {
-                                botBridge.set_current_channel(currentValue)
-                            }
-                        }
-
-                        onActivated: {
-                            if (currentText) {
-                                settings.lastChannel = currentText
-                            }
-                        }
-
-                        Connections {
-                            target: botBridge
-                            function onChannelsChanged(channels) {
-                                channelComboBox.model = channels
-                                if (channels.length > 0) {
-                                    let lastChannelIndex = channels.findIndex(channel => channel.name === settings.lastChannel)
-                                    channelComboBox.currentIndex = lastChannelIndex >= 0 ? lastChannelIndex : 0
-                                    botBridge.set_current_channel(channels[channelComboBox.currentIndex].id)
-                                }
-                            }
-                        }
-                    }
-
                     Button {
-                        id: stopPlaylistButton
-                        icon.source: "icons/stop.png"
+                        id: shuffleButton
                         Layout.preferredWidth: height
-                        property bool isPlaying: false
-                        enabled: isPlaying
+                        icon.source: "icons/shuffle.png"
+                        icon.width: 16
+                        icon.height: 16
+                        checkable: true
+                        enabled: root.connectedToAPI
+                        onCheckedChanged: {
+                            if (checked && repeatButton.checked) {
+                                repeatButton.checked = false
+                            }
+                            settings.shuffle = checked
+                        }
+                        Component.onCompleted: {
+                            checked = settings.shuffle
+                        }
+                    }
+
+                    Item {
+                        Layout.fillWidth: true
+                    }
+
+                    Button {
+                        id: playPrevButton
+                        icon.source: "icons/prev.png"
+                        Layout.preferredWidth: height
+                        enabled: playlistView.currentIndex > 0 && stopPlaylistButton.isPlaying && !downloadProgress.visible
                         onClicked: {
-                            botBridge.stop_playing()
-                            playlistView.currentIndex = 0
-                            isPlaying = false
+                            if (shuffleButton.checked) {
+                                // Find current index position in shuffle list
+                                const currentPos = shufflePlayedIndices.indexOf(playlistView.currentIndex)
+                                if (currentPos > 0) {
+                                    playlistView.manualNavigation = true
+                                    // Get previous played index from shuffle list
+                                    const prevIndex = shufflePlayedIndices[currentPos - 1]
+                                    playlistView.currentIndex = prevIndex
+                                    let item = playlistModel.get(prevIndex)
+                                    botBridge.play_url(item.url || item.userTyped)
+                                }
+                            } else {
+                                if (playlistView.currentIndex > 0) {
+                                    playlistView.manualNavigation = true
+                                    playlistView.currentIndex--
+                                    let item = playlistModel.get(playlistView.currentIndex)
+                                    botBridge.play_url(item.url || item.userTyped)
+                                }
+                            }
                         }
                     }
 
                     Button {
-                        id: disconnectButton
+                        id: pauseButton
+                        Layout.preferredWidth: height
+                        enabled: songLoaded && !downloadProgress.visible
+                        icon.source: "icons/play.png"
+                        icon.width: 24
+                        icon.height: 24
 
-                        text: botBridge.voiceConnected ? "Disconnect from channel" : "Connect to channel"
-                        Layout.fillWidth: true
-                        enabled: root.connectedToAPI && channelComboBox.currentValue !== undefined && channelComboBox.currentValue !== null
                         onClicked: {
-                            if (botBridge.voiceConnected) {
-                                botBridge.disconnect_voice()
-                            } else {
-                                botBridge.connect_to_channel()
+                            botBridge.toggle_playback()
+                        }
+
+                        Connections {
+                            target: botBridge
+                            function onPlayStateChanged(isPlaying) {
+                                pauseButton.icon.source = isPlaying ? "icons/pause.png" : "icons/play.png"
                             }
+                        }
+                    }
+
+                    Button {
+                        id: playNextButton
+                        icon.source: "icons/next.png"
+                        Layout.preferredWidth: height
+                        enabled: playlistView.currentIndex < (playlistModel.count - 1) && stopPlaylistButton.isPlaying && !downloadProgress.visible
+                        onClicked: {
+                            if (shuffleButton.checked) {
+                                // Get available indices (not played yet)
+                                let availableIndices = []
+                                for (let i = 0; i < playlistModel.count; i++) {
+                                    if (!shufflePlayedIndices.includes(i)) {
+                                        availableIndices.push(i)
+                                    }
+                                }
+
+                                // If all songs were played
+                                if (availableIndices.length === 0) {
+                                    shufflePlayedIndices = []
+                                    stopPlaylistButton.isPlaying = false
+                                    playlistView.currentIndex = 0
+                                    return
+                                }
+
+                                // Pick random index from available ones
+                                const randomIndex = Math.floor(Math.random() * availableIndices.length)
+                                const nextIndex = availableIndices[randomIndex]
+
+                                playlistView.manualNavigation = true
+                                shufflePlayedIndices.push(nextIndex)
+                                playlistView.currentIndex = nextIndex
+                                let item = playlistModel.get(nextIndex)
+                                botBridge.play_url(item.url || item.userTyped)
+                            } else {
+                                if (playlistView.currentIndex < (playlistModel.count - 1)) {
+                                    playlistView.manualNavigation = true
+                                    playlistView.currentIndex++
+                                    let item = playlistModel.get(playlistView.currentIndex)
+                                    botBridge.play_url(item.url || item.userTyped)
+                                }
+                            }
+                        }
+                    }
+
+                    Item {
+                        Layout.fillWidth: true
+                    }
+
+                    Button {
+                        id: repeatButton
+                        Layout.preferredWidth: height
+                        icon.source: "icons/repeat.png"
+                        icon.width: 16
+                        icon.height: 16
+                        checkable: true
+                        enabled: root.connectedToAPI
+                        onCheckedChanged: {
+                            botBridge.set_repeat_mode(checked)
+                            if (checked && shuffleButton.checked) {
+                                shuffleButton.checked = false
+                            }
+                            settings.repeat = checked
+                        }
+                        Component.onCompleted: {
+                            checked = settings.repeat
                         }
                     }
                 }
             }
         }
+
+        Frame {
+            Layout.preferredHeight: implicitHeight
+            Layout.fillWidth: true
+            GridLayout {
+                anchors.fill: parent
+                columnSpacing: 10
+                rowSpacing: 10
+                columns: 2
+
+                Label {
+                    text: "Serv:"
+                    Layout.preferredWidth: pauseButton.width
+                    Layout.alignment: Qt.AlignVCenter
+                }
+
+                ComboBox {
+                    id: serverComboBox
+                    Layout.fillWidth: true
+                    enabled: root.connectedToAPI
+                    textRole: "name"
+                    valueRole: "id"
+                    model: []
+
+                    onCurrentValueChanged: {
+                        if (currentValue) {
+                            botBridge.set_current_server(currentValue)
+                        }
+                    }
+
+                    onActivated: {
+                        if (currentText) {
+                            settings.lastServer = currentText
+                        }
+                    }
+
+                    Connections {
+                        target: botBridge
+                        function onServersChanged(servers) {
+                            serverComboBox.model = servers
+                            if (servers.length > 0) {
+                                let lastServerIndex = servers.findIndex(server => server.name === settings.lastServer)
+                                serverComboBox.currentIndex = lastServerIndex >= 0 ? lastServerIndex : 0
+                                botBridge.set_current_server(servers[serverComboBox.currentIndex].id)
+                            }
+                        }
+                    }
+                }
+
+                Label {
+                    id: channelListLabel
+                    text: "Chan:"
+                    Layout.preferredWidth: pauseButton.width
+                    Layout.alignment: Qt.AlignVCenter
+                }
+
+                ComboBox {
+                    id: channelComboBox
+                    Layout.fillWidth: true
+                    enabled: root.connectedToAPI && model.length > 0
+                    textRole: "name"
+                    valueRole: "id"
+                    model: []
+
+                    onCurrentValueChanged: {
+                        if (currentValue) {
+                            botBridge.set_current_channel(currentValue)
+                        }
+                    }
+
+                    onActivated: {
+                        if (currentText) {
+                            settings.lastChannel = currentText
+                        }
+                    }
+
+                    Connections {
+                        target: botBridge
+                        function onChannelsChanged(channels) {
+                            channelComboBox.model = channels
+                            if (channels.length > 0) {
+                                let lastChannelIndex = channels.findIndex(channel => channel.name === settings.lastChannel)
+                                channelComboBox.currentIndex = lastChannelIndex >= 0 ? lastChannelIndex : 0
+                                botBridge.set_current_channel(channels[channelComboBox.currentIndex].id)
+                            }
+                        }
+                    }
+                }
+
+                Button {
+                    id: stopPlaylistButton
+                    icon.source: "icons/stop.png"
+                    Layout.preferredWidth: height
+                    property bool isPlaying: false
+                    enabled: isPlaying
+                    onClicked: {
+                        botBridge.stop_playing()
+                        playlistView.currentIndex = 0
+                        isPlaying = false
+                    }
+                }
+
+                Button {
+                    id: disconnectButton
+
+                    text: botBridge.voiceConnected ? "Disconnect from channel" : "Connect to channel"
+                    Layout.fillWidth: true
+                    enabled: root.connectedToAPI && channelComboBox.currentValue !== undefined && channelComboBox.currentValue !== null
+                    onClicked: {
+                        if (botBridge.voiceConnected) {
+                            botBridge.disconnect_voice()
+                        } else {
+                            botBridge.connect_to_channel()
+                        }
+                    }
+                }
+            }
+        }
+    }
 
 
     Popup {
@@ -935,5 +938,70 @@ ApplicationWindow {
         }
 
         onOpened: hideTimer.start()
+    }
+
+    Popup {
+        id: playlistPopup
+        parent: playlistView
+        anchors.centerIn: parent
+        width: playlistLayout.width + 40
+        height: playlistLayout.height + 30
+        modal: true
+        closePolicy: Popup.CloseOnEscape
+
+        ColumnLayout {
+            id: playlistLayout
+            anchors.centerIn: parent
+            spacing: 14
+
+            Label {
+                text: "It looks like you're trying to add a playlist.\nWould you like to add the entire playlist or just the current song?"
+                horizontalAlignment: Text.AlignHCenter
+                Layout.fillWidth: true
+                wrapMode: Text.Wrap
+            }
+
+            RowLayout {
+                Layout.alignment: Qt.AlignHCenter
+                spacing: 14
+
+                Button {
+                    text: "Current Song"
+                    onClicked: {
+                        let idx = playlistModel.count
+                        playlistModel.append({
+                            "userTyped": newItemInput.text.trim(),
+                            "url": "",
+                            "resolvedTitle": "",
+                            "channelName": "",
+                            "isResolving": true
+                        })
+                        botBridge.resolve_title(idx, newItemInput.text.trim())
+                        newItemInput.text = ""
+                        playlistPopup.close()
+                    }
+                }
+
+                Button {
+                    text: "Entire Playlist"
+                    onClicked: {
+                        let urls = botBridge.extract_urls_from_playlist(newItemInput.text.trim())
+                        for (let url of urls) {
+                            let idx = playlistModel.count
+                            playlistModel.append({
+                                "userTyped": url,
+                                "url": "",
+                                "resolvedTitle": "",
+                                "channelName": "",
+                                "isResolving": true
+                            })
+                            botBridge.resolve_title(idx, url)
+                        }
+                        newItemInput.text = ""
+                        playlistPopup.close()
+                    }
+                }
+            }
+        }
     }
 }
