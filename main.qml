@@ -12,18 +12,22 @@ ApplicationWindow {
     height: 446
     minimumWidth: 800
     minimumHeight: 446
-    //maximumWidth: 800
-    //maximumHeight: 446
+
     title: "Boxy GUI"
     Universal.theme: Universal.System
     Universal.accent: Universal.Orange
     property bool songLoaded: false
     property var shufflePlayedIndices: []
     property bool connectedToAPI: false
+    property bool isResolvingAny: {
+        for(let i = 0; i < playlistModel.count; i++) {
+            if(playlistModel.get(i).isResolving) return true;
+        }
+        return false;
+    }
 
     Settings {
         id: settings
-        //category: "Boxy"
         property bool shuffle: false
         property bool repeat: false
         property string lastServer: ""
@@ -142,12 +146,10 @@ ApplicationWindow {
                         botBridge.play_url(item.url || item.userTyped)
                     }
                 } else {
-                    // We're at the last song and it finished
                     stopPlaylistButton.isPlaying = false
                     playlistView.currentIndex = 0
                 }
             }
-            // Reset the manual navigation flag after handling
             playlistView.manualNavigation = false
         }
     }
@@ -169,13 +171,8 @@ ApplicationWindow {
 
             ColumnLayout {
                 id: playListViewLayout
-                //Layout.fillHeight: true
-                //Layout.preferredWidth: parent.width * 0.55
                 spacing: 10
-                //Layout.fillWidth: true
                 anchors.fill: parent
-
-
 
                 RowLayout {
                     Layout.fillWidth: true
@@ -183,7 +180,7 @@ ApplicationWindow {
 
                     Button {
                         text: "New"
-                        enabled: root.connectedToAPI && playlistModel.count > 0
+                        enabled: root.connectedToAPI && playlistModel.count > 0 && !root.isResolvingAny
                         onClicked: {
                             playlistModel.clear()
                             playlistName.text = ""
@@ -192,35 +189,14 @@ ApplicationWindow {
 
                     Button {
                         text: "Load"
+                        enabled: root.connectedToAPI && !root.isResolvingAny
                         onClicked: playlistSelectorPopup.open()
-                        enabled: root.connectedToAPI
-                    }
-
-                    Platform.FileDialog {
-                        id: fileDialog
-                        title: "Load Playlist"
-                        nameFilters: ["JSON files (*.json)"]
-                        folder: "file:///" + botBridge.get_playlists_directory().replace(/\\/g, '/')
-
-                        onAccepted: {
-                            // Convert the URL to a local file path
-                            var path = fileDialog.file.toString()
-                            // Remove "file:///" prefix on Windows
-                            path = path.replace(/^(file:\/{2,3})/,"")
-                            // Decode URI component for special characters
-                            path = decodeURIComponent(path)
-                            // Handle Windows drive letters
-                            if (/^[A-Za-z]:/.test(path)) {
-                                path = path.replace(/^\//, '')
-                            }
-                            botBridge.load_playlist(path)
-                        }
                     }
 
                     Button {
                         id: saveButton
                         text: "Save"
-                        enabled: playlistName.text.trim() !== "" && playlistModel.count > 0
+                        enabled: playlistName.text.trim() !== "" && playlistModel.count > 0 && !root.isResolvingAny
                         onClicked: root.savePlaylist()
                     }
 
@@ -230,6 +206,11 @@ ApplicationWindow {
                         text: ""
                         placeholderText: "My super playlist"
                         Layout.fillWidth: true
+                        onAccepted: {
+                            if (saveButton.enabled) {
+                                root.savePlaylist()
+                            }
+                        }
                     }
 
                     Button {
@@ -287,7 +268,7 @@ ApplicationWindow {
                         delegate: ItemDelegate {
                             width: ListView.view.width
                             height: 50
-                            enabled: !downloadProgress.visible
+                            enabled: !downloadProgress.visible && !root.isResolvingAny
 
                             MouseArea {
                                 anchors.fill: parent
