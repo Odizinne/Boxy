@@ -78,6 +78,19 @@ class BotBridge(QObject):
         if hasattr(self, "_yt_pool"):
             self._yt_pool.shutdown(wait=False)
 
+    @Slot(result=list)
+    def get_playlist_files(self):
+        """Get list of playlist files in the playlists directory"""
+        playlists_dir = self.get_playlists_directory()
+        files = []
+        try:
+            for file in os.listdir(playlists_dir):
+                if file.endswith(".json"):
+                    files.append({"name": os.path.splitext(file)[0], "filePath": os.path.join(playlists_dir, file)})
+        except Exception as e:
+            print(f"Error reading playlist directory: {e}")
+        return files
+
     @Slot()
     def stop_playing(self):
         async def stop_wrapper():

@@ -51,10 +51,11 @@ ApplicationWindow {
         savePopup.visible = true
         hideTimer.start()
     }
+
     Shortcut {
         sequence: StandardKey.Open
         enabled: root.connectedToAPI
-        onActivated: fileDialog.open()
+        onActivated: playlistSelectorPopup.open()
     }
 
     Shortcut {
@@ -181,8 +182,17 @@ ApplicationWindow {
                     spacing: 10
 
                     Button {
+                        text: "New"
+                        enabled: root.connectedToAPI && playlistModel.count > 0
+                        onClicked: {
+                            playlistModel.clear()
+                            playlistName.text = ""
+                        }
+                    }
+
+                    Button {
                         text: "Load"
-                        onClicked: fileDialog.open()
+                        onClicked: playlistSelectorPopup.open()
                         enabled: root.connectedToAPI
                     }
 
@@ -477,12 +487,12 @@ ApplicationWindow {
                                 } else {
                                     let idx = playlistModel.count
                                     playlistModel.append({
-                                        "userTyped": newItemInput.text.trim(),
-                                        "url": "",
-                                        "resolvedTitle": "",
-                                        "channelName": "",
-                                        "isResolving": true
-                                    })
+                                                             "userTyped": newItemInput.text.trim(),
+                                                             "url": "",
+                                                             "resolvedTitle": "",
+                                                             "channelName": "",
+                                                             "isResolving": true
+                                                         })
                                     botBridge.resolve_title(idx, newItemInput.text.trim(), false)
                                     newItemInput.text = ""
                                 }
@@ -941,6 +951,121 @@ ApplicationWindow {
     }
 
     Popup {
+        id: playlistSelectorPopup
+        parent: playlistView
+        width: 200
+        height: 300
+        anchors.centerIn: parent
+        modal: true
+        closePolicy: Popup.CloseOnEscape | Popup.CloseOnPressOutside
+        opacity: 0
+
+        enter: Transition {
+            NumberAnimation {
+                property: "opacity"
+                from: 0.0
+                to: 1.0
+                duration: 200
+            }
+        }
+
+        exit: Transition {
+            NumberAnimation {
+                property: "opacity"
+                from: 1.0
+                to: 0.0
+                duration: 200
+            }
+        }
+
+        ColumnLayout {
+            anchors.fill: parent
+            anchors.margins: 0
+            spacing: 10
+
+            ScrollView {
+                Layout.fillWidth: true
+                Layout.fillHeight: true
+                clip: true
+                ScrollBar.vertical.policy: playlistList.model.count > 5 ?
+                                               ScrollBar.AlwaysOn : ScrollBar.AlwaysOff
+
+                ListView {
+                    id: playlistList
+                    model: ListModel {}
+                    clip: true
+                    highlightMoveDuration: 0
+                    currentIndex: 0
+                    boundsBehavior: Flickable.StopAtBounds
+
+                    delegate: ItemDelegate {
+                        width: playlistList.width
+                        height: 40
+                        required property string name
+                        required property string filePath
+
+                        RowLayout {
+                            anchors.fill: parent
+                            anchors.margins: 10
+
+                            Label {
+                                text: name
+                                Layout.fillWidth: true
+                                elide: Text.ElideRight
+                            }
+                        }
+
+                        onClicked: {
+                            botBridge.load_playlist(filePath)
+                            playlistSelectorPopup.close()
+                        }
+                    }
+                }
+            }
+
+            Button {
+                text: "Open Playlist Folder"
+                Layout.fillWidth: true
+                onClicked: {
+                    Qt.openUrlExternally("file:///" + botBridge.get_playlists_directory())
+                    playlistSelectorPopup.close()
+                }
+            }
+
+            Button {
+                text: "Close"
+                Layout.fillWidth: true
+                onClicked: playlistSelectorPopup.close()
+            }
+        }
+
+        onVisibleChanged: {
+            if (visible) {
+                playlistList.model.clear()
+                let playlists = botBridge.get_playlist_files()
+
+                if (playlists.length === 0) {
+                    playlistList.model.append({
+                                                  name: "No playlists found",
+                                                  filePath: "",
+                                                  enabled: false
+                                              })
+                } else {
+                    playlists.sort((a, b) => a.name.toLowerCase().localeCompare(b.name.toLowerCase()))
+
+                    playlists.forEach(function(playlist) {
+                        playlistList.model.append({
+                                                      name: playlist.name,
+                                                      filePath: playlist.filePath,
+                                                      enabled: true
+                                                  })
+                    })
+                }
+            }
+        }
+    }
+
+    Popup {
         id: playlistPopup
         parent: playlistView
         anchors.centerIn: parent
@@ -970,12 +1095,12 @@ ApplicationWindow {
                     onClicked: {
                         let idx = playlistModel.count
                         playlistModel.append({
-                            "userTyped": newItemInput.text.trim(),
-                            "url": "",
-                            "resolvedTitle": "",
-                            "channelName": "",
-                            "isResolving": true
-                        })
+                                                 "userTyped": newItemInput.text.trim(),
+                                                 "url": "",
+                                                 "resolvedTitle": "",
+                                                 "channelName": "",
+                                                 "isResolving": true
+                                             })
                         botBridge.resolve_title(idx, newItemInput.text.trim())
                         newItemInput.text = ""
                         playlistPopup.close()
@@ -989,12 +1114,12 @@ ApplicationWindow {
                         for (let url of urls) {
                             let idx = playlistModel.count
                             playlistModel.append({
-                                "userTyped": url,
-                                "url": "",
-                                "resolvedTitle": "",
-                                "channelName": "",
-                                "isResolving": true
-                            })
+                                                     "userTyped": url,
+                                                     "url": "",
+                                                     "resolvedTitle": "",
+                                                     "channelName": "",
+                                                     "isResolving": true
+                                                 })
                             botBridge.resolve_title(idx, url)
                         }
                         newItemInput.text = ""
