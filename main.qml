@@ -1050,7 +1050,6 @@ ApplicationWindow {
         id: playlistPopup
         parent: playlistView
         anchors.centerIn: parent
-        width: playlistLayout.width + 40
         height: playlistLayout.height + 30
         modal: true
         closePolicy: Popup.CloseOnEscape
@@ -1074,15 +1073,17 @@ ApplicationWindow {
                 Button {
                     text: "Current Song"
                     onClicked: {
+                        let cleanUrl = newItemInput.text.trim().split("&list=")[0]
+                        
                         let idx = playlistModel.count
                         playlistModel.append({
-                                                 "userTyped": newItemInput.text.trim(),
-                                                 "url": "",
-                                                 "resolvedTitle": "",
-                                                 "channelName": "",
-                                                 "isResolving": true
-                                             })
-                        botBridge.resolve_title(idx, newItemInput.text.trim())
+                            "userTyped": cleanUrl,
+                            "url": "",
+                            "resolvedTitle": "",
+                            "channelName": "",
+                            "isResolving": true
+                        })
+                        botBridge.resolve_title(idx, cleanUrl)
                         newItemInput.text = ""
                         playlistPopup.close()
                     }
