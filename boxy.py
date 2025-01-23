@@ -78,6 +78,14 @@ class BotBridge(QObject):
         if hasattr(self, "_yt_pool"):
             self._yt_pool.shutdown(wait=False)
 
+    @Slot(str)
+    def delete_playlist(self, filepath):
+        try:
+            os.remove(filepath)
+            self.playlistSaved.emit(f"Playlist deleted successfully")
+        except Exception as e:
+            self.playlistSaved.emit(f"Error deleting playlist: {str(e)}")
+
     @Slot(result=list)
     def get_playlist_files(self):
         """Get list of playlist files in the playlists directory"""

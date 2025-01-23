@@ -934,8 +934,8 @@ ApplicationWindow {
     Popup {
         id: playlistSelectorPopup
         parent: playlistView
-        width: 200
-        height: 300
+        width: 350
+        height: 350
         anchors.centerIn: parent
         modal: true
         closePolicy: Popup.CloseOnEscape | Popup.CloseOnPressOutside
@@ -984,21 +984,40 @@ ApplicationWindow {
                         height: 40
                         required property string name
                         required property string filePath
+                        required property int index
 
                         RowLayout {
                             anchors.fill: parent
                             anchors.margins: 10
+                            spacing: 10
 
                             Label {
                                 text: name
                                 Layout.fillWidth: true
                                 elide: Text.ElideRight
+                                anchors.verticalCenter: parent.verticalCenter
+
+                            }
+
+                            Button {
+                                anchors.verticalCenter: parent.verticalCenter
+                                icon.source: "icons/delete.png"
+                                icon.width: width / 3
+                                icon.height: height / 3
+                                visible: filePath !== ""
+                                flat: true
+                                onClicked: {
+                                    botBridge.delete_playlist(filePath)
+                                    playlistList.model.remove(index)
+                                }
                             }
                         }
 
                         onClicked: {
-                            botBridge.load_playlist(filePath)
-                            playlistSelectorPopup.close()
+                            if (filePath !== "") {
+                                botBridge.load_playlist(filePath)
+                                playlistSelectorPopup.close()
+                            }
                         }
                     }
                 }
@@ -1077,12 +1096,12 @@ ApplicationWindow {
                         
                         let idx = playlistModel.count
                         playlistModel.append({
-                            "userTyped": cleanUrl,
-                            "url": "",
-                            "resolvedTitle": "",
-                            "channelName": "",
-                            "isResolving": true
-                        })
+                                                 "userTyped": cleanUrl,
+                                                 "url": "",
+                                                 "resolvedTitle": "",
+                                                 "channelName": "",
+                                                 "isResolving": true
+                                             })
                         botBridge.resolve_title(idx, cleanUrl)
                         newItemInput.text = ""
                         playlistPopup.close()
