@@ -3,6 +3,8 @@
 import asyncio
 import os
 import sys
+import subprocess
+import platform
 import threading
 import argparse
 import concurrent.futures
@@ -12,7 +14,6 @@ from PySide6.QtCore import QObject, Signal, Slot, QUrl, Property, QTimer
 from PySide6.QtGui import QGuiApplication, QIcon
 from PySide6.QtQml import QQmlApplicationEngine
 import json
-import platform
 import yt_dlp
 from youtube_search import YoutubeSearch
 import signal
@@ -891,62 +892,6 @@ async def verify_token(token):
             print(f"Error verifying token: {e}")
             return False
 
-
-def run_bot_with_gui():
-    try:
-        token = get_token()
-    except Exception as e:
-        print(f"Error reading token: {e}")
-        sys.exit(1)
-
-    # Verify token before creating any Qt components
-    if not asyncio.run(verify_token(token)):
-        print("Token was rejected by Discord")
-        sys.exit(1)
-
-    app = QGuiApplication(sys.argv)
-    engine = QQmlApplicationEngine()
-
-    def signal_handler(signum, frame):
-        print("\nCtrl+C received. Cleaning up...")
-        app.quit()
-
-    signal.signal(signal.SIGINT, signal_handler)
-
-    bot = BoxyBot(command_prefix="/", intents=intents)
-    bridge = BotBridge(bot)
-    bot.bridge = bridge
-
-    def cleanup():
-        asyncio.run_coroutine_threadsafe(bridge.cleanup(), bot.loop).result()
-
-    icon = os.path.join(get_script_dir(), "boxy-orange.png")
-    app.setWindowIcon(QIcon(icon))
-    app.setOrganizationName("Odizinne")
-    app.setApplicationName("Boxy")
-    app.aboutToQuit.connect(cleanup)
-
-    engine.rootContext().setContextProperty("botBridge", bridge)
-
-    def bot_runner():
-        try:
-            bot.run(token)
-        except Exception as e:
-            print(f"Bot error: {e}")
-            app.quit()
-
-    bot_thread = threading.Thread(target=bot_runner, daemon=True)
-    bot_thread.start()
-
-    qml_path = os.path.join(get_script_dir(), "main.qml")
-    engine.load(QUrl.fromLocalFile(qml_path))
-
-    if not engine.rootObjects():
-        sys.exit(1)
-
-    sys.exit(app.exec())
-
-
 def run_bot_no_gui():
     try:
         token = get_token()
@@ -968,14 +913,320 @@ def run_bot_no_gui():
 def get_script_dir():
     return os.path.dirname(os.path.abspath(__file__))
 
+class SetupManager(QObject):
+    # Define the signals
+    setupCompleted = Signal(str)  # Keep this name the same as before
+    ffmpegInstallInProgressSignal = Signal(bool)
+    ffmpegInstalledSignal = Signal(bool)
+    ffmpegInstallMessageSignal = Signal(str)
+    
+    def __init__(self):
+        super().__init__()
+        self.config_dir = self.get_config_dir()
+        self.token_file = os.path.join(self.config_dir, "token.txt")
+        self._ffmpeg_install_in_progress = False
+        self._ffmpeg_installed = self.check_ffmpeg_installed()
+        self._ffmpeg_install_message = ""
+        self._os_type = platform.system()
+        self._linux_distro = self.get_linux_distro() if self._os_type == "Linux" else ""
+        
+    def get_config_dir(self):
+        """Get platform-specific config directory"""
+        system = platform.system()
+        
+        if system == "Windows":
+            config_dir = os.path.join(os.environ.get("APPDATA"), "Boxy")
+        elif system == "Darwin":  # macOS
+            config_dir = os.path.join(os.path.expanduser("~"), "Library", "Application Support", "Boxy")
+        else:  # Linux and other Unix-like
+            config_dir = os.path.join(os.path.expanduser("~"), ".config", "Boxy")
+            
+        # Create directory if it doesn't exist
+        if not os.path.exists(config_dir):
+            os.makedirs(config_dir)
+            
+        return config_dir
+    
+    @Property(str, constant=True)
+    def osType(self):
+        return self._os_type
+        
+    @Property(str, constant=True)
+    def linuxDistro(self):
+        return self._linux_distro
+    
+    @Property(bool, notify=ffmpegInstallInProgressSignal)
+    def ffmpegInstallInProgress(self):
+        return self._ffmpeg_install_in_progress
+        
+    @ffmpegInstallInProgress.setter
+    def ffmpegInstallInProgress(self, value):
+        if self._ffmpeg_install_in_progress != value:
+            self._ffmpeg_install_in_progress = value
+            self.ffmpegInstallInProgressSignal.emit(value)
+    
+    @Property(bool, notify=ffmpegInstalledSignal)
+    def ffmpegInstalled(self):
+        return self._ffmpeg_installed
+        
+    @ffmpegInstalled.setter
+    def ffmpegInstalled(self, value):
+        if self._ffmpeg_installed != value:
+            self._ffmpeg_installed = value
+            self.ffmpegInstalledSignal.emit(value)
+            
+    @Property(str, notify=ffmpegInstallMessageSignal)
+    def ffmpegInstallMessage(self):
+        return self._ffmpeg_install_message
+        
+    @ffmpegInstallMessage.setter
+    def ffmpegInstallMessage(self, value):
+        if self._ffmpeg_install_message != value:
+            self._ffmpeg_install_message = value
+            self.ffmpegInstallMessageSignal.emit(value)
+    
+    def get_linux_distro(self):
+        """Try to determine Linux distribution"""
+        try:
+            # Check for os-release file
+            if os.path.exists("/etc/os-release"):
+                with open("/etc/os-release", "r") as f:
+                    for line in f:
+                        if line.startswith("ID="):
+                            distro = line.split("=")[1].strip().strip('"').strip("'").lower()
+                            if "ubuntu" in distro:
+                                return "Ubuntu"
+                            elif "debian" in distro:
+                                return "Debian"
+                            elif "fedora" in distro:
+                                return "Fedora"
+                            elif "arch" in distro:
+                                return "Arch"
+            
+            # Check for specific files
+            if os.path.exists("/etc/debian_version"):
+                return "Debian"
+            elif os.path.exists("/etc/fedora-release"):
+                return "Fedora"
+            elif os.path.exists("/etc/arch-release"):
+                return "Arch"
+        except:
+            pass
+        
+        return "Unknown"
+    
+    def check_ffmpeg_installed(self):
+        """Check if FFmpeg is installed"""
+        try:
+            # Try to run ffmpeg -version
+            subprocess.run(["ffmpeg", "-version"], stdout=subprocess.PIPE, stderr=subprocess.PIPE, check=True)
+            return True
+        except:
+            return False
+    
+    @Slot()
+    def installFFmpegWindows(self):
+        """Install FFmpeg on Windows"""
+        if self._ffmpeg_installed or self._ffmpeg_install_in_progress:
+            return
+            
+        self.ffmpegInstallInProgress = True
+        self.ffmpegInstallMessage = "Starting download..."
+        
+        # Run the installation in a separate thread
+        threading.Thread(target=self._install_ffmpeg_windows, daemon=True).start()
+    
+    def _install_ffmpeg_windows(self):
+        """Download and install FFmpeg for Windows"""
+        import tempfile
+        import zipfile
+        import urllib.request
+        import shutil
+        import ctypes
+        
+        ffmpeg_url = "https://github.com/BtbN/FFmpeg-Builds/releases/download/latest/ffmpeg-master-latest-win64-gpl.zip"
+        
+        try:
+            # Create temp directory
+            with tempfile.TemporaryDirectory() as temp_dir:
+                # Download file
+                self.ffmpegInstallMessage = "Downloading FFmpeg..."
+                zip_path = os.path.join(temp_dir, "ffmpeg.zip")
+                urllib.request.urlretrieve(ffmpeg_url, zip_path)
+                
+                # Extract zip
+                self.ffmpegInstallMessage = "Extracting files..."
+                with zipfile.ZipFile(zip_path, 'r') as zip_ref:
+                    zip_ref.extractall(temp_dir)
+                
+                # Find bin directory
+                bin_dir = None
+                for root, dirs, files in os.walk(temp_dir):
+                    if "bin" in dirs:
+                        bin_dir = os.path.join(root, "bin")
+                        break
+                
+                if not bin_dir:
+                    raise Exception("Could not find bin directory in downloaded files")
+                
+                # Determine install location
+                python_dir = os.path.dirname(sys.executable)
+                is_admin = ctypes.windll.shell32.IsUserAnAdmin() if hasattr(ctypes.windll, 'shell32') else False
+                
+                # Check if directory is writable
+                is_writable = os.access(python_dir, os.W_OK)
+                
+                if not is_writable and not is_admin:
+                    self.ffmpegInstallMessage = "Python directory is not writable. Installing to user directory..."
+                    install_dir = os.path.join(os.path.expanduser("~"), "ffmpeg", "bin")
+                    os.makedirs(install_dir, exist_ok=True)
+                else:
+                    install_dir = python_dir
+                
+                # Copy files
+                self.ffmpegInstallMessage = f"Installing FFmpeg to {install_dir}..."
+                for file in os.listdir(bin_dir):
+                    if file.endswith(".exe"):
+                        shutil.copy2(os.path.join(bin_dir, file), os.path.join(install_dir, file))
+                
+                # Add to PATH if needed
+                if install_dir != python_dir:
+                    # Get current PATH
+                    path = os.environ.get("PATH", "")
+                    
+                    # Check if already in PATH
+                    if install_dir not in path:
+                        # Add to user PATH
+                        self.ffmpegInstallMessage = "Adding FFmpeg to user PATH..."
+                        subprocess.run(
+                            f'setx PATH "{install_dir};{path}"',
+                            shell=True, 
+                            check=True
+                        )
+                
+                self.ffmpegInstallMessage = "FFmpeg installed successfully!"
+                self.ffmpegInstalled = True
+        
+        except Exception as e:
+            self.ffmpegInstallMessage = f"Installation failed: {str(e)}"
+            print(f"FFmpeg installation error: {e}")
+        finally:
+            self.ffmpegInstallInProgress = False
+    
+    def is_setup_complete(self):
+        """Check if token is already set up"""
+        if os.path.exists(self.token_file):
+            with open(self.token_file, "r") as f:
+                token = f.read().strip()
+                return token != "" and token != "REPLACE_THIS_WITH_YOUR_BOT_TOKEN"
+        return False
+    
+    @Slot(str)
+    def save_token(self, token):
+        """Save bot token to file and signal completion"""
+        with open(self.token_file, "w") as f:
+            f.write(token)
+        
+        # Emit the token so the main app can use it
+        self.setupCompleted.emit(token)
+        
+    def get_token(self):
+        """Get the saved token"""
+        if not os.path.exists(self.token_file):
+            return None
+            
+        with open(self.token_file, "r") as f:
+            token = f.read().strip()
+            if token == "" or token == "REPLACE_THIS_WITH_YOUR_BOT_TOKEN":
+                return None
+            return token
+
+def run_bot():
+    """Main entry point for the application"""
+    # Create a single QGuiApplication instance
+    app = QGuiApplication(sys.argv)
+    
+    # Create QML engine
+    engine = QQmlApplicationEngine()
+    
+    # Set application info
+    app.setOrganizationName("Odizinne")
+    app.setApplicationName("Boxy")
+    icon = os.path.join(get_script_dir(), "boxy-orange.png")
+    app.setWindowIcon(QIcon(icon))
+    
+    # Create setup manager
+    setup_manager = SetupManager()
+    
+    # Check if setup is needed
+    if setup_manager.is_setup_complete():
+        # Already set up - go straight to main app
+        token = setup_manager.get_token()
+        start_main_app(app, engine, token)
+    else:
+        # Need setup - show setup window first
+        engine.rootContext().setContextProperty("setupManager", setup_manager)
+        
+        # Load setup QML
+        qml_path = os.path.join(get_script_dir(), "SetupWindow.qml")
+        engine.load(QUrl.fromLocalFile(qml_path))
+        
+        if not engine.rootObjects():
+            print("Error loading setup UI")
+            sys.exit(1)
+        
+        # Connect signals from QML
+        root = engine.rootObjects()[0]
+        root.setupFinished.connect(setup_manager.save_token)
+
+        setup_manager.setupCompleted.connect(lambda token: start_main_app(app, engine, token))
+    
+    # Run the application event loop
+    sys.exit(app.exec())
+
+def start_main_app(app, engine, token):
+    """Start the main application with the token"""
+    # Clear any existing objects in the engine
+    engine.clearComponentCache()
+    for obj in engine.rootObjects():
+        obj.deleteLater()
+    
+    # Initialize the bot
+    intents = discord.Intents.default()
+    intents.message_content = True
+    intents.voice_states = True
+    
+    bot = BoxyBot(command_prefix="/", intents=intents)
+    bridge = BotBridge(bot)
+    bot.bridge = bridge
+    
+    # Connect cleanup on app quit
+    def cleanup():
+        asyncio.run_coroutine_threadsafe(bridge.cleanup(), bot.loop).result()
+    
+    app.aboutToQuit.connect(cleanup)
+    
+    # Register bridge to QML
+    engine.rootContext().setContextProperty("botBridge", bridge)
+    
+    # Start bot in a separate thread
+    def bot_runner():
+        try:
+            bot.run(token)
+        except Exception as e:
+            print(f"Bot error: {e}")
+            app.quit()
+    
+    bot_thread = threading.Thread(target=bot_runner, daemon=True)
+    bot_thread.start()
+    
+    # Load the main application UI
+    qml_path = os.path.join(get_script_dir(), "main.qml")
+    engine.load(QUrl.fromLocalFile(qml_path))
+    
+    if not engine.rootObjects():
+        print("Error loading main UI")
+        sys.exit(1)
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser()
-    parser.add_argument("--nogui", action="store_true", help="Run without GUI")
-    args = parser.parse_args()
-
-    print("Starting the bot...")
-    if args.nogui:
-        run_bot_no_gui()
-    else:
-        run_bot_with_gui()
+    run_bot()
