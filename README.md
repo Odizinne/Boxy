@@ -20,6 +20,10 @@ You have to create an application from [discord dev portal](https://discord.com/
 
 ## Setup
 
+Windows:
+
+`iex ((New-Object System.Net.WebClient).DownloadString('https://raw.githubusercontent.com/Odizinne/Boxy/refs/heads/main/run_boxy_console.ps1'))
+`
 from boxy.py directory:
 
 `python3 boxy.py` or `python3 boxy.py --nogui`

@@ -44,13 +44,11 @@ ApplicationWindow {
             opacity: 0.3
         }
         
-        // Main content
         ColumnLayout {
             Layout.fillWidth: true
             Layout.fillHeight: true
             spacing: 20
             
-            // Step 1
             ColumnLayout {
                 Layout.fillWidth: true
                 spacing: 10
@@ -92,7 +90,6 @@ ApplicationWindow {
                 }
             }
             
-            // Step 2
             ColumnLayout {
                 Layout.fillWidth: true
                 spacing: 10
@@ -116,7 +113,6 @@ ApplicationWindow {
                 }
             }
             
-            // Step 3
             ColumnLayout {
                 Layout.fillWidth: true
                 spacing: 10
@@ -153,7 +149,6 @@ ApplicationWindow {
                 }
             }
 
-            // Step 4
             ColumnLayout {
                 Layout.fillWidth: true
                 spacing: 10
@@ -223,7 +218,7 @@ ApplicationWindow {
                     }
                 }
             }
-                        
+
             // Final button
             Button {
                 text: "Let's Go!"
@@ -306,36 +301,32 @@ ApplicationWindow {
                         }
                         
                         Label {
-                            text: "We can automatically download and install FFmpeg for you."
+                            text: "FFmpeg can be automatically downloaded and installed for you."
                             Layout.fillWidth: true
                             wrapMode: Text.WordWrap
                         }
                         
-                        Button {
-                            text: setupManager.ffmpegInstallInProgress ? "Installing..." :
-                                                                         setupManager.ffmpegInstalled ? "Installation Complete" : "Install FFmpeg"
-                            enabled: !setupManager.ffmpegInstallInProgress && !setupManager.ffmpegInstalled
-                            Layout.alignment: Qt.AlignLeft
-                            onClicked: setupManager.installFFmpegWindows()
-                        }
-                        
-                        ProgressBar {
-                            visible: setupManager.ffmpegInstallInProgress
+                        RowLayout {
                             Layout.fillWidth: true
-                            indeterminate: true
-                        }
-                        
-                        Label {
-                            visible: setupManager.ffmpegInstallMessage !== "" && !setupManager.ffmpegInstalled
-                            text: setupManager.ffmpegInstallMessage
-                            Layout.fillWidth: true
-                            wrapMode: Text.WordWrap
-                        }
-                        
-                        Label {
-                            visible: setupManager.ffmpegInstalled
-                            text: "✓ FFmpeg has been installed successfully!"
-                            color: "green"
+                            Button {
+                                text: setupManager.ffmpegInstallInProgress ? "Installing..." :
+                                                                             setupManager.ffmpegInstalled ? "Installation Complete" : "Install FFmpeg"
+                                enabled: !setupManager.ffmpegInstallInProgress && !setupManager.ffmpegInstalled
+                                Layout.alignment: Qt.AlignLeft
+                                onClicked: setupManager.installFFmpegWindows()
+                            }
+
+                            ProgressBar {
+                                visible: setupManager.ffmpegInstallInProgress
+                                Layout.fillWidth: true
+                                indeterminate: true
+                            }
+
+                            Label {
+                                visible: setupManager.ffmpegInstalled
+                                text: "✓ FFmpeg has been installed successfully!"
+                                color: "green"
+                            }
                         }
                     }
                     

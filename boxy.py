@@ -1229,4 +1229,5 @@ def start_main_app(app, engine, token):
         sys.exit(1)
 
 if __name__ == "__main__":
+    print("Starting Boxy GUI")
     run_bot()
