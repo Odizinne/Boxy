@@ -6,6 +6,8 @@ import Qt.labs.platform as Platform
 import QtCore
 import QtQuick.Templates as T
 
+import "."
+
 ApplicationWindow {
     visible: true
     id: root
@@ -53,7 +55,6 @@ ApplicationWindow {
         }
         botBridge.save_playlist(playlistName.text, items)
         savePopup.visible = true
-        hideTimer.start()
     }
 
     Shortcut {
@@ -890,248 +891,21 @@ ApplicationWindow {
     }
 
 
-    Popup {
+    SavePopup {
         id: savePopup
         parent: playlistView
         anchors.centerIn: parent
-        width: saveLabel.width + 40
-        height: saveLabel.height + 30
-        T.Overlay.modal: Rectangle {
-            color: root.Universal.altMediumLowColor 
-        }
-        T.Overlay.modeless: Rectangle {
-            color: root.Universal.baseLowColor 
-        }
-        enter: Transition {
-            NumberAnimation { property: "opacity"; from: 0.0; to: 1.0; easing.type: Easing.Linear; duration: 83 }
-            NumberAnimation { property: "scale"; from: savePopup.modal ? 1.05 : 1; to: 1; easing.type: Easing.OutCubic; duration: 167 }
-        }
-        exit: Transition {
-            NumberAnimation { property: "opacity"; from: 1.0; to: 0.0; easing.type: Easing.Linear; duration: 83 }
-            NumberAnimation { property: "scale"; from: 1; to: savePopup.modal ? 1.05 : 1; easing.type: Easing.OutCubic; duration: 167 }
-        }
-
-        Label {
-            id: saveLabel
-            font.pixelSize: 14
-            anchors.centerIn: parent
-            text: "Playlist saved successfully"
-        }
-
-        Timer {
-            id: hideTimer
-            interval: 2500
-            onTriggered: savePopup.close()
-        }
-
-        onOpened: hideTimer.start()
     }
 
-    Popup {
+    LoadPopup {
         id: playlistSelectorPopup
         parent: playlistView
-        width: 350
-        height: 350
         anchors.centerIn: parent
-        modal: true
-        closePolicy: Popup.CloseOnEscape | Popup.CloseOnPressOutside
-
-        T.Overlay.modal: Rectangle {
-            color: root.Universal.altMediumLowColor 
-        }
-        T.Overlay.modeless: Rectangle {
-            color: root.Universal.baseLowColor 
-        }
-        enter: Transition {
-            NumberAnimation { property: "opacity"; from: 0.0; to: 1.0; easing.type: Easing.Linear; duration: 83 }
-            NumberAnimation { property: "scale"; from: playlistSelectorPopup.modal ? 1.05 : 1; to: 1; easing.type: Easing.OutCubic; duration: 167 }
-        }
-        exit: Transition {
-            NumberAnimation { property: "opacity"; from: 1.0; to: 0.0; easing.type: Easing.Linear; duration: 83 }
-            NumberAnimation { property: "scale"; from: 1; to: playlistSelectorPopup.modal ? 1.05 : 1; easing.type: Easing.OutCubic; duration: 167 }
-        }
-
-        ColumnLayout {
-            anchors.fill: parent
-            anchors.margins: 0
-            spacing: 10
-
-            ScrollView {
-                Layout.fillWidth: true
-                Layout.fillHeight: true
-                clip: true
-                ScrollBar.vertical.policy: playlistList.model.count > 5 ?
-                                               ScrollBar.AlwaysOn : ScrollBar.AlwaysOff
-
-                ListView {
-                    id: playlistList
-                    model: ListModel {}
-                    clip: true
-                    highlightMoveDuration: 0
-                    currentIndex: 0
-                    boundsBehavior: Flickable.StopAtBounds
-
-                    delegate: ItemDelegate {
-                        width: playlistList.width
-                        height: 40
-                        required property string name
-                        required property string filePath
-                        required property int index
-
-                        RowLayout {
-                            anchors.fill: parent
-                            spacing: 10
-                            anchors.leftMargin: 10
-
-                            Label {
-                                text: name
-                                Layout.fillWidth: true
-                                elide: Text.ElideRight
-                                Layout.alignment: Qt.AlignCenter
-                            }
-
-                            Button {
-                                Layout.alignment: Qt.AlignCenter
-                                icon.source: "icons/delete.png"
-                                icon.width: width / 3
-                                icon.height: height / 3
-                                visible: filePath !== ""
-                                flat: true
-                                onClicked: {
-                                    botBridge.delete_playlist(filePath)
-                                    playlistList.model.remove(index)
-                                }
-                            }
-                        }
-
-                        onClicked: {
-                            if (filePath !== "") {
-                                botBridge.load_playlist(filePath)
-                                playlistSelectorPopup.close()
-                            }
-                        }
-                    }
-                }
-            }
-
-            Button {
-                text: "Open Playlist Folder"
-                Layout.fillWidth: true
-                onClicked: {
-                    Qt.openUrlExternally("file:///" + botBridge.get_playlists_directory())
-                    playlistSelectorPopup.close()
-                }
-            }
-
-            Button {
-                text: "Close"
-                Layout.fillWidth: true
-                onClicked: playlistSelectorPopup.close()
-            }
-        }
-
-        onVisibleChanged: {
-            if (visible) {
-                playlistList.model.clear()
-                let playlists = botBridge.get_playlist_files()
-
-                if (playlists.length === 0) {
-                    playlistList.model.append({
-                                                  name: "No playlists found",
-                                                  filePath: "",
-                                                  enabled: false
-                                              })
-                } else {
-                    playlists.sort((a, b) => a.name.toLowerCase().localeCompare(b.name.toLowerCase()))
-
-                    playlists.forEach(function(playlist) {
-                        playlistList.model.append({
-                                                      name: playlist.name,
-                                                      filePath: playlist.filePath,
-                                                      enabled: true
-                                                  })
-                    })
-                }
-            }
-        }
     }
 
-    Popup {
+    PlaylistPromptPopup {
         id: playlistPopup
         parent: playlistView
         anchors.centerIn: parent
-        height: playlistLayout.height + 30
-        modal: true
-        closePolicy: Popup.CloseOnEscape
-        T.Overlay.modal: Rectangle {
-            color: root.Universal.altMediumLowColor 
-        }
-        T.Overlay.modeless: Rectangle {
-            color: root.Universal.baseLowColor 
-        }
-        enter: Transition {
-            NumberAnimation { property: "opacity"; from: 0.0; to: 1.0; easing.type: Easing.Linear; duration: 83 }
-            NumberAnimation { property: "scale"; from: playlistPopup.modal ? 1.05 : 1; to: 1; easing.type: Easing.OutCubic; duration: 167 }
-        }
-        exit: Transition {
-            NumberAnimation { property: "opacity"; from: 1.0; to: 0.0; easing.type: Easing.Linear; duration: 83 }
-            NumberAnimation { property: "scale"; from: 1; to: playlistPopup.modal ? 1.05 : 1; easing.type: Easing.OutCubic; duration: 167 }
-        }
-        ColumnLayout {
-            id: playlistLayout
-            anchors.centerIn: parent
-            spacing: 14
-
-            Label {
-                text: "It looks like you're trying to add a playlist.\nWould you like to add the entire playlist or just the current song?"
-                horizontalAlignment: Text.AlignHCenter
-                Layout.fillWidth: true
-                wrapMode: Text.Wrap
-            }
-
-            RowLayout {
-                Layout.alignment: Qt.AlignHCenter
-                spacing: 14
-
-                Button {
-                    text: "Current Song"
-                    onClicked: {
-                        let cleanUrl = newItemInput.text.trim().split("&list=")[0]
-                        
-                        let idx = playlistModel.count
-                        playlistModel.append({
-                                                 "userTyped": cleanUrl,
-                                                 "url": "",
-                                                 "resolvedTitle": "",
-                                                 "channelName": "",
-                                                 "isResolving": true
-                                             })
-                        botBridge.resolve_title(idx, cleanUrl)
-                        newItemInput.text = ""
-                        playlistPopup.close()
-                    }
-                }
-
-                Button {
-                    text: "Entire Playlist"
-                    onClicked: {
-                        let urls = botBridge.extract_urls_from_playlist(newItemInput.text.trim())
-                        for (let url of urls) {
-                            let idx = playlistModel.count
-                            playlistModel.append({
-                                                     "userTyped": url,
-                                                     "url": "",
-                                                     "resolvedTitle": "",
-                                                     "channelName": "",
-                                                     "isResolving": true
-                                                 })
-                            botBridge.resolve_title(idx, url)
-                        }
-                        newItemInput.text = ""
-                        playlistPopup.close()
-                    }
-                }
-            }
-        }
     }
 }
