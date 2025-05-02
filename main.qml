@@ -4,6 +4,7 @@ import QtQuick.Layouts
 import QtQuick.Controls.Universal
 import Qt.labs.platform as Platform
 import QtCore
+import QtQuick.Templates as T
 
 ApplicationWindow {
     visible: true
@@ -12,9 +13,8 @@ ApplicationWindow {
     height: 446
     minimumWidth: 800
     minimumHeight: 446
-
     title: "Boxy GUI"
-    Universal.theme: Universal.System
+    Universal.theme: Universal.Dark
     Universal.accent: Universal.Orange
     property bool songLoaded: false
     property var shufflePlayedIndices: []
@@ -896,24 +896,19 @@ ApplicationWindow {
         anchors.centerIn: parent
         width: saveLabel.width + 40
         height: saveLabel.height + 30
-        opacity: 0
-
-        enter: Transition {
-            NumberAnimation {
-                property: "opacity"
-                from: 0.0
-                to: 1.0
-                duration: 200
-            }
+        T.Overlay.modal: Rectangle {
+            color: root.Universal.altMediumLowColor 
         }
-
+        T.Overlay.modeless: Rectangle {
+            color: root.Universal.baseLowColor 
+        }
+        enter: Transition {
+            NumberAnimation { property: "opacity"; from: 0.0; to: 1.0; easing.type: Easing.Linear; duration: 83 }
+            NumberAnimation { property: "scale"; from: control.modal ? 1.05 : 1; to: 1; easing.type: Easing.OutCubic; duration: 167 }
+        }
         exit: Transition {
-            NumberAnimation {
-                property: "opacity"
-                from: 1.0
-                to: 0.0
-                duration: 200
-            }
+            NumberAnimation { property: "opacity"; from: 1.0; to: 0.0; easing.type: Easing.Linear; duration: 83 }
+            NumberAnimation { property: "scale"; from: 1; to: control.modal ? 1.05 : 1; easing.type: Easing.OutCubic; duration: 167 }
         }
 
         Label {
@@ -940,24 +935,20 @@ ApplicationWindow {
         anchors.centerIn: parent
         modal: true
         closePolicy: Popup.CloseOnEscape | Popup.CloseOnPressOutside
-        opacity: 0
 
-        enter: Transition {
-            NumberAnimation {
-                property: "opacity"
-                from: 0.0
-                to: 1.0
-                duration: 200
-            }
+        T.Overlay.modal: Rectangle {
+            color: root.Universal.altMediumLowColor 
         }
-
+        T.Overlay.modeless: Rectangle {
+            color: root.Universal.baseLowColor 
+        }
+        enter: Transition {
+            NumberAnimation { property: "opacity"; from: 0.0; to: 1.0; easing.type: Easing.Linear; duration: 83 }
+            NumberAnimation { property: "scale"; from: control.modal ? 1.05 : 1; to: 1; easing.type: Easing.OutCubic; duration: 167 }
+        }
         exit: Transition {
-            NumberAnimation {
-                property: "opacity"
-                from: 1.0
-                to: 0.0
-                duration: 200
-            }
+            NumberAnimation { property: "opacity"; from: 1.0; to: 0.0; easing.type: Easing.Linear; duration: 83 }
+            NumberAnimation { property: "scale"; from: 1; to: control.modal ? 1.05 : 1; easing.type: Easing.OutCubic; duration: 167 }
         }
 
         ColumnLayout {
@@ -989,19 +980,18 @@ ApplicationWindow {
 
                         RowLayout {
                             anchors.fill: parent
-                            anchors.margins: 10
                             spacing: 10
+                            anchors.leftMargin: 10
 
                             Label {
                                 text: name
                                 Layout.fillWidth: true
                                 elide: Text.ElideRight
-                                anchors.verticalCenter: parent.verticalCenter
-
+                                Layout.alignment: Qt.AlignCenter
                             }
 
                             Button {
-                                anchors.verticalCenter: parent.verticalCenter
+                                Layout.alignment: Qt.AlignCenter
                                 icon.source: "icons/delete.png"
                                 icon.width: width / 3
                                 icon.height: height / 3
@@ -1073,7 +1063,20 @@ ApplicationWindow {
         height: playlistLayout.height + 30
         modal: true
         closePolicy: Popup.CloseOnEscape
-
+        T.Overlay.modal: Rectangle {
+            color: root.Universal.altMediumLowColor 
+        }
+        T.Overlay.modeless: Rectangle {
+            color: root.Universal.baseLowColor 
+        }
+        enter: Transition {
+            NumberAnimation { property: "opacity"; from: 0.0; to: 1.0; easing.type: Easing.Linear; duration: 83 }
+            NumberAnimation { property: "scale"; from: control.modal ? 1.05 : 1; to: 1; easing.type: Easing.OutCubic; duration: 167 }
+        }
+        exit: Transition {
+            NumberAnimation { property: "opacity"; from: 1.0; to: 0.0; easing.type: Easing.Linear; duration: 83 }
+            NumberAnimation { property: "scale"; from: 1; to: control.modal ? 1.05 : 1; easing.type: Easing.OutCubic; duration: 167 }
+        }
         ColumnLayout {
             id: playlistLayout
             anchors.centerIn: parent
