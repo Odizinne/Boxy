@@ -6,9 +6,9 @@ yt-dlp discord music bot
 
 - Python 3.13
 - Install dependencies: `pip install -r requirements.txt`
-- ffmpeg added to path:
+- ffmpeg available:
   
-  Windows: download ffmpeg binaries [here](https://github.com/BtbN/FFmpeg-Builds/releases) and add it to path / next to python executable
+  Windows: Automated installation available in the setup page
 
   Ubuntu: `sudo apt install ffmpeg`
 
@@ -16,44 +16,28 @@ yt-dlp discord music bot
 
   Arch: `sudo pacman -S ffmpeg`
 
-You have to create an application from [discord dev portal](https://discord.com/developers/docs/intro).
-
 ## Setup
 
-Windows:
+### Windows
 
-`iex ((New-Object System.Net.WebClient).DownloadString('https://raw.githubusercontent.com/Odizinne/Boxy/refs/heads/main/run_boxy_console.ps1'))
-`
-from boxy.py directory:
+Open powershell and run:
 
-`python3 boxy.py` or `python3 boxy.py --nogui`
+```powershell
+iex ((New-Object System.Net.WebClient).DownloadString('https://raw.githubusercontent.com/Odizinne/Boxy/refs/heads/main/run_boxy_console.ps1'))
+```
 
-On first run `token.txt` will be created. Replace placeholder with your bot token from your application.
+This command will install python3.13 and required dependencies, as well as creating a desktop shortcut.
 
-You can then create an oAuth2 link.
+### Linux / UNIX
 
-Give it the bot scope.
+from Boxy directory:
 
-Under permissions setions, check the following:
-- Send messages
-- Read message history
-- Connect
-- Speak
-- View channels
-
-You can then invite boxy in your server.
+```bash
+pip install -r requierments.txt`
+python3 boxy.py
+```
 
 ## Usage 
-
-### No gui mode
-
-Discord commands:
-- `/play YOUTUBE_URL / KEYWORDS`<br/>
-- `/stop`<br/>
-- `/pause`<br/>
-- `/resume`
-
-### Gui mode
 
 Wait for boxy to connect.
 
