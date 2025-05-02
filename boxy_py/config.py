@@ -1,6 +1,6 @@
 import os
 import platform
-from utils import get_script_dir
+from boxy_py.utils import get_script_dir
 
 def get_config_directory():
     """Get platform-specific config directory"""

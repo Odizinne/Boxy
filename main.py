@@ -1,5 +1,3 @@
-#!/usr/bin/env python3
-
 import sys
 import os
 import argparse
@@ -9,15 +7,15 @@ from PySide6.QtGui import QGuiApplication, QIcon
 from PySide6.QtQml import QQmlApplicationEngine
 from PySide6.QtCore import QUrl
 
-from bot import BoxyBot
-from bridge import BotBridge
-from setup_manager import SetupManager
-from utils import get_script_dir
+from boxy_py.bot import BoxyBot
+from boxy_py.bridge import BotBridge
+from boxy_py.setup_manager import SetupManager
+from boxy_py.utils import get_script_dir
 import discord
 
 def run_bot_no_gui():
     """Run bot without GUI (command line mode)"""
-    from utils import get_token, verify_token
+    from boxy_py.utils import get_token, verify_token
     import asyncio
     
     try:
@@ -74,9 +72,11 @@ def start_main_app(app, engine, token):
     
     bot_thread = threading.Thread(target=bot_runner, daemon=True)
     bot_thread.start()
-    
+    print(get_script_dir())
     # Load the main application UI
-    qml_path = os.path.join(get_script_dir(), "main.qml")
+    qml_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "qml/Main.qml")
+    print(qml_path)
+
     engine.load(QUrl.fromLocalFile(qml_path))
     
     if not engine.rootObjects():
@@ -110,7 +110,7 @@ def run_bot():
         engine.rootContext().setContextProperty("setupManager", setup_manager)
         
         # Load setup QML
-        qml_path = os.path.join(get_script_dir(), "SetupWindow.qml")
+        qml_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "qml/SetupWindow.qml")
         engine.load(QUrl.fromLocalFile(qml_path))
         
         if not engine.rootObjects():

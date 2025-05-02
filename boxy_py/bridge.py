@@ -7,8 +7,8 @@ from PySide6.QtCore import QObject, Signal, Slot, Property, QTimer
 import yt_dlp
 from youtube_search import YoutubeSearch
 
-from utils import delete_file, get_first_video_url, get_script_dir
-import config
+from boxy_py.utils import delete_file, get_first_video_url, get_script_dir
+import boxy_py.config as config
 
 class BotBridge(QObject):
     # Signal definitions

@@ -2,7 +2,7 @@ import asyncio
 import os
 import discord
 from discord.ext import commands
-from utils import get_script_dir, delete_file, get_first_video_url
+from boxy_py.utils import get_script_dir, delete_file, get_first_video_url
 import yt_dlp
 
 class BoxyBot(commands.Bot):

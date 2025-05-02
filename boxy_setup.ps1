@@ -88,7 +88,7 @@ $shortcut = $wshShell.CreateShortcut($shortcutPath)
 
 # Set the target of the shortcut
 $shortcut.TargetPath = $pythonPath
-$shortcut.Arguments = "`"$currentDir\boxy.py`""
+$shortcut.Arguments = "`"$currentDir\main.py`""
 $shortcut.WorkingDirectory = $currentDir.Path  # Set working directory to current location
 $shortcut.IconLocation = "$pythonPath,0" # Optional: set Python icon for the shortcut
 $shortcut.Save()
@@ -102,7 +102,7 @@ Write-Host "Creating 'Boxy (No console)' desktop shortcut..."
 
 $shortcutNoConsole = $wshShell.CreateShortcut($shortcutPathNoConsole)
 $shortcutNoConsole.TargetPath = $pythonwPath
-$shortcutNoConsole.Arguments = "`"$currentDir\boxy.py`""
+$shortcutNoConsole.Arguments = "`"$currentDir\main.py`""
 $shortcutNoConsole.WorkingDirectory = $currentDir.Path
 $shortcutNoConsole.IconLocation = "$pythonwPath,0"
 $shortcutNoConsole.Save()
@@ -110,12 +110,12 @@ $shortcutNoConsole.Save()
 Write-Host "Desktop shortcuts created successfully at $shortcutPath"
 
 
-# Run boxy.py with visible console (normal python) after prompt
-if (Test-Path "$boxyExtractPath\boxy.py") {
-    Write-Host "Launching boxy.py in console mode..."
-    Start-Process -FilePath $pythonPath -ArgumentList "$currentDir\boxy.py" -WindowStyle Normal
+# Run boxy with visible console (normal python) after prompt
+if (Test-Path "$boxyExtractPath\main.py") {
+    Write-Host "Launching Boxy in console mode..."
+    Start-Process -FilePath $pythonPath -ArgumentList "$currentDir\main.py" -WindowStyle Normal
     Write-Host "You can safely close this window."
 } else {
-    Write-Warning "Could not find boxy.py in the current directory."
+    Write-Warning "Could not find main.py in the current directory."
 }
 
