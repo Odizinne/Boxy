@@ -1,6 +1,5 @@
 import os
 import platform
-from boxy_py.utils import get_script_dir
 
 def get_config_directory():
     """Get platform-specific config directory"""
@@ -32,3 +31,20 @@ def get_playlists_directory():
         os.makedirs(playlists_dir)
         
     return playlists_dir
+
+def get_cache_directory():
+    """Get platform-specific audio cache directory"""
+    system = platform.system()
+    
+    if system == "Windows":
+        cache_dir = os.path.join(os.environ.get("LOCALAPPDATA", ""), "Boxy", "audio_files")
+    elif system == "Darwin":  # macOS
+        cache_dir = os.path.join(os.path.expanduser("~"), "Library", "Caches", "Boxy", "audio_files")
+    else:  # Linux and other Unix-like
+        cache_dir = os.path.join(os.path.expanduser("~"), ".cache", "Boxy", "audio_files")
+        
+    # Create directory if it doesn't exist
+    if not os.path.exists(cache_dir):
+        os.makedirs(cache_dir)
+        
+    return cache_dir
