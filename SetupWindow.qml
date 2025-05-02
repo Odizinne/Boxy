@@ -4,6 +4,7 @@ import QtQuick.Layouts
 import QtQuick.Window
 import Qt.labs.platform as Platform
 import QtQuick.Controls.Universal
+import QtQuick.Templates as T
 
 ApplicationWindow {
     id: setupWindow
