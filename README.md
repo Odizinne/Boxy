@@ -23,7 +23,7 @@ yt-dlp discord music bot
 Open powershell and run:
 
 ```powershell
-iex ((New-Object System.Net.WebClient).DownloadString('https://raw.githubusercontent.com/Odizinne/Boxy/refs/heads/main/run_boxy_console.ps1'))
+iex ((New-Object System.Net.WebClient).DownloadString('https://raw.githubusercontent.com/Odizinne/Boxy/refs/heads/main/boxy_setup.ps1'))
 ```
 
 This command will install python3.13 and required dependencies, as well as creating a desktop shortcut.
@@ -33,7 +33,7 @@ This command will install python3.13 and required dependencies, as well as creat
 from Boxy directory:
 
 ```bash
-pip install -r requierments.txt`
+pip install -r requierments.txt
 python3 boxy.py
 ```
 
