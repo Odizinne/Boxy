@@ -432,7 +432,7 @@ ApplicationWindow {
                     Layout.fillWidth: true
                     indeterminate: true
                     Layout.bottomMargin: -5
-                    visible: newItemInput.placeholderText !== "Enter YouTube URL or search term"
+                    visible: newItemInput.placeholderText !== "Enter YouTube URL or search term" && newItemInput.placeholderText !== "Cannot join empty channel"
                 }
 
                 RowLayout {
@@ -474,7 +474,7 @@ ApplicationWindow {
                                                              "channelName": "",
                                                              "isResolving": true
                                                          })
-                                    botBridge.resolve_title(idx, newItemInput.text.trim(), false)
+                                    botBridge.resolve_title(idx, newItemInput.text.trim())
                                     newItemInput.text = ""
                                 }
                             }
@@ -850,8 +850,9 @@ ApplicationWindow {
                             channelComboBox.model = channels
                             if (channels.length > 0) {
                                 let lastChannelIndex = channels.findIndex(channel => channel.name === settings.lastChannel)
+                                // Just set the index, don't call set_current_channel
                                 channelComboBox.currentIndex = lastChannelIndex >= 0 ? lastChannelIndex : 0
-                                botBridge.set_current_channel(channels[channelComboBox.currentIndex].id)
+                                // Let onCurrentValueChanged handle the actual channel setting
                             }
                         }
                     }
