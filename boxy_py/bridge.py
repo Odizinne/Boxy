@@ -312,17 +312,17 @@ class BotBridge(QObject):
             if not self._current_channel or not self._current_server:
                 self.downloadStatusChanged.emit("Please select a server and channel first")
                 return
-    
+
             selected_server = discord.utils.get(self.bot.guilds, id=int(self._current_server))
             if not selected_server:
                 self.downloadStatusChanged.emit("Selected server not found")
                 return
-    
+
             selected_channel = discord.utils.get(selected_server.voice_channels, id=int(self._current_channel))
             if not selected_channel:
                 self.downloadStatusChanged.emit("Selected channel not found")
                 return
-    
+
             # Check if we need to change channels
             need_reconnect = True
             if self.bot.voice_client and self.bot.voice_client.is_connected():
@@ -341,12 +341,12 @@ class BotBridge(QObject):
                     self.songChanged.emit("")
                     self.songLoadedChanged.emit(False)
                     self.voiceConnectedChanged.emit(False)
-    
+
             if need_reconnect:
                 if all(member.bot for member in selected_channel.members):
                     self.downloadStatusChanged.emit("Cannot join empty channel")
                     return
-    
+
                 try:
                     self.bot.voice_client = await selected_channel.connect()
                     self._voice_connected = True
@@ -354,40 +354,40 @@ class BotBridge(QObject):
                 except Exception as e:
                     self.downloadStatusChanged.emit(f"Failed to connect: {str(e)}")
                     return
-    
+
             # IMPORTANT FIX: We need to stop playback and wait for it to completely finish
             # before starting a new playback
             if self.bot.voice_client and (self.bot.voice_client.is_playing() or self.bot.voice_client.is_paused()):
                 # First set a flag that we're changing songs - this prevents on_playback_finished
                 # from resetting the UI state during the transition
                 self._changing_song = True
-                
+
                 # Now stop the current playback
                 self.bot.voice_client.stop()
-                
+
                 # Wait for it to fully stop (important!)
                 await asyncio.sleep(0.3)
             else:
                 self._changing_song = False
-    
+
             # Now reset the playback state manually since we'll skip that in on_playback_finished
             self.stopTimerSignal.emit()
             self._position = 0
             self.positionChanged.emit(0)
-    
+
             # Save repeat mode state and disable temporarily
             was_repeat = self.repeat_mode
             self.repeat_mode = False
-            
+
             # Play the audio
             await self.play_from_gui(url)
-            
+
             # Restore repeat mode
             self.repeat_mode = was_repeat
-            
+
             # Clear the changing flag
             self._changing_song = False
-    
+
         asyncio.run_coroutine_threadsafe(play_wrapper(), self.bot.loop)
 
     async def play_from_gui(self, search):
@@ -919,6 +919,11 @@ class BotBridge(QObject):
         """Set the current voice channel"""
         self._current_channel = channel_id
         self.currentChannelChanged.emit(channel_id)
+
+    @Slot(result=str)
+    def get_cache_directory(self):
+        """Get the audio cache directory path"""
+        return self.audio_cache.cache_dir
 
     #
     # Property Getters/Setters

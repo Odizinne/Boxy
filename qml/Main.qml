@@ -1,5 +1,4 @@
 import QtQuick
-import QtQuick.Controls
 import QtQuick.Layouts
 import QtQuick.Controls.Universal
 import Qt.labs.platform as Platform
@@ -14,7 +13,7 @@ ApplicationWindow {
     width: 800
     height: 446
     minimumWidth: 800
-    minimumHeight: 446
+    minimumHeight: 486
     title: "Boxy GUI"
     Universal.theme: Universal.Dark
     Universal.accent: Universal.Orange
@@ -27,6 +26,85 @@ ApplicationWindow {
         }
         return false;
     }
+
+    header: ToolBar {
+    height: 30
+        ToolButton {
+            id: menuButton
+            height: 30
+            text: "File"
+            onClicked: mainMenu.visible = !mainMenu.visible
+            Menu {
+                id: mainMenu
+                title: qsTr("File")
+                width: 150
+                visible: false
+                enter: Transition {
+                    NumberAnimation { property: "opacity"; from: 0.0; to: 1.0; easing.type: Easing.Linear; duration: 110 }
+                }
+                exit: Transition {
+                    NumberAnimation { property: "opacity"; from: 1.0; to: 0.0; easing.type: Easing.Linear; duration: 110 }
+                }
+
+                CustomMenuItem {
+                    height: 40
+                    text: "Open cache folder"
+                    onTriggered: Qt.openUrlExternally("file:///" + botBridge.get_cache_directory())
+                }
+                MenuSeparator {}
+
+                CustomMenuItem {
+                    height: 40
+                    text: qsTr("Exit")
+                    onTriggered: Qt.quit()
+                }
+            }
+        }
+        ToolButton {
+            anchors.left: menuButton.right
+            height: 30
+            text: "Playlist"
+            onClicked: playlistMenu.visible = !playlistMenu.visible
+            Menu {
+                id: playlistMenu
+                title: qsTr("Playlist")
+                width: 150
+                visible: false
+                enter: Transition {
+                    NumberAnimation { property: "opacity"; from: 0.0; to: 1.0; easing.type: Easing.Linear; duration: 110 }
+                }
+                exit: Transition {
+                    NumberAnimation { property: "opacity"; from: 1.0; to: 0.0; easing.type: Easing.Linear; duration: 110 }
+                }
+
+                CustomMenuItem {
+                    text: qsTr("New")
+                    height: 40
+                    enabled: root.connectedToAPI && playlistModel.count > 0 && !root.isResolvingAny
+                    onTriggered: {
+                        playlistModel.clear()
+                        playlistName.text = ""
+                    }
+                }
+
+                CustomMenuItem {
+                    text: qsTr("Load")
+                    height: 40
+                    enabled: root.connectedToAPI && !root.isResolvingAny
+                    onTriggered: playlistSelectorPopup.open()
+                }
+
+                CustomMenuItem {
+                    text: qsTr("Save")
+                    height: 40
+                    enabled: playlistName.text.trim() !== "" && playlistModel.count > 0 && !root.isResolvingAny
+                    onTriggered: root.savePlaylist()
+                }
+            }
+        }
+    }
+    
+    
 
     Settings {
         id: settings
@@ -157,8 +235,8 @@ ApplicationWindow {
 
     GridLayout {
         anchors.fill: parent
-        columnSpacing: 14
-        rowSpacing: 14
+        columnSpacing: 20
+        rowSpacing: 20
         anchors.margins: 14
         columns: 2
         rows: 2
@@ -178,28 +256,6 @@ ApplicationWindow {
                 RowLayout {
                     Layout.fillWidth: true
                     spacing: 10
-
-                    Button {
-                        text: "New"
-                        enabled: root.connectedToAPI && playlistModel.count > 0 && !root.isResolvingAny
-                        onClicked: {
-                            playlistModel.clear()
-                            playlistName.text = ""
-                        }
-                    }
-
-                    Button {
-                        text: "Load"
-                        enabled: root.connectedToAPI && !root.isResolvingAny
-                        onClicked: playlistSelectorPopup.open()
-                    }
-
-                    Button {
-                        id: saveButton
-                        text: "Save"
-                        enabled: playlistName.text.trim() !== "" && playlistModel.count > 0 && !root.isResolvingAny
-                        onClicked: root.savePlaylist()
-                    }
 
                     TextField {
                         id: playlistName
