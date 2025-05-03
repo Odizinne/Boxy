@@ -20,6 +20,7 @@ ApplicationWindow {
     property bool songLoaded: false
     property var shufflePlayedIndices: []
     property bool connectedToAPI: false
+    property bool isAutoAdvancing: false
     property bool isResolvingAny: {
         for(let i = 0; i < playlistModel.count; i++) {
             if(playlistModel.get(i).isResolving) return true;
@@ -186,51 +187,97 @@ ApplicationWindow {
             })
         }
 
-        function onSongLoadedChanged(loaded) {
-            // Only auto-advance if we're not manually navigating
-            if (!loaded && !botBridge.repeat_mode && stopPlaylistButton.isPlaying && !playlistView.manualNavigation) {
-                if (playlistView.currentIndex < playlistModel.count - 1) {
-                    if (shuffleButton.checked) {
-                        // Get available indices (not played yet)
-                        let availableIndices = []
-                        for (let i = 0; i < playlistModel.count; i++) {
-                            if (!shufflePlayedIndices.includes(i)) {
-                                availableIndices.push(i)
-                            }
-                        }
-
-                        // If all songs were played, clear the shuffle list and stop playing
-                        if (availableIndices.length === 0) {
-                            shufflePlayedIndices = []
-                            stopPlaylistButton.isPlaying = false
-                            playlistView.currentIndex = 0
-                            return
-                        }
-
-                        // Pick random index from available ones
-                        const randomIndex = Math.floor(Math.random() * availableIndices.length)
-                        const nextIndex = availableIndices[randomIndex]
-
-                        // Add to played indices
-                        shufflePlayedIndices.push(nextIndex)
-
-                        // Play the song
-                        playlistView.currentIndex = nextIndex
-                        let item = playlistModel.get(nextIndex)
-                        botBridge.play_url(item.url || item.userTyped)
-                    } else {
-                        // Normal sequential play
-                        playlistView.currentIndex++
-                        let item = playlistModel.get(playlistView.currentIndex)
-                        botBridge.play_url(item.url || item.userTyped)
+function onSongLoadedChanged(loaded) {
+    console.log("DEBUG: onSongLoadedChanged called with loaded =", loaded);
+    console.log("DEBUG: Current conditions - repeat_mode:", botBridge.repeat_mode, 
+                "isPlaying:", stopPlaylistButton.isPlaying, 
+                "manualNavigation:", playlistView.manualNavigation,
+                "currentIndex:", playlistView.currentIndex,
+                "isAutoAdvancing:", isAutoAdvancing,
+                "playlistCount:", playlistModel.count);
+    
+    // If loaded is true, reset the auto-advancing flag
+    if (loaded) {
+        isAutoAdvancing = false;
+        console.log("DEBUG: Song loaded, reset isAutoAdvancing to false");
+    }
+    
+    // Only auto-advance if we're not manually navigating AND not already auto-advancing
+    if (!loaded && !botBridge.repeat_mode && stopPlaylistButton.isPlaying && 
+        !playlistView.manualNavigation && !isAutoAdvancing) {
+        
+        console.log("DEBUG: All conditions for auto-advance are TRUE");
+        
+        if (playlistView.currentIndex < playlistModel.count - 1) {
+            console.log("DEBUG: Not at end of playlist, will advance");
+            
+            // Set auto-advancing flag to prevent multiple advances
+            isAutoAdvancing = true;
+            console.log("DEBUG: Set isAutoAdvancing to true");
+            
+            if (shuffleButton.checked) {
+                console.log("DEBUG: Shuffle is enabled");
+                // Get available indices (not played yet)
+                let availableIndices = []
+                for (let i = 0; i < playlistModel.count; i++) {
+                    if (!shufflePlayedIndices.includes(i)) {
+                        availableIndices.push(i)
                     }
-                } else {
+                }
+                console.log("DEBUG: Available indices:", JSON.stringify(availableIndices));
+
+                // If all songs were played, clear the shuffle list and stop playing
+                if (availableIndices.length === 0) {
+                    console.log("DEBUG: No available indices left in shuffle, stopping playback");
+                    shufflePlayedIndices = []
                     stopPlaylistButton.isPlaying = false
                     playlistView.currentIndex = 0
+                    isAutoAdvancing = false;
+                    return
                 }
+
+                // Pick random index from available ones
+                const randomIndex = Math.floor(Math.random() * availableIndices.length)
+                const nextIndex = availableIndices[randomIndex]
+                console.log("DEBUG: Selected next index in shuffle:", nextIndex);
+
+                // Add to played indices
+                shufflePlayedIndices.push(nextIndex)
+                console.log("DEBUG: Updated shufflePlayedIndices:", JSON.stringify(shufflePlayedIndices));
+
+                // Play the song
+                console.log("DEBUG: Setting currentIndex to", nextIndex);
+                playlistView.currentIndex = nextIndex
+                let item = playlistModel.get(nextIndex)
+                console.log("DEBUG: About to call play_url with:", item.url || item.userTyped);
+                botBridge.play_url(item.url || item.userTyped)
+            } else {
+                // Normal sequential play
+                console.log("DEBUG: Sequential play, incrementing index");
+                playlistView.currentIndex++
+                console.log("DEBUG: New currentIndex:", playlistView.currentIndex);
+                let item = playlistModel.get(playlistView.currentIndex)
+                console.log("DEBUG: About to call play_url with:", item.url || item.userTyped);
+                botBridge.play_url(item.url || item.userTyped)
             }
-            playlistView.manualNavigation = false
+        } else {
+            console.log("DEBUG: At end of playlist, stopping playback");
+            stopPlaylistButton.isPlaying = false
+            playlistView.currentIndex = 0
+            isAutoAdvancing = false;
         }
+    } else {
+        console.log("DEBUG: Not auto-advancing because:");
+        if (loaded) console.log("  - loaded is TRUE");
+        if (botBridge.repeat_mode) console.log("  - repeat_mode is TRUE");
+        if (!stopPlaylistButton.isPlaying) console.log("  - isPlaying is FALSE");
+        if (playlistView.manualNavigation) console.log("  - manualNavigation is TRUE");
+        if (isAutoAdvancing) console.log("  - isAutoAdvancing is TRUE (already advancing)");
+    }
+    
+    console.log("DEBUG: Setting manualNavigation to false");
+    playlistView.manualNavigation = false
+}
     }
 
     GridLayout {
