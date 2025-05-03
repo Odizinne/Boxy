@@ -5,10 +5,10 @@ import QtQuick
 Popup {
     id: control
     T.Overlay.modal: Rectangle {
-        color: control.Universal.altMediumLowColor 
+        color: control.Universal.altMediumLowColor
     }
     T.Overlay.modeless: Rectangle {
-        color: control.Universal.baseLowColor 
+        color: control.Universal.baseLowColor
     }
     enter: Transition {
         NumberAnimation { property: "opacity"; from: 0.0; to: 1.0; easing.type: Easing.Linear; duration: 83 }

@@ -9,8 +9,8 @@ MenuItem {
         implicitHeight: 30
 
         color: !control.enabled ? control.Universal.altMediumLowColor :
-                control.down ? control.Universal.listMediumColor :
-                control.highlighted ? control.Universal.listLowColor : control.Universal.altMediumLowColor
+                                  control.down ? control.Universal.listMediumColor :
+                                                 control.highlighted ? control.Universal.listLowColor : control.Universal.altMediumLowColor
 
         Rectangle {
             x: 1; y: 1

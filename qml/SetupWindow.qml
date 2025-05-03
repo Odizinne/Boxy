@@ -247,10 +247,10 @@ ApplicationWindow {
         height: popupLyt.implicitHeight + 80
         
         T.Overlay.modal: Rectangle {
-            color: setupWindow.Universal.altMediumLowColor 
+            color: setupWindow.Universal.altMediumLowColor
         }
         T.Overlay.modeless: Rectangle {
-            color: setupWindow.Universal.baseLowColor 
+            color: setupWindow.Universal.baseLowColor
         }
         enter: Transition {
             NumberAnimation { property: "opacity"; from: 0.0; to: 1.0; easing.type: Easing.Linear; duration: 83 }
