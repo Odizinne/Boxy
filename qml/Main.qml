@@ -47,14 +47,14 @@ ApplicationWindow {
                 }
 
                 CustomMenuItem {
-                    height: 40
+                    height: 35
                     text: "Open cache folder"
                     onTriggered: Qt.openUrlExternally("file:///" + botBridge.get_cache_directory())
                 }
                 MenuSeparator {}
 
                 CustomMenuItem {
-                    height: 40
+                    height: 35
                     text: qsTr("Exit")
                     onTriggered: Qt.quit()
                 }
@@ -79,7 +79,7 @@ ApplicationWindow {
 
                 CustomMenuItem {
                     text: qsTr("New")
-                    height: 40
+                    height: 35
                     enabled: root.connectedToAPI && playlistModel.count > 0 && !root.isResolvingAny
                     onTriggered: {
                         playlistModel.clear()
@@ -89,14 +89,14 @@ ApplicationWindow {
 
                 CustomMenuItem {
                     text: qsTr("Load")
-                    height: 40
+                    height: 35
                     enabled: root.connectedToAPI && !root.isResolvingAny
                     onTriggered: playlistSelectorPopup.open()
                 }
 
                 CustomMenuItem {
                     text: qsTr("Save")
-                    height: 40
+                    height: 35
                     enabled: playlistName.text.trim() !== "" && playlistModel.count > 0 && !root.isResolvingAny
                     onTriggered: root.savePlaylist()
                 }

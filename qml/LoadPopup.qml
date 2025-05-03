@@ -53,9 +53,9 @@ import "."
 
                             Button {
                                 Layout.alignment: Qt.AlignCenter
-                                icon.source: "icons/delete.png"
-                                icon.width: width / 3
-                                icon.height: height / 3
+                                icon.source: "icons/trash.png"
+                                icon.width: width / 2
+                                icon.height: height / 2
                                 visible: filePath !== ""
                                 flat: true
                                 onClicked: {
