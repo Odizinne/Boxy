@@ -1,5 +1,5 @@
 # Boxy
-yt-dlp discord music bot
+yt-dlp discord music bot made for my bf DND sessions
 
 ![image](.assets/screenshot.png)
 ## Requierments
@@ -39,6 +39,9 @@ python3 boxy.py
 
 ## Usage 
 
-Wait for boxy to connect.
+Follow the setup instructions and wait for boxy to connect.
 
-Select server / channel where boxy should join, paste url or type search to textinput and press enter.
+Select server / channel where boxy should join, paste url or type search to textinput and press enter.  
+Double click on the song once fetched has finished to start playing.  
+Songs are automatically cached to avoid having to redownload each time.  
+Go easy with the play / pause and the timeline, discord does not seems to like it (it will create lag).
