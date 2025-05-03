@@ -262,6 +262,7 @@ ApplicationWindow {
                         text: "Download All"
                         enabled: root.connectedToAPI && playlistModel.count > 0 && !root.isResolvingAny && !downloadProgress.visible
                         onClicked: {
+                            stopPlaylistButton.click()
                             let urls = []
                             for (let i = 0; i < playlistModel.count; i++) {
                                 let item = playlistModel.get(i)
