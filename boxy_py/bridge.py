@@ -34,6 +34,7 @@ class BotBridge(QObject):
     playlistLoaded = Signal(list, str)
     playlistSaved = Signal(str)
     cacheInfoUpdated = Signal(int, int, str)
+    batchDownloadProgressChanged = Signal(int, int, str)  # current, total, status
 
     def __init__(self, bot):
         super().__init__()
@@ -924,6 +925,70 @@ class BotBridge(QObject):
     def get_cache_directory(self):
         """Get the audio cache directory path"""
         return self.audio_cache.cache_dir
+
+    @Slot("QVariantList")
+    def download_all_playlist_items(self, urls):
+        """Download all playlist items to cache"""
+        async def downloader():
+            self.downloadStatusChanged.emit("Downloading playlist items...")
+            
+            for url in urls:
+                # Skip already cached items
+                cached_item = self.audio_cache.get_cached_file(url)
+                if cached_item:
+                    print(f"Already in cache: {url}")
+                    continue
+                
+                try:
+                    # Create a temporary file for this download
+                    import tempfile
+                    temp_dir = tempfile.mkdtemp()
+                    temp_path = os.path.join(temp_dir, "audio.webm")
+                    
+                    print(f"Downloading {url} to {temp_path}")
+                    
+                    # Download the file
+                    ydl_opts = {
+                        "format": "bestaudio/best",
+                        "outtmpl": temp_path,
+                        "noplaylist": True,
+                        "quiet": False,  # Show detailed progress for debugging
+                    }
+                    
+                    # Make sure we get download info
+                    with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+                        info = ydl.extract_info(url, download=True)
+                    
+                    # Check if file exists and has content
+                    if os.path.exists(temp_path) and os.path.getsize(temp_path) > 0:
+                        print(f"Downloaded file size: {os.path.getsize(temp_path)} bytes")
+                        
+                        # Add to cache
+                        cached_path = self.audio_cache.add_file(url, temp_path, info)
+                        print(f"Added to cache at: {cached_path}")
+                        
+                        # Verify cached file
+                        if os.path.exists(cached_path):
+                            print(f"Cached file size: {os.path.getsize(cached_path)} bytes")
+                    else:
+                        print(f"Error: Downloaded file is missing or empty: {temp_path}")
+                    
+                    # Clean up temp directory
+                    import shutil
+                    shutil.rmtree(temp_dir, ignore_errors=True)
+                        
+                except Exception as e:
+                    print(f"Error downloading {url}: {str(e)}")
+                    # Continue with next item
+            
+            # Done
+            self.downloadStatusChanged.emit("")
+            
+            # Cleanup cache after batch download
+            self.audio_cache.cleanup(self.max_cache_age_days, self.max_cache_size_mb)
+        
+        # Run the downloader in the background
+        asyncio.run_coroutine_threadsafe(downloader(), self.bot.loop)
 
     #
     # Property Getters/Setters

@@ -28,7 +28,7 @@ ApplicationWindow {
     }
 
     header: ToolBar {
-    height: 30
+        height: 30
         ToolButton {
             id: menuButton
             height: 30
@@ -257,6 +257,20 @@ ApplicationWindow {
                     Layout.fillWidth: true
                     spacing: 10
 
+                    Button {
+                        id: downloadAllButton
+                        text: "Download All"
+                        enabled: root.connectedToAPI && playlistModel.count > 0 && !root.isResolvingAny && !downloadProgress.visible
+                        onClicked: {
+                            let urls = []
+                            for (let i = 0; i < playlistModel.count; i++) {
+                                let item = playlistModel.get(i)
+                                urls.push(item.url || item.userTyped)
+                            }
+                            botBridge.download_all_playlist_items(urls)
+                        }
+                    }
+                    
                     TextField {
                         id: playlistName
                         Layout.preferredHeight: addButton.height
