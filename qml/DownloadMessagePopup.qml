@@ -11,7 +11,7 @@ import "."
             id: saveLabel
             font.pixelSize: 14
             anchors.centerIn: parent
-            text: "Playlist saved successfully"
+            text: "Downloading any non cached files"
         }
 
         Timer {

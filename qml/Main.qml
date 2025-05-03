@@ -52,6 +52,12 @@ ApplicationWindow {
                     text: "Open cache folder"
                     onTriggered: Qt.openUrlExternally("file:///" + botBridge.get_cache_directory())
                 }
+
+                CustomMenuItem {
+                    height: 35
+                    text: "Edit token"
+                    onTriggered: tokenPopup.open()
+                }
                 MenuSeparator {}
 
                 CustomMenuItem {
@@ -196,13 +202,11 @@ function onSongLoadedChanged(loaded) {
                 "isAutoAdvancing:", isAutoAdvancing,
                 "playlistCount:", playlistModel.count);
     
-    // If loaded is true, reset the auto-advancing flag
     if (loaded) {
         isAutoAdvancing = false;
         console.log("DEBUG: Song loaded, reset isAutoAdvancing to false");
     }
     
-    // Only auto-advance if we're not manually navigating AND not already auto-advancing
     if (!loaded && !botBridge.repeat_mode && stopPlaylistButton.isPlaying && 
         !playlistView.manualNavigation && !isAutoAdvancing) {
         
@@ -211,13 +215,11 @@ function onSongLoadedChanged(loaded) {
         if (playlistView.currentIndex < playlistModel.count - 1) {
             console.log("DEBUG: Not at end of playlist, will advance");
             
-            // Set auto-advancing flag to prevent multiple advances
             isAutoAdvancing = true;
             console.log("DEBUG: Set isAutoAdvancing to true");
             
             if (shuffleButton.checked) {
                 console.log("DEBUG: Shuffle is enabled");
-                // Get available indices (not played yet)
                 let availableIndices = []
                 for (let i = 0; i < playlistModel.count; i++) {
                     if (!shufflePlayedIndices.includes(i)) {
@@ -226,7 +228,6 @@ function onSongLoadedChanged(loaded) {
                 }
                 console.log("DEBUG: Available indices:", JSON.stringify(availableIndices));
 
-                // If all songs were played, clear the shuffle list and stop playing
                 if (availableIndices.length === 0) {
                     console.log("DEBUG: No available indices left in shuffle, stopping playback");
                     shufflePlayedIndices = []
@@ -236,23 +237,19 @@ function onSongLoadedChanged(loaded) {
                     return
                 }
 
-                // Pick random index from available ones
                 const randomIndex = Math.floor(Math.random() * availableIndices.length)
                 const nextIndex = availableIndices[randomIndex]
                 console.log("DEBUG: Selected next index in shuffle:", nextIndex);
 
-                // Add to played indices
                 shufflePlayedIndices.push(nextIndex)
                 console.log("DEBUG: Updated shufflePlayedIndices:", JSON.stringify(shufflePlayedIndices));
 
-                // Play the song
                 console.log("DEBUG: Setting currentIndex to", nextIndex);
                 playlistView.currentIndex = nextIndex
                 let item = playlistModel.get(nextIndex)
                 console.log("DEBUG: About to call play_url with:", item.url || item.userTyped);
                 botBridge.play_url(item.url || item.userTyped)
             } else {
-                // Normal sequential play
                 console.log("DEBUG: Sequential play, incrementing index");
                 playlistView.currentIndex++
                 console.log("DEBUG: New currentIndex:", playlistView.currentIndex);
@@ -306,7 +303,7 @@ function onSongLoadedChanged(loaded) {
 
                     Button {
                         id: downloadAllButton
-                        text: "Download All"
+                        icon.source: "icons/download.png"
                         enabled: root.connectedToAPI && playlistModel.count > 0 && !root.isResolvingAny && !downloadProgress.visible
                         onClicked: {
                             stopPlaylistButton.click()
@@ -316,6 +313,7 @@ function onSongLoadedChanged(loaded) {
                                 urls.push(item.url || item.userTyped)
                             }
                             botBridge.download_all_playlist_items(urls)
+                            downloadMessagePopup.visible = true
                         }
                     }
                     
@@ -617,7 +615,6 @@ function onSongLoadedChanged(loaded) {
                     Layout.fillWidth: true
                     Layout.fillHeight: true
                     spacing: 10
-                    //Layout.topMargin: 14
 
                     ColumnLayout {
                         Layout.fillWidth: true
@@ -777,11 +774,9 @@ function onSongLoadedChanged(loaded) {
                         enabled: playlistView.currentIndex > 0 && stopPlaylistButton.isPlaying && !downloadProgress.visible
                         onClicked: {
                             if (shuffleButton.checked) {
-                                // Find current index position in shuffle list
                                 const currentPos = shufflePlayedIndices.indexOf(playlistView.currentIndex)
                                 if (currentPos > 0) {
                                     playlistView.manualNavigation = true
-                                    // Get previous played index from shuffle list
                                     const prevIndex = shufflePlayedIndices[currentPos - 1]
                                     playlistView.currentIndex = prevIndex
                                     let item = playlistModel.get(prevIndex)
@@ -825,7 +820,6 @@ function onSongLoadedChanged(loaded) {
                         enabled: playlistView.currentIndex < (playlistModel.count - 1) && stopPlaylistButton.isPlaying && !downloadProgress.visible
                         onClicked: {
                             if (shuffleButton.checked) {
-                                // Get available indices (not played yet)
                                 let availableIndices = []
                                 for (let i = 0; i < playlistModel.count; i++) {
                                     if (!shufflePlayedIndices.includes(i)) {
@@ -833,7 +827,6 @@ function onSongLoadedChanged(loaded) {
                                     }
                                 }
 
-                                // If all songs were played
                                 if (availableIndices.length === 0) {
                                     shufflePlayedIndices = []
                                     stopPlaylistButton.isPlaying = false
@@ -841,7 +834,6 @@ function onSongLoadedChanged(loaded) {
                                     return
                                 }
 
-                                // Pick random index from available ones
                                 const randomIndex = Math.floor(Math.random() * availableIndices.length)
                                 const nextIndex = availableIndices[randomIndex]
 
@@ -969,9 +961,7 @@ function onSongLoadedChanged(loaded) {
                             channelComboBox.model = channels
                             if (channels.length > 0) {
                                 let lastChannelIndex = channels.findIndex(channel => channel.name === settings.lastChannel)
-                                // Just set the index, don't call set_current_channel
                                 channelComboBox.currentIndex = lastChannelIndex >= 0 ? lastChannelIndex : 0
-                                // Let onCurrentValueChanged handle the actual channel setting
                             }
                         }
                     }
@@ -1023,6 +1013,18 @@ function onSongLoadedChanged(loaded) {
 
     PlaylistPromptPopup {
         id: playlistPopup
+        parent: playlistView
+        anchors.centerIn: parent
+    }
+
+    TokenPopup {
+        id: tokenPopup
+        parent: playlistView
+        anchors.centerIn: parent
+    }
+
+    DownloadMessagePopup {
+        id: downloadMessagePopup
         parent: playlistView
         anchors.centerIn: parent
     }

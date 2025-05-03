@@ -1049,3 +1049,44 @@ class BotBridge(QObject):
     def voiceConnected(self):
         """Get whether connected to a voice channel"""
         return self._voice_connected
+    
+    @Slot(result=str)
+    def get_token(self):
+        """Get the current token from the token file"""
+        token_path = config.get_token_path()
+        if os.path.exists(token_path):
+            with open(token_path, "r") as f:
+                return f.read().strip()
+        return ""
+
+    @Slot(str)
+    def save_token(self, token):
+        """Save the token and restart the application"""
+        if not token or token.strip() == "":
+            self.downloadStatusChanged.emit("Invalid token")
+            return
+            
+        # Save the token
+        token_path = config.get_token_path()
+        with open(token_path, "w") as f:
+            f.write(token.strip())
+        
+        # Show a message that we're restarting
+        self.downloadStatusChanged.emit("Token saved. Restarting application...")
+        
+        # Wait a moment for the message to be visible
+        QTimer.singleShot(1500, self.restart_application)
+
+    @Slot()
+    def restart_application(self):
+        """Restart the application"""
+        import sys
+        import os
+
+        # Get current executable path and arguments
+        python = sys.executable
+        script = os.path.abspath(sys.argv[0])
+        args = sys.argv[1:]
+
+        # Exit the current instance and start a new one
+        os.execl(python, python, script, *args)
