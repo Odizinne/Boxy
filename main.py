@@ -5,7 +5,7 @@ import asyncio
 import logging
 from PySide6.QtGui import QGuiApplication, QIcon
 from PySide6.QtQml import QQmlApplicationEngine
-from PySide6.QtCore import QUrl
+from PySide6.QtCore import QUrl, QSettings
 
 from boxy_py.bot import BoxyBot
 from boxy_py.bridge import BotBridge
@@ -34,10 +34,17 @@ def start_main_app(app, engine, token):
     bot = BoxyBot(command_prefix="/", intents=intents)
     bridge = BotBridge(bot)
     bot.bridge = bridge
-    
     bot_started = False
     
     def cleanup():
+        settings = QSettings("Odizinne", "Boxy")
+        clear_on_exit = settings.value("clearCacheOnExit", False, type=bool)
+        if clear_on_exit:
+            if hasattr(bridge, 'audio_cache'):
+                bridge.audio_cache.clear_all()
+            else:
+                print("No audio cache to clear")
+
         if bot_started:
             loop = asyncio.new_event_loop()
             try:

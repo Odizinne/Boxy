@@ -138,7 +138,8 @@ class AudioCache:
     
     def cleanup(self, max_age_days=30, max_size_mb=500):
         """
-        Clean up old cache files.
+        Clean up old cache files to stay within size limits.
+        This is called during normal operation, not on exit.
         
         Args:
             max_age_days: Maximum age of files in days
@@ -159,26 +160,61 @@ class AudioCache:
         items = sorted(self.metadata.items(), key=lambda x: x[1].get('last_accessed', 0))
         
         # Delete files until we're under the max size
-        now = time.time()
         for file_id, info in items:
-            file_path = os.path.join(self.cache_dir, f"{file_id}.webm")
-            file_age_days = (now - info.get('last_accessed', 0)) / (60 * 60 * 24)
-            
-            # Delete if it's too old or we need to free space
-            if file_age_days > max_age_days or total_size > max_size_bytes:
-                if os.path.exists(file_path):
-                    try:
-                        os.remove(file_path)
-                        total_size -= info.get('file_size', 0)
-                        del self.metadata[file_id]
-                    except OSError as e:
-                        print(f"Error deleting cache file {file_path}: {e}")
-                else:
-                    # File is missing, remove from metadata
-                    del self.metadata[file_id]
-            
-            # If we're under the size limit, stop deleting
             if total_size <= max_size_bytes:
                 break
                 
+            file_path = os.path.join(self.cache_dir, f"{file_id}.webm")
+            file_age_days = (time.time() - info.get('last_accessed', 0)) / (60 * 60 * 24)
+            
+            # Skip if file is too new
+            if file_age_days < max_age_days:
+                continue
+                
+            # Try to delete the file
+            if os.path.exists(file_path):
+                try:
+                    os.remove(file_path)
+                    total_size -= info.get('file_size', 0)
+                    del self.metadata[file_id]
+                except PermissionError:
+                    # File is probably in use (playing), skip it
+                    continue
+                except OSError as e:
+                    print(f"Error deleting cache file {file_path}: {e}")
+            else:
+                # File is missing, remove from metadata
+                del self.metadata[file_id]
+                
         self._save_metadata()
+
+    def clear_all(self):
+        """
+        Clear ALL cache files. Used when closing the application.
+        This is different from cleanup() which only removes old files to maintain size limits.
+        """
+        try:
+            # Get all files in the cache directory
+            for filename in os.listdir(self.cache_dir):
+                file_path = os.path.join(self.cache_dir, filename)
+                
+                # Skip the metadata file
+                if filename == "metadata.json":
+                    continue
+                    
+                # Try to delete the file
+                try:
+                    if os.path.isfile(file_path):
+                        os.remove(file_path)
+                except PermissionError:
+                    # File is in use (possibly playing), skip it
+                    continue
+                except OSError as e:
+                    print(f"Error deleting cache file {file_path}: {e}")
+            
+            # Clear metadata
+            self.metadata = {}
+            self._save_metadata()
+            
+        except Exception as e:
+            print(f"Error clearing cache: {e}")

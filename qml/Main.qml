@@ -49,8 +49,8 @@ ApplicationWindow {
 
                 CustomMenuItem {
                     height: 35
-                    text: "Open cache folder"
-                    onTriggered: Qt.openUrlExternally("file:///" + botBridge.get_cache_directory())
+                    text: "Cache settings"
+                    onTriggered: cacheSettingsPopup.open()
                 }
 
                 CustomMenuItem {
@@ -109,14 +109,6 @@ ApplicationWindow {
                 }
             }
         }
-    }
-    
-    Settings {
-        id: settings
-        property bool shuffle: false
-        property bool repeat: false
-        property string lastServer: ""
-        property string lastChannel: ""
     }
 
     function formatTime(seconds) {
@@ -732,10 +724,10 @@ ApplicationWindow {
                             if (checked && repeatButton.checked) {
                                 repeatButton.checked = false
                             }
-                            settings.shuffle = checked
+                            BoxySettings.shuffle = checked
                         }
                         Component.onCompleted: {
-                            checked = settings.shuffle
+                            checked = BoxySettings.shuffle
                         }
                     }
 
@@ -846,10 +838,10 @@ ApplicationWindow {
                             if (checked && shuffleButton.checked) {
                                 shuffleButton.checked = false
                             }
-                            settings.repeat = checked
+                            BoxySettings.repeat = checked
                         }
                         Component.onCompleted: {
-                            checked = settings.repeat
+                            checked = BoxySettings.repeat
                         }
                     }
                 }
@@ -887,7 +879,7 @@ ApplicationWindow {
 
                     onActivated: {
                         if (currentText) {
-                            settings.lastServer = currentText
+                            BoxySettings.lastServer = currentText
                         }
                     }
 
@@ -896,7 +888,7 @@ ApplicationWindow {
                         function onServersChanged(servers) {
                             serverComboBox.model = servers
                             if (servers.length > 0) {
-                                let lastServerIndex = servers.findIndex(server => server.name === settings.lastServer)
+                                let lastServerIndex = servers.findIndex(server => server.name === BoxySettings.lastServer)
                                 serverComboBox.currentIndex = lastServerIndex >= 0 ? lastServerIndex : 0
                                 botBridge.set_current_server(servers[serverComboBox.currentIndex].id)
                             }
@@ -927,7 +919,7 @@ ApplicationWindow {
 
                     onActivated: {
                         if (currentText) {
-                            settings.lastChannel = currentText
+                            BoxySettings.lastChannel = currentText
                         }
                     }
 
@@ -936,7 +928,7 @@ ApplicationWindow {
                         function onChannelsChanged(channels) {
                             channelComboBox.model = channels
                             if (channels.length > 0) {
-                                let lastChannelIndex = channels.findIndex(channel => channel.name === settings.lastChannel)
+                                let lastChannelIndex = channels.findIndex(channel => channel.name === BoxySettings.lastChannel)
                                 channelComboBox.currentIndex = lastChannelIndex >= 0 ? lastChannelIndex : 0
                             }
                         }
@@ -962,9 +954,7 @@ ApplicationWindow {
                     Layout.fillWidth: true
                     enabled: root.connectedToAPI && channelComboBox.currentValue !== undefined && channelComboBox.currentValue !== null
                     onClicked: {
-                        console.log(botBridge.voiceConnected)
                         if (botBridge.voiceConnected) {
-                            console.log("pass")
                             botBridge.disconnect_voice()
                         } else {
                             botBridge.connect_to_channel()
@@ -1002,6 +992,12 @@ ApplicationWindow {
 
     DownloadMessagePopup {
         id: downloadMessagePopup
+        parent: playlistView
+        anchors.centerIn: parent
+    }
+
+    CacheSettingsPopup {
+        id: cacheSettingsPopup
         parent: playlistView
         anchors.centerIn: parent
     }

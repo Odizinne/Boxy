@@ -106,12 +106,11 @@ class BotBridge(QObject):
         
     @Slot(int, int)
     def set_cache_settings(self, max_size_mb, max_age_days):
-        """Update cache settings"""
+        """Update cache settings and cleanup old files"""
         self.max_cache_size_mb = max_size_mb
         self.max_cache_age_days = max_age_days
         self.audio_cache.cleanup(max_age_days, max_size_mb)
-        
-        # Update cache info
+
         cache_info = self.get_cache_info()
         self.cacheInfoUpdated.emit(
             cache_info['total_size'],
@@ -123,28 +122,20 @@ class BotBridge(QObject):
     def clear_cache(self):
         """Clear all cache files"""
         try:
-            for file_id in list(self.audio_cache.metadata.keys()):
-                file_path = os.path.join(self.audio_cache.cache_dir, f"{file_id}.webm")
-                if os.path.exists(file_path):
-                    os.remove(file_path)
-            
-            self.audio_cache.metadata = {}
-            self.audio_cache._save_metadata()
-            
+            self.audio_cache.clear_all()
+
             cache_info = self.get_cache_info()
             self.cacheInfoUpdated.emit(
                 cache_info['total_size'],
                 cache_info['file_count'],
                 cache_info['cache_location']
             )
-            
+
             return True
         except Exception as e:
+            print(f"Error clearing cache: {e}")
             return False
 
-    #
-    # Playlist Management Methods
-    #
     @Slot(str)
     def delete_playlist(self, filepath):
         """Delete a playlist file"""
@@ -570,7 +561,8 @@ class BotBridge(QObject):
             if self.current_audio_file == temp_audio_file and os.path.exists(temp_audio_file):
                 await delete_file(temp_audio_file)
         
-        self.audio_cache.cleanup(self.max_cache_age_days, self.max_cache_size_mb)
+        # Note: We don't clear cache here - that's handled by main.py checking settings
+        # Just cleanup active resources
 
     def _update_position(self):
         """Update the position timer"""
@@ -827,8 +819,8 @@ class BotBridge(QObject):
                     
                     if os.path.exists(temp_path) and os.path.getsize(temp_path) > 0:
                         cached_path = self.audio_cache.add_file(url, temp_path, info)
-                        if os.path.exists(cached_path):
-                            print(f"Cached file size: {os.path.getsize(cached_path)} bytes")
+                        #if os.path.exists(cached_path):
+                            #print(f"Cached file size: {os.path.getsize(cached_path)} bytes")
                     else:
                         print(f"Error: Downloaded file is missing or empty: {temp_path}")
                     
