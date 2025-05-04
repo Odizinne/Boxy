@@ -109,7 +109,7 @@ class BotBridge(QObject):
         """Update cache settings and cleanup old files"""
         self.max_cache_size_mb = max_size_mb
         self.max_cache_age_days = max_age_days
-        self.audio_cache.cleanup(max_age_days, max_size_mb)
+        self.audio_cache.cleanup(max_size_mb)
 
         cache_info = self.get_cache_info()
         self.cacheInfoUpdated.emit(
@@ -459,6 +459,15 @@ class BotBridge(QObject):
                     self.channelNameChanged.emit(channel_name)
                     self.downloadStatusChanged.emit("Caching audio file...")
                     audio_file = self.audio_cache.add_file(url, temp_audio_file, info)
+
+                    # Check cache size and cleanup if needed
+                    from PySide6.QtCore import QSettings
+                    settings = QSettings("Odizinne", "Boxy")
+                    max_cache_size_mb = settings.value("maxCacheSize", 1024, type=int)
+
+                    # Clean up cache to stay within size limit
+                    self.audio_cache.cleanup(max_size_mb=max_cache_size_mb)
+
                     self.current_audio_file = audio_file
                     self.current_url = url
                     self._current_thumbnail_url = info.get("thumbnail") or info.get("thumbnails", [{}])[0].get("url", "")
@@ -821,6 +830,12 @@ class BotBridge(QObject):
 
                     if os.path.exists(temp_path) and os.path.getsize(temp_path) > 0:
                         cached_path = self.audio_cache.add_file(url, temp_path, info)
+
+                        from PySide6.QtCore import QSettings
+                        settings = QSettings("Odizinne", "Boxy")
+                        max_cache_size_mb = settings.value("maxCacheSize", 1024, type=int)
+
+                        self.audio_cache.cleanup(max_size_mb=max_cache_size_mb)
                     else:
                         print(f"Error: Downloaded file is missing or empty: {temp_path}")
 
@@ -834,7 +849,7 @@ class BotBridge(QObject):
                 self.batchDownloadProgressChanged.emit(downloaded_count, total_items, "Downloading playlist items...")
 
             self.downloadStatusChanged.emit("")
-            self.audio_cache.cleanup(self.max_cache_age_days, self.max_cache_size_mb)
+            self.audio_cache.cleanup(self.max_cache_size_mb)
 
         asyncio.run_coroutine_threadsafe(downloader(), self.bot.loop)
 

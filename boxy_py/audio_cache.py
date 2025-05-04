@@ -136,47 +136,44 @@ class AudioCache:
         
         return cached_file_path
     
-    def cleanup(self, max_age_days=30, max_size_mb=500):
+    def cleanup(self, max_size_mb=1024):
         """
         Clean up old cache files to stay within size limits.
         This is called during normal operation, not on exit.
-        
+
         Args:
             max_age_days: Maximum age of files in days
             max_size_mb: Maximum total cache size in MB
         """
         if not self.metadata:
             return
-            
+
         # Check total cache size
         total_size = sum(info.get('file_size', 0) for info in self.metadata.values())
         max_size_bytes = max_size_mb * 1024 * 1024
-        
-        # If we're under limits, no need to clean
+
+        # Only cleanup if we exceed the size limit
         if total_size <= max_size_bytes:
             return
-            
+
         # Sort files by last access time (oldest first)
         items = sorted(self.metadata.items(), key=lambda x: x[1].get('last_accessed', 0))
-        
+
         # Delete files until we're under the max size
         for file_id, info in items:
-            if total_size <= max_size_bytes:
-                break
-                
             file_path = os.path.join(self.cache_dir, f"{file_id}.webm")
-            file_age_days = (time.time() - info.get('last_accessed', 0)) / (60 * 60 * 24)
-            
-            # Skip if file is too new
-            if file_age_days < max_age_days:
-                continue
-                
+
             # Try to delete the file
             if os.path.exists(file_path):
                 try:
                     os.remove(file_path)
                     total_size -= info.get('file_size', 0)
                     del self.metadata[file_id]
+
+                    # Check if we're now under the limit
+                    if total_size <= max_size_bytes:
+                        break
+
                 except PermissionError:
                     # File is probably in use (playing), skip it
                     continue
@@ -185,7 +182,7 @@ class AudioCache:
             else:
                 # File is missing, remove from metadata
                 del self.metadata[file_id]
-                
+
         self._save_metadata()
 
     def clear_all(self):
