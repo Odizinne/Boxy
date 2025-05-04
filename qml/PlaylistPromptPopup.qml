@@ -15,7 +15,16 @@ AnimatedPopup {
         spacing: 14
 
         Label {
-            text: "It looks like you're trying to add a playlist.\nWould you like to add the entire playlist or just the current song?"
+            text: "It looks like you're trying to add a playlist."
+            horizontalAlignment: Text.AlignHCenter
+            Layout.fillWidth: true
+            wrapMode: Text.Wrap
+            font.bold: true
+            font.pixelSize: 16
+        }
+
+        Label {
+            text: "Would you like to add the entire playlist\nor just the current song?"
             horizontalAlignment: Text.AlignHCenter
             Layout.fillWidth: true
             wrapMode: Text.Wrap

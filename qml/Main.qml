@@ -10,9 +10,9 @@ import "."
 ApplicationWindow {
     visible: true
     id: root
-    width: 800
+    width: 850
     height: 446
-    minimumWidth: 800
+    minimumWidth: 850
     minimumHeight: 486
     title: "Boxy GUI"
     Universal.theme: Universal.Dark
@@ -164,6 +164,13 @@ ApplicationWindow {
             playlistModel.setProperty(index, "isResolving", false)
         }
 
+        function onBatchDownloadProgressChanged(current, total, status) {
+            playlistDownloadProgress.from = 0
+            playlistDownloadProgress.to = total
+            playlistDownloadProgress.value = current
+            newItemInput.placeholderText = status
+        }
+
         function onPlaylistLoaded(items, title) {
             playlistModel.clear()
             playlistName.text = title
@@ -261,7 +268,7 @@ ApplicationWindow {
                     Button {
                         id: downloadAllButton
                         icon.source: "icons/download.png"
-                        enabled: root.connectedToAPI && playlistModel.count > 0 && !root.isResolvingAny && !downloadProgress.visible
+                        enabled: root.connectedToAPI && playlistModel.count > 0 && !root.isResolvingAny && !downloadProgress.visible && !playlistDownloadProgress.visible
                         onClicked: {
                             stopPlaylistButton.click()
                             let urls = []
@@ -353,7 +360,7 @@ ApplicationWindow {
                         delegate: ItemDelegate {
                             width: ListView.view.width
                             height: 50
-                            enabled: !downloadProgress.visible && !root.isResolvingAny
+                            enabled: !downloadProgress.visible && !root.isResolvingAny && !playlistDownloadProgress.visible
 
                             MouseArea {
                                 anchors.fill: parent
@@ -517,7 +524,19 @@ ApplicationWindow {
                     Layout.fillWidth: true
                     indeterminate: true
                     Layout.bottomMargin: -5
-                    visible: newItemInput.placeholderText !== "Enter YouTube URL or search term" && newItemInput.placeholderText !== "Cannot join empty channel"
+                    visible: newItemInput.placeholderText !== "Enter YouTube URL or search term" &&
+                             newItemInput.placeholderText !== "Cannot join empty channel" &&
+                             newItemInput.placeholderText !== "Downloading playlist items..."
+                }
+
+                ProgressBar {
+                    id: playlistDownloadProgress
+                    Layout.fillWidth: true
+                    Layout.bottomMargin: -5
+                    visible: newItemInput.placeholderText === "Downloading playlist items..."
+                    from: 0
+                    to: 100
+                    value: 0
                 }
 
                 RowLayout {

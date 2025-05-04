@@ -560,7 +560,7 @@ class BotBridge(QObject):
             temp_audio_file = os.path.join(get_script_dir(), "downloaded_audio.webm")
             if self.current_audio_file == temp_audio_file and os.path.exists(temp_audio_file):
                 await delete_file(temp_audio_file)
-        
+
         # Note: We don't clear cache here - that's handled by main.py checking settings
         # Just cleanup active resources
 
@@ -794,8 +794,10 @@ class BotBridge(QObject):
     def download_all_playlist_items(self, urls):
         """Download all playlist items to cache"""
         async def downloader():
-            self.downloadStatusChanged.emit("Downloading playlist items...")
-            
+            total_items = len(urls)
+            downloaded_count = 0
+            self.batchDownloadProgressChanged.emit(downloaded_count, total_items, "Downloading playlist items...")
+
             for url in urls:
                 cached_item = self.audio_cache.get_cached_file(url)
                 if cached_item:
@@ -805,7 +807,7 @@ class BotBridge(QObject):
                     import tempfile
                     temp_dir = tempfile.mkdtemp()
                     temp_path = os.path.join(temp_dir, "audio.webm")
-                                        
+
                     ydl_opts = {
                         "format": "bestaudio/best",
                         "outtmpl": temp_path,
@@ -813,26 +815,27 @@ class BotBridge(QObject):
                         "quiet": True,
                         "no_warnings": True
                     }
-                    
+
                     with yt_dlp.YoutubeDL(ydl_opts) as ydl:
                         info = ydl.extract_info(url, download=True)
-                    
+
                     if os.path.exists(temp_path) and os.path.getsize(temp_path) > 0:
                         cached_path = self.audio_cache.add_file(url, temp_path, info)
-                        #if os.path.exists(cached_path):
-                            #print(f"Cached file size: {os.path.getsize(cached_path)} bytes")
                     else:
                         print(f"Error: Downloaded file is missing or empty: {temp_path}")
-                    
+
                     import shutil
                     shutil.rmtree(temp_dir, ignore_errors=True)
-                        
+
                 except Exception as e:
                     print(f"Error downloading {url}: {str(e)}")
-            
+
+                downloaded_count += 1
+                self.batchDownloadProgressChanged.emit(downloaded_count, total_items, "Downloading playlist items...")
+
             self.downloadStatusChanged.emit("")
             self.audio_cache.cleanup(self.max_cache_age_days, self.max_cache_size_mb)
-        
+
         asyncio.run_coroutine_threadsafe(downloader(), self.bot.loop)
 
     @Property(str, notify=channelNameChanged)
