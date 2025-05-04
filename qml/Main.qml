@@ -111,8 +111,6 @@ ApplicationWindow {
         }
     }
     
-    
-
     Settings {
         id: settings
         property bool shuffle: false
@@ -324,10 +322,21 @@ ApplicationWindow {
                             Layout.preferredHeight: 60
                             Layout.preferredWidth: 60
                             Layout.alignment: Qt.AlignHCenter
+                            visible: root.connectedToAPI === false && connectingLabel.text === "Connecting to Discord API..."
+                        }
+
+                        Image {
+                            Layout.preferredHeight: 60
+                            Layout.preferredWidth: 60
+                            source: "icons/warning.png"
+                            Layout.alignment: Qt.AlignHCenter
+                            mipmap: true
+                            visible: connectingLabel.text === "Incorrect token format"
                         }
 
                         Label {
-                            text: "Connecting to Discord API..."
+                            id: connectingLabel
+                            text: botBridge && botBridge.validTokenFormat ? "Connecting to Discord API..." : "Incorrect token format"
                             Layout.alignment: Qt.AlignHCenter
                             font.pixelSize: 18
                         }

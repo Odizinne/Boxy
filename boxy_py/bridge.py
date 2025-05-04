@@ -12,7 +12,6 @@ import boxy_py.config as config
 from boxy_py.audio_cache import AudioCache
 
 class BotBridge(QObject):
-    # Signal definitions
     statusChanged = Signal(str)
     playStateChanged = Signal(bool)
     songChanged = Signal(str)
@@ -34,7 +33,8 @@ class BotBridge(QObject):
     playlistLoaded = Signal(list, str)
     playlistSaved = Signal(str)
     cacheInfoUpdated = Signal(int, int, str)
-    batchDownloadProgressChanged = Signal(int, int, str)  # current, total, status
+    batchDownloadProgressChanged = Signal(int, int, str)
+    validTokenFormatChanged = Signal(bool)
 
     def __init__(self, bot):
         super().__init__()
@@ -59,6 +59,7 @@ class BotBridge(QObject):
         self._position = 0
         self._current_thumbnail_url = None
         self._current_channel_name = ""
+        self._valid_token_format = True
 
         # Initialize the audio cache
         self.audio_cache = AudioCache()
@@ -746,7 +747,7 @@ class BotBridge(QObject):
                 self.thumbnailChanged.emit("")
                 self._current_channel_name = ""  
                 self.channelNameChanged.emit("")
-    
+
         asyncio.run_coroutine_threadsafe(disconnect_wrapper(), self.bot.loop)
 
     @Property(list, notify=serversChanged)
@@ -871,6 +872,18 @@ class BotBridge(QObject):
         """Get whether connected to a voice channel"""
         return self._voice_connected
     
+    @Property(bool, notify=validTokenFormatChanged)
+    def validTokenFormat(self):
+        """Get whether the token format is valid"""
+        return self._valid_token_format
+        
+    @validTokenFormat.setter
+    def validTokenFormat(self, value):
+        """Set whether the token format is valid"""
+        if self._valid_token_format != value:
+            self._valid_token_format = value
+            self.validTokenFormatChanged.emit(value)
+                                              
     @Slot(result=str)
     def get_token(self):
         """Get the current token from the token file"""

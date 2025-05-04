@@ -10,11 +10,10 @@ from PySide6.QtCore import QUrl
 from boxy_py.bot import BoxyBot
 from boxy_py.bridge import BotBridge
 from boxy_py.setup_manager import SetupManager
-from boxy_py.utils import get_script_dir
-import discord
-
+from boxy_py.utils import verify_token  
 from boxy_py.config import migrate_playlists_if_needed
 
+import discord
 
 def configure_logging():
     """Configure logging"""
@@ -36,8 +35,17 @@ def start_main_app(app, engine, token):
     bridge = BotBridge(bot)
     bot.bridge = bridge
     
+    bot_started = False
+    
     def cleanup():
-        asyncio.run_coroutine_threadsafe(bridge.cleanup(), bot.loop).result()
+        if bot_started:
+            loop = asyncio.new_event_loop()
+            try:
+                loop.run_until_complete(bridge.cleanup())
+            except Exception as e:
+                print(f"Cleanup error: {e}")
+            finally:
+                loop.close()
     
     app.aboutToQuit.connect(cleanup)
     
@@ -45,6 +53,12 @@ def start_main_app(app, engine, token):
     
     def bot_runner():
         try:
+            if not asyncio.run(verify_token(token)):
+                bridge._valid_token_format = False
+                app.quit()
+                return
+            
+            bot_started = True
             bot.run(token)
         except Exception as e:
             print(f"Bot error: {e}")
@@ -66,7 +80,8 @@ if __name__ == "__main__":
     
     app = QGuiApplication(sys.argv)
     engine = QQmlApplicationEngine()
-    icon = os.path.join(get_script_dir(), "boxy-orange.png")
+    script_dir = os.path.dirname(os.path.abspath(__file__))
+    icon = os.path.join(script_dir, "qml/icons/icon.png")
     
     app.setOrganizationName("Odizinne")
     app.setApplicationName("Boxy")
