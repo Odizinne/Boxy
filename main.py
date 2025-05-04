@@ -3,6 +3,7 @@ import os
 import argparse
 import threading
 import asyncio
+import logging
 from PySide6.QtGui import QGuiApplication, QIcon
 from PySide6.QtQml import QQmlApplicationEngine
 from PySide6.QtCore import QUrl
@@ -15,6 +16,13 @@ import discord
 
 from boxy_py.config import migrate_playlists_if_needed
 
+
+def configure_logging():
+    """Configure logging to filter out discord.player logs only"""
+    # Filter out discord.player logs only
+    discord_player_logger = logging.getLogger('discord.player')
+    discord_player_logger.setLevel(logging.WARNING)
+    
 
 def start_main_app(app, engine, token):
     """Start the main application with the token"""
@@ -54,8 +62,11 @@ def start_main_app(app, engine, token):
         print("Error loading main UI")
         sys.exit(1)
 
-def run_bot():
-    """Main entry point for the application"""
+
+if __name__ == "__main__":
+    print("Starting Boxy GUI")
+    configure_logging()
+    
     app = QGuiApplication(sys.argv)
     engine = QQmlApplicationEngine()
     icon = os.path.join(get_script_dir(), "boxy-orange.png")
@@ -86,7 +97,3 @@ def run_bot():
         setup_manager.setupCompleted.connect(lambda token: start_main_app(app, engine, token))
     
     sys.exit(app.exec())
-
-if __name__ == "__main__":
-    print("Starting Boxy GUI")
-    run_bot()
