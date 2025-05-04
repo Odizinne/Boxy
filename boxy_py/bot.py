@@ -12,7 +12,7 @@ class BoxyBot(commands.Bot):
         self.bridge = None
 
     async def on_ready(self):
-        print(f"We have logged in as {self.user}")
+        #print(f"We have logged in as {self.user}")
         if self.bridge:
             self.bridge.statusChanged.emit("Connected")
             self.bridge._voice_connected = False

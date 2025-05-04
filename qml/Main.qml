@@ -638,11 +638,11 @@ ApplicationWindow {
                     Image {
                         id: thumbnailImage
                         Layout.rowSpan: 2
-                        Layout.preferredWidth: parent.width * 0.30
-                        Layout.preferredHeight: thumbnailImage.Layout.preferredWidth
+                        property int idealSize: parent.width * 0.30
+                        Layout.preferredWidth: idealSize
+                        Layout.preferredHeight: idealSize
                         fillMode: Image.PreserveAspectCrop
                         property string currentUrl: ""
-
                         source: currentUrl || (Universal.theme === Universal.Dark ?
                                                    "icons/placeholder_light.png" : "icons/placeholder_dark.png")
 
