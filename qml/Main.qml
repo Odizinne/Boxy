@@ -1002,6 +1002,24 @@ ApplicationWindow {
         id: playlistPopup
         parent: playlistView
         anchors.centerIn: parent
+        Connections {
+            target: botBridge
+            function onUrlsExtractedSignal(urls) {
+                for (let url of urls) {
+                    let idx = playlistModel.count
+                    playlistModel.append({
+                        "userTyped": url,
+                        "url": "",
+                        "resolvedTitle": "",
+                        "channelName": "",
+                        "isResolving": true
+                    })
+                    botBridge.resolve_title(idx, url)
+                }
+                newItemInput.text = ""
+                playlistPopup.close()
+            }
+        }
     }
 
     TokenPopup {

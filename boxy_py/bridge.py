@@ -35,6 +35,7 @@ class BotBridge(QObject):
     cacheInfoUpdated = Signal(int, int, str)
     batchDownloadProgressChanged = Signal(int, int, str)
     validTokenFormatChanged = Signal(bool)
+    urlsExtractedSignal = Signal(list)
 
     def __init__(self, bot):
         super().__init__()
@@ -583,15 +584,14 @@ class BotBridge(QObject):
             self._position = 0
             self.positionChanged.emit(0)
 
-    @Slot(str, result="QVariantList")
+    @Slot(str)
     def extract_urls_from_playlist(self, playlist_url):
-        """Extract video URLs from a YouTube playlist"""
-        urls = []
-
-        async def extractor():
+        """Extract video URLs from a YouTube playlist (non-blocking)"""
+        def extractor():
             try:
                 self.downloadStatusChanged.emit("Extracting playlist info...")
 
+                urls = []
                 ydl_opts = {
                     "quiet": True,
                     "no_warnings": True,
@@ -601,29 +601,25 @@ class BotBridge(QObject):
                     "playlist_items": "1-100", 
                 }
 
-                async def get_playlist_info():
-                    with yt_dlp.YoutubeDL(ydl_opts) as ydl:
-                        return await asyncio.get_event_loop().run_in_executor(
-                            self._yt_pool, lambda: ydl.extract_info(playlist_url, download=False)
-                        )
+                with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+                    info = ydl.extract_info(playlist_url, download=False)
 
-                info = await get_playlist_info()
+                    if info and "entries" in info:
+                        urls.extend([
+                            f"https://www.youtube.com/watch?v={entry['id']}"
+                            for entry in info["entries"]
+                            if entry and "id" in entry
+                        ])
 
-                if info and "entries" in info:
-                    urls.extend([
-                        f"https://www.youtube.com/watch?v={entry['id']}"
-                        for entry in info["entries"]
-                        if entry and "id" in entry
-                    ])
+                self.urlsExtractedSignal.emit(urls)
 
             except Exception as e:
                 self.downloadStatusChanged.emit(f"Error extracting playlist: {str(e)}")
+                self.urlsExtractedSignal.emit([])
             finally:
                 self.downloadStatusChanged.emit("")
 
-        future = asyncio.run_coroutine_threadsafe(extractor(), self.bot.loop)
-        future.result()
-        return urls
+        self._yt_pool.submit(extractor)
 
     @Slot(int, str)
     def resolve_title(self, index, user_input):
