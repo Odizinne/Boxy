@@ -548,17 +548,18 @@ ApplicationWindow {
                         enabled: newItemInput.text.trim() !== ""
                         onClicked: {
                             if (newItemInput.text.trim() !== "") {
-                                if (newItemInput.text.includes("&list=")) {
+                                if (newItemInput.text.includes("&list=") || 
+                                    newItemInput.text.includes("/playlist?list=")) {
                                     playlistPopup.open()
                                 } else {
                                     let idx = playlistModel.count
                                     playlistModel.append({
-                                                             "userTyped": newItemInput.text.trim(),
-                                                             "url": "",
-                                                             "resolvedTitle": "",
-                                                             "channelName": "",
-                                                             "isResolving": true
-                                                         })
+                                        "userTyped": newItemInput.text.trim(),
+                                        "url": "",
+                                        "resolvedTitle": "",
+                                        "channelName": "",
+                                        "isResolving": true
+                                    })
                                     botBridge.resolve_title(idx, newItemInput.text.trim())
                                     newItemInput.text = ""
                                 }
