@@ -1,6 +1,5 @@
 import sys
 import os
-import argparse
 import threading
 import asyncio
 import logging
@@ -18,11 +17,10 @@ from boxy_py.config import migrate_playlists_if_needed
 
 
 def configure_logging():
-    """Configure logging to filter out discord.player logs only"""
-    # Filter out discord.player logs only
+    """Configure logging"""
+    os.environ["QT_LOGGING_RULES"] = "qt.qpa.*=false"
     discord_player_logger = logging.getLogger('discord.player')
     discord_player_logger.setLevel(logging.WARNING)
-    
 
 def start_main_app(app, engine, token):
     """Start the main application with the token"""
@@ -64,7 +62,6 @@ def start_main_app(app, engine, token):
 
 
 if __name__ == "__main__":
-    print("Starting Boxy GUI")
     configure_logging()
     
     app = QGuiApplication(sys.argv)

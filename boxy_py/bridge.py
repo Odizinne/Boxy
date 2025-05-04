@@ -742,8 +742,12 @@ class BotBridge(QObject):
                 self.current_audio_file = None
                 self.current_url = None
                 self.downloadStatusChanged.emit("")
-                self._current_thumbnail_url = None
+                self._current_thumbnail_url = ""
                 self.thumbnailChanged.emit("")
+                self._current_channel_name = ""  
+                self.channelNameChanged.emit("")
+    
+        asyncio.run_coroutine_threadsafe(disconnect_wrapper(), self.bot.loop)
 
     @Property(list, notify=serversChanged)
     def servers(self):

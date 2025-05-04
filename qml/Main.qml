@@ -949,12 +949,13 @@ ApplicationWindow {
 
                 Button {
                     id: disconnectButton
-
-                    text: botBridge.voiceConnected ? "Disconnect from channel" : "Connect to channel"
+                    text: botBridge && botBridge.voiceConnected ? "Disconnect from channel" : "Connect to channel"
                     Layout.fillWidth: true
                     enabled: root.connectedToAPI && channelComboBox.currentValue !== undefined && channelComboBox.currentValue !== null
                     onClicked: {
+                        console.log(botBridge.voiceConnected)
                         if (botBridge.voiceConnected) {
+                            console.log("pass")
                             botBridge.disconnect_voice()
                         } else {
                             botBridge.connect_to_channel()
