@@ -13,6 +13,8 @@ from boxy_py.setup_manager import SetupManager
 from boxy_py.utils import get_script_dir
 import discord
 
+from boxy_py.config import migrate_playlists_if_needed
+
 def run_bot_no_gui():
     """Run bot without GUI (command line mode)"""
     from boxy_py.utils import get_token, verify_token
@@ -99,6 +101,8 @@ def run_bot():
     
     # Create setup manager
     setup_manager = SetupManager()
+
+    migrate_playlists_if_needed()
     
     # Check if setup is needed
     if setup_manager.is_setup_complete():

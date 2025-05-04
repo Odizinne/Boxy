@@ -48,3 +48,21 @@ def get_cache_directory():
         os.makedirs(cache_dir)
         
     return cache_dir
+
+def migrate_playlists_if_needed():
+    """Migrate playlists from config directory to playlist subdirectory"""
+    config_dir = get_config_directory()
+    playlist_dir = get_playlists_directory()
+    
+    try:
+        for file in os.listdir(config_dir):
+            if file.endswith(".json") and file != "metadata.json":
+                old_path = os.path.join(config_dir, file)
+                new_path = os.path.join(playlist_dir, file)
+                
+                if not os.path.exists(new_path):
+                    import shutil
+                    shutil.move(old_path, new_path)
+                    print(f"Migrated playlist: {file}")
+    except Exception as e:
+        print(f"Error during playlist migration: {e}")
