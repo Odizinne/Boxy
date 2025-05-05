@@ -15,8 +15,8 @@ ApplicationWindow {
     minimumWidth: 850
     minimumHeight: 486
     title: "Boxy GUI"
-    Universal.theme: Universal.Dark
-    Universal.accent: Universal.Orange
+    Universal.theme: BoxySettings.darkMode ? Universal.Dark : Universal.Light
+    Universal.accent: BoxySettings.accentColor
     property bool songLoaded: false
     property var shufflePlayedIndices: []
     property bool connectedToAPI: false
@@ -64,14 +64,21 @@ ApplicationWindow {
             onClicked: mainMenu.visible = !mainMenu.visible
             Menu {
                 id: mainMenu
+                topMargin: 30
                 title: qsTr("File")
-                width: 150
+                width: 200
                 visible: false
                 enter: Transition {
                     NumberAnimation { property: "opacity"; from: 0.0; to: 1.0; easing.type: Easing.Linear; duration: 110 }
                 }
                 exit: Transition {
                     NumberAnimation { property: "opacity"; from: 1.0; to: 0.0; easing.type: Easing.Linear; duration: 110 }
+                }
+
+                CustomMenuItem {
+                    height: 35
+                    text: "UI Config"
+                    onTriggered: globalConfigPopup.open()
                 }
 
                 CustomMenuItem {
@@ -118,7 +125,8 @@ ApplicationWindow {
             Menu {
                 id: playlistMenu
                 title: qsTr("Playlist")
-                width: 150
+                topMargin: 30
+                width: 200
                 visible: false
                 enter: Transition {
                     NumberAnimation { property: "opacity"; from: 0.0; to: 1.0; easing.type: Easing.Linear; duration: 110 }
@@ -1147,6 +1155,12 @@ ApplicationWindow {
 
     CacheSettingsPopup {
         id: cacheSettingsPopup
+        parent: playlistView
+        anchors.centerIn: parent
+    }
+
+    GlobalConfigPopup {
+        id: globalConfigPopup
         parent: playlistView
         anchors.centerIn: parent
     }
