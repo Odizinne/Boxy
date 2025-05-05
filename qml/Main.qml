@@ -904,9 +904,6 @@ ApplicationWindow {
                         Layout.preferredWidth: height
                         enabled: songLoaded && !downloadProgress.visible
                         icon.source: "icons/play.png"
-                        icon.width: 24
-                        icon.height: 24
-
                         onClicked: {
                             botBridge.toggle_playback()
                         }
