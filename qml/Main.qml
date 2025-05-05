@@ -45,7 +45,7 @@ ApplicationWindow {
 
     Shortcut {
         sequence: "Ctrl+S"
-        enabled: playlistName.text.trim() !== "" && playlistModel.count > 0 && !root.isResolvingAny
+        enabled: !root.isResolvingAny
         onActivated: root.savePlaylist()
     }
 
@@ -176,7 +176,7 @@ ApplicationWindow {
 
                 CustomMenuItem {
                     height: 35
-                    enabled: playlistName.text.trim() !== "" && playlistModel.count > 0 && !root.isResolvingAny
+                    enabled: !root.isResolvingAny
                     onTriggered: root.savePlaylist()
 
                     RowLayout {
@@ -206,18 +206,29 @@ ApplicationWindow {
     }
 
     function savePlaylist() {
-        let items = []
-        for (let i = 0; i < playlistModel.count; i++) {
-            let item = playlistModel.get(i)
-            items.push({
-                           "userTyped": item.userTyped,
-                           "url": item.url || "",
-                           "resolvedTitle": item.resolvedTitle || "",
-                           "channelName": item.channelName || ""
-                       })
+        if (playlistName.text.trim() == "") {
+            savePopup.displayText = "You must name the playlist"
+            savePopup.visible = true
+            return
+        } else if (!playlistModel.count > 0) {
+            savePopup.displayText = "Cannot save empty playlist"
+            savePopup.visible = true
+            return
+        } else {
+            let items = []
+            for (let i = 0; i < playlistModel.count; i++) {
+                let item = playlistModel.get(i)
+                items.push({
+                               "userTyped": item.userTyped,
+                               "url": item.url || "",
+                               "resolvedTitle": item.resolvedTitle || "",
+                               "channelName": item.channelName || ""
+                           })
+            }
+            botBridge.save_playlist(playlistName.text, items)
+            savePopup.displayText = "Playlist saved successfully"
+            savePopup.visible = true
         }
-        botBridge.save_playlist(playlistName.text, items)
-        savePopup.visible = true
     }
 
     Connections {
@@ -228,7 +239,7 @@ ApplicationWindow {
                 playlistModel.setProperty(index, "isDownloading", true)
             }
         }
-        
+
         function onItemDownloadCompleted(url, index) {
             if (index < playlistModel.count) {
                 playlistModel.setProperty(index, "isDownloading", false)

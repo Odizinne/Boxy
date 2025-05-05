@@ -6,12 +6,13 @@ AnimatedPopup {
     id: savePopup
     width: saveLabel.width + 40
     height: saveLabel.height + 30
+    property string displayText: "Playlist saved successfully"
 
     Label {
         id: saveLabel
         font.pixelSize: 14
         anchors.centerIn: parent
-        text: "Playlist saved successfully"
+        text: savePopup.displayText
     }
 
     Timer {

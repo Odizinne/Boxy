@@ -47,93 +47,84 @@ AnimatedPopup {
     ColumnLayout {
         id: contentColumn
         anchors.fill: parent
-        spacing: 20
+        spacing: 15
 
-        Frame {
-            Layout.fillWidth: true
+        RowLayout {
+            Layout.preferredHeight: 30
+            spacing: 10
 
-            ColumnLayout {
-                anchors.fill: parent
-                spacing: 15
+            Label {
+                text: "Cached items:"
+                Layout.fillWidth: true
+            }
+            Label {
+                text: cachedItemsCount.toString()
+                font.bold: true
+            }
+        }
 
-                RowLayout {
-                    Layout.preferredHeight: 30
-                    spacing: 10
+        RowLayout {
+            Layout.preferredHeight: 30
+            spacing: 10
 
-                    Label {
-                        text: "Cached items:"
-                        Layout.fillWidth: true
-                    }
-                    Label {
-                        text: cachedItemsCount.toString()
-                        font.bold: true
-                    }
+            Label {
+                text: "Total size:"
+                Layout.fillWidth: true
+            }
+            Label {
+                text: formatBytes(totalCachedSize)
+                font.bold: true
+            }
+        }
+
+        RowLayout {
+            Layout.preferredHeight: 30
+            spacing: 10
+
+            Label {
+                text: "Maximum cache size:"
+                Layout.preferredWidth: implicitWidth + 50
+                Layout.fillWidth: true
+            }
+
+            SpinBox {
+                id: cacheSizeSpinBox
+                from: 100
+                to: 10000
+                stepSize: 100
+                value: BoxySettings.maxCacheSize
+                editable: true
+
+                onValueModified: {
+                    BoxySettings.maxCacheSize = value
+                    botBridge.set_cache_settings(BoxySettings.maxCacheSize, 30)
                 }
 
-                RowLayout {
-                    Layout.preferredHeight: 30
-                    spacing: 10
-
-                    Label {
-                        text: "Total size:"
-                        Layout.fillWidth: true
-                    }
-                    Label {
-                        text: formatBytes(totalCachedSize)
-                        font.bold: true
-                    }
+                textFromValue: function(value, locale) {
+                    return value + " MB"
                 }
 
-                RowLayout {
-                    Layout.preferredHeight: 30
-                    spacing: 10
-
-                    Label {
-                        text: "Maximum cache size:"
-                        Layout.preferredWidth: implicitWidth + 50
-                        Layout.fillWidth: true
-                    }
-
-                    SpinBox {
-                        id: cacheSizeSpinBox
-                        from: 100
-                        to: 10000
-                        stepSize: 100
-                        value: BoxySettings.maxCacheSize
-                        editable: true
-
-                        onValueModified: {
-                            BoxySettings.maxCacheSize = value
-                            botBridge.set_cache_settings(BoxySettings.maxCacheSize, 30)
-                        }
-
-                        textFromValue: function(value, locale) {
-                            return value + " MB"
-                        }
-
-                        valueFromText: function(text, locale) {
-                            return parseInt(text)
-                        }
-                    }
+                valueFromText: function(text, locale) {
+                    return parseInt(text)
                 }
+            }
+        }
 
-                RowLayout {
-                    Layout.preferredHeight: 30
-                    spacing: 10
+        RowLayout {
+            Layout.preferredHeight: 30
+            spacing: 10
 
-                    Label {
-                        text: "Clear cache on exit:"
-                        Layout.fillWidth: true
-                    }
+            Label {
+                text: "Clear cache on exit:"
+                Layout.fillWidth: true
+            }
 
-                    Switch {
-                        id: clearCacheSwitch
-                        checked: BoxySettings.clearCacheOnExit
-
-                        onCheckedChanged: {
-                            BoxySettings.clearCacheOnExit = checked
-                        }
-                    }
+            Switch {
+                id: clearCacheSwitch
+                checked: BoxySettings.clearCacheOnExit
+                Layout.rightMargin: -5
+                onCheckedChanged: {
+                    BoxySettings.clearCacheOnExit = checked
                 }
             }
         }
@@ -164,3 +155,4 @@ AnimatedPopup {
         }
     }
 }
+
