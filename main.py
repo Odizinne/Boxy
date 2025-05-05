@@ -42,23 +42,26 @@ def start_main_app(app, engine, token):
         if clear_on_exit:
             if hasattr(bridge, 'audio_cache'):
                 bridge.audio_cache.clear_all()
-            else:
-                print("No audio cache to clear")
 
         if bot_started:
-            loop = asyncio.new_event_loop()
             try:
-                loop.run_until_complete(bridge.cleanup())
+                if bot.loop.is_running():
+                    asyncio.run_coroutine_threadsafe(bridge.cleanup(), bot.loop)
+                else:
+                    loop = asyncio.new_event_loop()
+                    loop.run_until_complete(asyncio.wait_for(bridge.cleanup(), timeout=2.0))
+                    loop.close()
+            except asyncio.TimeoutError:
+                print("Cleanup timed out")
             except Exception as e:
                 print(f"Cleanup error: {e}")
-            finally:
-                loop.close()
     
     app.aboutToQuit.connect(cleanup)
     
     engine.rootContext().setContextProperty("botBridge", bridge)
     
     def bot_runner():
+        nonlocal bot_started
         try:
             if not asyncio.run(verify_token(token)):
                 bridge._valid_token_format = False
