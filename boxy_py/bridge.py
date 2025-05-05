@@ -372,26 +372,26 @@ class BotBridge(QObject):
 
     async def play_from_gui(self, search):
         """Download and play audio from URL or search term"""
-
+    
         if not self.bot.voice_client or not self.bot.voice_client.is_connected():
             if not self._current_channel or not self._current_server:
                 self.downloadStatusChanged.emit("Please select a server and channel first")
                 return
-
+    
             selected_server = discord.utils.get(self.bot.guilds, id=int(self._current_server))
             if not selected_server:
                 self.downloadStatusChanged.emit("Selected server not found")
                 return
-
+    
             selected_channel = discord.utils.get(selected_server.voice_channels, id=int(self._current_channel))
             if not selected_channel:
                 self.downloadStatusChanged.emit("Selected channel not found")
                 return
-
+    
             if all(member.bot for member in selected_channel.members):
                 self.downloadStatusChanged.emit("Cannot join empty channel")
                 return
-
+    
             try:
                 self.bot.voice_client = await selected_channel.connect()
                 self._voice_connected = True
@@ -399,30 +399,30 @@ class BotBridge(QObject):
             except Exception as e:
                 self.downloadStatusChanged.emit(f"Failed to connect: {str(e)}")
                 return
-
+    
         self.downloadStatusChanged.emit("Preparing...")
         temp_audio_file = os.path.join(get_script_dir(), "downloaded_audio.webm")
-
+    
         if self.bot.voice_client and (self.bot.voice_client.is_playing() or self.bot.voice_client.is_paused()):
             self.bot.voice_client.stop()
-
+    
         self.stopTimerSignal.emit()
         self._position = 0
         self.positionChanged.emit(0)
-
+    
         if os.path.exists(temp_audio_file):
             await delete_file(temp_audio_file)
             await asyncio.sleep(0.1)
-
+    
         url = search if search.startswith("http") else get_first_video_url(search)
-
+    
         if url is None:
             self.downloadStatusChanged.emit("No video found")
             return
-
+    
         self.songLoadedChanged.emit(False)
         cached = self.audio_cache.get_cached_file(url)
-
+    
         if cached:
             audio_file, info = cached
             song_name = info['title']
@@ -447,37 +447,43 @@ class BotBridge(QObject):
                     "quiet" : True,
                     "no_warnings": True
                 }
-
+    
                 self.downloadStatusChanged.emit("Extracting video info...")
-                with yt_dlp.YoutubeDL(ydl_opts) as ydl:
-                    info = ydl.extract_info(url, download=True)
-                    song_name = info["title"]
-                    channel_name = info.get("channel", "") or info.get("uploader", "")
-                    self._duration = info.get("duration", 0)
-                    self.durationChanged.emit(self._duration)
-                    self._current_channel_name = channel_name
-                    self.songChanged.emit(song_name)
-                    self.channelNameChanged.emit(channel_name)
-                    self.downloadStatusChanged.emit("Caching audio file...")
-                    audio_file = self.audio_cache.add_file(url, temp_audio_file, info)
-
-                    # Check cache size and cleanup if needed
-                    from PySide6.QtCore import QSettings
-                    settings = QSettings("Odizinne", "Boxy")
-                    max_cache_size_mb = settings.value("maxCacheSize", 1024, type=int)
-
-                    # Clean up cache to stay within size limit
-                    self.audio_cache.cleanup(max_size_mb=max_cache_size_mb)
-
-                    self.current_audio_file = audio_file
-                    self.current_url = url
-                    self._current_thumbnail_url = info.get("thumbnail") or info.get("thumbnails", [{}])[0].get("url", "")
-                    self.thumbnailChanged.emit(self._current_thumbnail_url)
-
+                
+                # Run yt_dlp in thread pool to prevent blocking asyncio event loop
+                loop = asyncio.get_event_loop()
+                info = await loop.run_in_executor(
+                    self._yt_pool, 
+                    lambda: self._extract_video_info(url, ydl_opts)
+                )
+                
+                song_name = info["title"]
+                channel_name = info.get("channel", "") or info.get("uploader", "")
+                self._duration = info.get("duration", 0)
+                self.durationChanged.emit(self._duration)
+                self._current_channel_name = channel_name
+                self.songChanged.emit(song_name)
+                self.channelNameChanged.emit(channel_name)
+                self.downloadStatusChanged.emit("Caching audio file...")
+                audio_file = self.audio_cache.add_file(url, temp_audio_file, info)
+    
+                # Check cache size and cleanup if needed
+                from PySide6.QtCore import QSettings
+                settings = QSettings("Odizinne", "Boxy")
+                max_cache_size_mb = settings.value("maxCacheSize", 1024, type=int)
+    
+                # Clean up cache to stay within size limit
+                self.audio_cache.cleanup(max_size_mb=max_cache_size_mb)
+    
+                self.current_audio_file = audio_file
+                self.current_url = url
+                self._current_thumbnail_url = info.get("thumbnail") or info.get("thumbnails", [{}])[0].get("url", "")
+                self.thumbnailChanged.emit(self._current_thumbnail_url)
+    
             except Exception as e:
                 self.downloadStatusChanged.emit(f"Error: {str(e)}")
                 return
-
+    
         try:
             if os.path.exists(self.current_audio_file):
                 self.downloadStatusChanged.emit("Starting playback...")
@@ -492,17 +498,16 @@ class BotBridge(QObject):
                     self.is_playing = True
                     self.playStateChanged.emit(True)
                     self.downloadStatusChanged.emit("")
-
+    
                     await asyncio.sleep(0.2)
-
+    
                     self.songLoadedChanged.emit(True)
                     self.startTimerSignal.emit()
             else:
                 self.downloadStatusChanged.emit("Error: Audio file not found")
-
+    
         except Exception as e:
             self.downloadStatusChanged.emit(f"Playback error: {str(e)}")
-
 
     def download_hook(self, d):
         """Progress hook for youtube-dl"""
@@ -800,8 +805,21 @@ class BotBridge(QObject):
         """Download all playlist items to cache"""
         async def downloader():
             total_items = len(urls)
+
+            cached_count = 0
+            for url in urls:
+                if self.audio_cache.get_cached_file(url) is not None:
+                    cached_count += 1
+
+            non_cached_total = total_items - cached_count
+
+            if non_cached_total == 0:
+                self.downloadStatusChanged.emit("")
+                self.batchDownloadProgressChanged.emit(0, 0, "All items already cached")
+                return
+
             downloaded_count = 0
-            self.batchDownloadProgressChanged.emit(downloaded_count, total_items, "Downloading playlist items...")
+            self.batchDownloadProgressChanged.emit(downloaded_count, non_cached_total, "Downloading playlist items...")
 
             for url in urls:
                 cached_item = self.audio_cache.get_cached_file(url)
@@ -821,8 +839,8 @@ class BotBridge(QObject):
                         "no_warnings": True
                     }
 
-                    with yt_dlp.YoutubeDL(ydl_opts) as ydl:
-                        info = ydl.extract_info(url, download=True)
+                    loop = asyncio.get_event_loop()
+                    info = await loop.run_in_executor(self._yt_pool, lambda: self._extract_video_info(url, ydl_opts))
 
                     if os.path.exists(temp_path) and os.path.getsize(temp_path) > 0:
                         cached_path = self.audio_cache.add_file(url, temp_path, info)
@@ -842,13 +860,18 @@ class BotBridge(QObject):
                     print(f"Error downloading {url}: {str(e)}")
 
                 downloaded_count += 1
-                self.batchDownloadProgressChanged.emit(downloaded_count, total_items, "Downloading playlist items...")
+                self.batchDownloadProgressChanged.emit(downloaded_count, non_cached_total, "Downloading playlist items...")
 
             self.downloadStatusChanged.emit("")
             self.audio_cache.cleanup(self.max_cache_size_mb)
 
         asyncio.run_coroutine_threadsafe(downloader(), self.bot.loop)
 
+    def _extract_video_info(self, url, ydl_opts):
+        """Helper method to run yt_dlp in thread pool"""
+        with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+            return ydl.extract_info(url, download=True)
+    
     @Property(str, notify=channelNameChanged)
     def current_channel_name(self):
         """Get the name of the current YouTube channel"""

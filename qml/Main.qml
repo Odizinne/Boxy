@@ -28,6 +28,33 @@ ApplicationWindow {
         return false;
     }
 
+    Shortcut {
+        sequence: "Ctrl+N"
+        enabled: root.connectedToAPI && playlistModel.count > 0 && !root.isResolvingAny
+        onActivated: {
+            playlistModel.clear()
+            playlistName.text = ""
+        }
+    }
+
+    Shortcut {
+        sequence: "Ctrl+O"
+        enabled: root.connectedToAPI && !root.isResolvingAny
+        onActivated: playlistSelectorPopup.open()
+    }
+
+    Shortcut {
+        sequence: "Ctrl+S"
+        enabled: playlistName.text.trim() !== "" && playlistModel.count > 0 && !root.isResolvingAny
+        onActivated: root.savePlaylist()
+    }
+
+    Shortcut {
+        sequence: "Ctrl+Q"
+        enabled: true
+        onActivated: Qt.quit()
+    }
+
     header: ToolBar {
         height: 30
         ToolButton {
@@ -62,8 +89,23 @@ ApplicationWindow {
 
                 CustomMenuItem {
                     height: 35
-                    text: qsTr("Exit")
                     onTriggered: Qt.quit()
+
+                    RowLayout {
+                        anchors.fill: parent
+                        anchors.leftMargin: 12
+                        anchors.rightMargin: 12
+                        Label {
+                            text: "Exit"
+                            Layout.fillWidth: true
+                        }
+
+                        Label {
+                            text: "Ctrl + Q"
+                            opacity: 0.2
+                            font.pixelSize: 12
+                        }
+                    }
                 }
             }
         }
@@ -85,27 +127,72 @@ ApplicationWindow {
                 }
 
                 CustomMenuItem {
-                    text: qsTr("New")
                     height: 35
                     enabled: root.connectedToAPI && playlistModel.count > 0 && !root.isResolvingAny
                     onTriggered: {
                         playlistModel.clear()
                         playlistName.text = ""
                     }
+
+                    RowLayout {
+                        anchors.fill: parent
+                        anchors.leftMargin: 12
+                        anchors.rightMargin: 12
+                        Label {
+                            text: "New"
+                            Layout.fillWidth: true
+                        }
+
+                        Label {
+                            text: "Ctrl + N"
+                            opacity: 0.2
+                            font.pixelSize: 12
+                        }
+                    }
                 }
 
                 CustomMenuItem {
-                    text: qsTr("Load")
                     height: 35
                     enabled: root.connectedToAPI && !root.isResolvingAny
                     onTriggered: playlistSelectorPopup.open()
+
+                    RowLayout {
+                        anchors.fill: parent
+                        anchors.leftMargin: 12
+                        anchors.rightMargin: 12
+                        Label {
+                            text: "Load"
+                            Layout.fillWidth: true
+                        }
+
+                        Label {
+                            text: "Ctrl + O"
+                            opacity: 0.2
+                            font.pixelSize: 12
+                        }
+                    }
                 }
 
                 CustomMenuItem {
-                    text: qsTr("Save")
                     height: 35
                     enabled: playlistName.text.trim() !== "" && playlistModel.count > 0 && !root.isResolvingAny
                     onTriggered: root.savePlaylist()
+
+                    RowLayout {
+                        anchors.fill: parent
+                        anchors.leftMargin: 12
+                        anchors.rightMargin: 12
+                        Label {
+                            text: "Save"
+                            Layout.fillWidth: true
+                        }
+
+                        Label {
+                            text: "Ctrl + S"
+                            opacity: 0.2
+                            font.pixelSize: 12
+                        }
+                    }
                 }
             }
         }
@@ -130,18 +217,6 @@ ApplicationWindow {
         }
         botBridge.save_playlist(playlistName.text, items)
         savePopup.visible = true
-    }
-
-    Shortcut {
-        sequence: StandardKey.Open
-        enabled: root.connectedToAPI
-        onActivated: playlistSelectorPopup.open()
-    }
-
-    Shortcut {
-        sequence: StandardKey.Save
-        enabled: playlistName.text.trim() !== "" && playlistModel.count > 0
-        onActivated: root.savePlaylist()
     }
 
     Connections {
@@ -194,13 +269,13 @@ ApplicationWindow {
             if (loaded) {
                 isAutoAdvancing = false
             }
-        
+
             if (!loaded && !botBridge.repeat_mode && stopPlaylistButton.isPlaying &&
                     !playlistView.manualNavigation && !isAutoAdvancing) {
-                    
+
                 if (playlistView.currentIndex < playlistModel.count - 1) {
                     isAutoAdvancing = true
-        
+
                     if (shuffleButton.checked) {
                         let availableIndices = []
                         for (let i = 0; i < playlistModel.count; i++) {
@@ -208,7 +283,7 @@ ApplicationWindow {
                                 availableIndices.push(i)
                             }
                         }
-        
+
                         if (availableIndices.length === 0) {
                             shufflePlayedIndices = []
                             stopPlaylistButton.isPlaying = false
@@ -216,12 +291,12 @@ ApplicationWindow {
                             isAutoAdvancing = false
                             return
                         }
-        
+
                         const randomIndex = Math.floor(Math.random() * availableIndices.length)
                         const nextIndex = availableIndices[randomIndex]
-        
+
                         shufflePlayedIndices.push(nextIndex)
-        
+
                         playlistView.currentIndex = nextIndex
                         let item = playlistModel.get(nextIndex)
                         botBridge.play_url(item.url || item.userTyped)
@@ -236,7 +311,7 @@ ApplicationWindow {
                     isAutoAdvancing = false
                 }
             }
-        
+
             playlistView.manualNavigation = false
         }
     }
@@ -280,7 +355,7 @@ ApplicationWindow {
                             downloadMessagePopup.visible = true
                         }
                     }
-                    
+
                     TextField {
                         id: playlistName
                         Layout.preferredHeight: addButton.height
@@ -567,7 +642,7 @@ ApplicationWindow {
                         enabled: newItemInput.text.trim() !== ""
                         onClicked: {
                             if (newItemInput.text.trim() !== "") {
-                                if (newItemInput.text.includes("&list=") || 
+                                if (newItemInput.text.includes("&list=") ||
                                     newItemInput.text.includes("/playlist?list=")) {
                                     playlistPopup.open()
                                 } else {
