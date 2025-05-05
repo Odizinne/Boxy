@@ -7,7 +7,6 @@ AnimatedPopup {
     id: playlistPopup
     height: playlistLayout.height + 30
     modal: true
-    closePolicy: Popup.CloseOnEscape
 
     onClosed: {
         busyIndicator.visible = false

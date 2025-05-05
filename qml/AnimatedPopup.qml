@@ -4,6 +4,7 @@ import QtQuick
 
 Popup {
     id: control
+    closePolicy: Popup.CloseOnEscape | Popup.CloseOnPressOutside
     T.Overlay.modal: Rectangle {
         color: control.Universal.altMediumLowColor
     }

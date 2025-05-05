@@ -10,7 +10,6 @@ AnimatedPopup {
     height: 350
     anchors.centerIn: parent
     modal: true
-    closePolicy: Popup.CloseOnEscape | Popup.CloseOnPressOutside
 
     ColumnLayout {
         anchors.fill: parent
@@ -82,12 +81,6 @@ AnimatedPopup {
                 Qt.openUrlExternally("file:///" + botBridge.get_playlists_directory())
                 playlistSelectorPopup.close()
             }
-        }
-
-        Button {
-            text: "Close"
-            Layout.fillWidth: true
-            onClicked: playlistSelectorPopup.close()
         }
     }
 
