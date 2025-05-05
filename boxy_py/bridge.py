@@ -36,6 +36,8 @@ class BotBridge(QObject):
     batchDownloadProgressChanged = Signal(int, int, str)
     validTokenFormatChanged = Signal(bool)
     urlsExtractedSignal = Signal(list)
+    itemDownloadStarted = Signal(str, int)  
+    itemDownloadCompleted = Signal(str, int) 
 
     def __init__(self, bot):
         super().__init__()
@@ -821,12 +823,15 @@ class BotBridge(QObject):
             downloaded_count = 0
             self.batchDownloadProgressChanged.emit(downloaded_count, non_cached_total, "Downloading playlist items...")
 
-            for url in urls:
+            for i, url in enumerate(urls):
                 cached_item = self.audio_cache.get_cached_file(url)
                 if cached_item:
                     continue
                 
                 try:
+                    # Emit signal with both URL and index
+                    self.itemDownloadStarted.emit(url, i)
+
                     import tempfile
                     temp_dir = tempfile.mkdtemp()
                     temp_path = os.path.join(temp_dir, "audio.webm")
@@ -858,6 +863,9 @@ class BotBridge(QObject):
 
                 except Exception as e:
                     print(f"Error downloading {url}: {str(e)}")
+                finally:
+                    # Emit signal with both URL and index
+                    self.itemDownloadCompleted.emit(url, i)
 
                 downloaded_count += 1
                 self.batchDownloadProgressChanged.emit(downloaded_count, non_cached_total, "Downloading playlist items...")

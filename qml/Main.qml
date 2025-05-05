@@ -109,6 +109,7 @@ ApplicationWindow {
                 }
             }
         }
+
         ToolButton {
             anchors.left: menuButton.right
             height: 30
@@ -222,6 +223,18 @@ ApplicationWindow {
     Connections {
         target: botBridge
 
+        function onItemDownloadStarted(url, index) {
+            if (index < playlistModel.count) {
+                playlistModel.setProperty(index, "isDownloading", true)
+            }
+        }
+        
+        function onItemDownloadCompleted(url, index) {
+            if (index < playlistModel.count) {
+                playlistModel.setProperty(index, "isDownloading", false)
+            }
+        }
+
         function onStatusChanged(status) {
             if (status === "Connected") {
                 root.connectedToAPI = true
@@ -255,7 +268,8 @@ ApplicationWindow {
                                          "url": item.url || "",
                                          "resolvedTitle": item.resolvedTitle || "",
                                          "channelName": item.channelName || "",
-                                         "isResolving": !item.resolvedTitle || !item.url || !item.channelName
+                                         "isResolving": !item.resolvedTitle || !item.url || !item.channelName,
+                                         "isDownloading": false
                                      })
 
                 if (!item.resolvedTitle || !item.url || !item.channelName) {
@@ -580,6 +594,15 @@ ApplicationWindow {
                                     Layout.rightMargin: 10
                                 }
 
+                                BusyIndicator {
+                                    id: downloadingIndicator
+                                    visible: model.isDownloading
+                                    running: visible
+                                    height: 16
+                                    width: 16
+                                    Layout.rightMargin: 10
+                                }
+
                                 Button {
                                     icon.source: "icons/delete.png"
                                     icon.width: width / 3
@@ -652,7 +675,8 @@ ApplicationWindow {
                                         "url": "",
                                         "resolvedTitle": "",
                                         "channelName": "",
-                                        "isResolving": true
+                                        "isResolving": true,
+                                        "isDownloading": false
                                     })
                                     botBridge.resolve_title(idx, newItemInput.text.trim())
                                     newItemInput.text = ""
@@ -1087,7 +1111,8 @@ ApplicationWindow {
                         "url": "",
                         "resolvedTitle": "",
                         "channelName": "",
-                        "isResolving": true
+                        "isResolving": true,
+                        "isDownloading": false
                     })
                     botBridge.resolve_title(idx, url)
                 }
