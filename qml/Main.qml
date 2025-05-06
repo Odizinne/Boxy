@@ -214,7 +214,7 @@ ApplicationWindow {
     }
 
     function savePlaylist() {
-        if (playlistName.text.trim() == "") {
+        if (playlistName.text.trim() === "") {
             savePopup.displayText = "You must name the playlist"
             savePopup.visible = true
             return
