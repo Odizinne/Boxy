@@ -643,7 +643,9 @@ ApplicationWindow {
                     Layout.bottomMargin: -5
                     visible: newItemInput.placeholderText !== "Enter YouTube URL or search term" &&
                              newItemInput.placeholderText !== "Cannot join empty channel" &&
-                             newItemInput.placeholderText !== "Downloading playlist items..."
+                             newItemInput.placeholderText !== "Downloading playlist items..." &&
+                             newItemInput.placeholderText !== "Download complete!" &&
+                             newItemInput.placeholderText !== "All items already cached"
                 }
 
                 ProgressBar {

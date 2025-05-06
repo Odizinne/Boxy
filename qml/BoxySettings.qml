@@ -12,4 +12,5 @@ Settings {
     property int maxCacheSize: 1024 
     property string accentColor: "#00CC6A"
     property bool darkMode: true
+    property int maxParallelDownloads: 3
 }

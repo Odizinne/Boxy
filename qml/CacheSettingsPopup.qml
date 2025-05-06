@@ -29,20 +29,15 @@ AnimatedPopup {
         cacheLocation = cacheInfo.cache_location
     }
     
-    // New function to properly format file URLs for different platforms
     function getFileUrl(path) {
-        // Remove any trailing slashes for consistency
         let cleanPath = path
         while (cleanPath.endsWith("/") || cleanPath.endsWith("\\")) {
             cleanPath = cleanPath.slice(0, -1)
         }
         
-        // On Windows, paths need to start with an extra slash
         if (cleanPath.includes(":\\")) {
-            // Windows path detected
             return "file:///" + cleanPath
         } else {
-            // Unix-like path (Linux, macOS)
             return "file://" + cleanPath
         }
     }
@@ -120,6 +115,37 @@ AnimatedPopup {
 
                 textFromValue: function(value, locale) {
                     return value + " MB"
+                }
+
+                valueFromText: function(text, locale) {
+                    return parseInt(text)
+                }
+            }
+        }
+
+        RowLayout {
+            Layout.preferredHeight: 30
+            spacing: 10
+
+            Label {
+                text: "Parallel downloads:"
+                Layout.fillWidth: true
+            }
+
+            SpinBox {
+                id: parallelDownloadsSpinBox
+                from: 1
+                to: 8
+                stepSize: 1
+                value: BoxySettings.maxParallelDownloads
+                editable: true
+
+                onValueModified: {
+                    BoxySettings.maxParallelDownloads = value
+                }
+                
+                textFromValue: function(value, locale) {
+                    return value.toString()
                 }
 
                 valueFromText: function(text, locale) {

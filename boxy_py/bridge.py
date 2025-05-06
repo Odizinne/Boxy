@@ -804,74 +804,86 @@ class BotBridge(QObject):
 
     @Slot("QVariantList")
     def download_all_playlist_items(self, urls):
-        """Download all playlist items to cache"""
+        """Download all playlist items to cache with parallel processing based on user settings"""
         async def downloader():
-            total_items = len(urls)
-
             cached_count = 0
-            for url in urls:
+            non_cached_urls = []
+            for i, url in enumerate(urls):
                 if self.audio_cache.get_cached_file(url) is not None:
                     cached_count += 1
+                else:
+                    non_cached_urls.append((i, url))
 
-            non_cached_total = total_items - cached_count
+            non_cached_total = len(non_cached_urls)
 
             if non_cached_total == 0:
-                self.downloadStatusChanged.emit("")
-                self.batchDownloadProgressChanged.emit(0, 0, "All items already cached")
+                self.downloadStatusChanged.emit("All items already cached")
                 return
 
+            self.batchDownloadProgressChanged.emit(0, non_cached_total, "Downloading playlist items...")
+
+            from PySide6.QtCore import QSettings
+            settings = QSettings("Odizinne", "Boxy")
+            max_parallel_downloads = settings.value("maxParallelDownloads", 3, type=int)
             downloaded_count = 0
-            self.batchDownloadProgressChanged.emit(downloaded_count, non_cached_total, "Downloading playlist items...")
+            semaphore = asyncio.Semaphore(max_parallel_downloads)
+            download_tasks = []
 
-            for i, url in enumerate(urls):
-                cached_item = self.audio_cache.get_cached_file(url)
-                if cached_item:
-                    continue
-                
-                try:
-                    # Emit signal with both URL and index
-                    self.itemDownloadStarted.emit(url, i)
+            async def download_item(url_index, url):
+                nonlocal downloaded_count
+                idx, current_url = url_index, url
 
-                    import tempfile
-                    temp_dir = tempfile.mkdtemp()
-                    temp_path = os.path.join(temp_dir, "audio.webm")
+                async with semaphore:  
+                    try:
+                        self.itemDownloadStarted.emit(current_url, idx)
 
-                    ydl_opts = {
-                        "format": "bestaudio/best",
-                        "outtmpl": temp_path,
-                        "noplaylist": True,
-                        "quiet": True,
-                        "no_warnings": True
-                    }
+                        import tempfile
+                        temp_dir = tempfile.mkdtemp()
+                        temp_path = os.path.join(temp_dir, "audio.webm")
 
-                    loop = asyncio.get_event_loop()
-                    info = await loop.run_in_executor(self._yt_pool, lambda: self._extract_video_info(url, ydl_opts))
+                        ydl_opts = {
+                            "format": "bestaudio/best",
+                            "outtmpl": temp_path,
+                            "noplaylist": True,
+                            "quiet": True,
+                            "no_warnings": True
+                        }
 
-                    if os.path.exists(temp_path) and os.path.getsize(temp_path) > 0:
-                        cached_path = self.audio_cache.add_file(url, temp_path, info)
+                        loop = asyncio.get_event_loop()
+                        info = await loop.run_in_executor(
+                            self._yt_pool, 
+                            lambda: self._extract_video_info(current_url, ydl_opts)
+                        )
 
-                        from PySide6.QtCore import QSettings
-                        settings = QSettings("Odizinne", "Boxy")
-                        max_cache_size_mb = settings.value("maxCacheSize", 1024, type=int)
+                        if os.path.exists(temp_path) and os.path.getsize(temp_path) > 0:
+                            cached_path = self.audio_cache.add_file(current_url, temp_path, info)
+                        else:
+                            print(f"Error: Downloaded file is missing or empty: {temp_path}")
 
-                        self.audio_cache.cleanup(max_size_mb=max_cache_size_mb)
-                    else:
-                        print(f"Error: Downloaded file is missing or empty: {temp_path}")
+                        import shutil
+                        shutil.rmtree(temp_dir, ignore_errors=True)
 
-                    import shutil
-                    shutil.rmtree(temp_dir, ignore_errors=True)
+                    except Exception as e:
+                        print(f"Error downloading {current_url}: {str(e)}")
+                    finally:
+                        self.itemDownloadCompleted.emit(current_url, idx)
+                        downloaded_count += 1
+                        self.batchDownloadProgressChanged.emit(
+                            downloaded_count, non_cached_total, 
+                            "Downloading playlist items..."
+                        )
 
-                except Exception as e:
-                    print(f"Error downloading {url}: {str(e)}")
-                finally:
-                    # Emit signal with both URL and index
-                    self.itemDownloadCompleted.emit(url, i)
+            for url_index, url in non_cached_urls:
+                download_tasks.append(download_item(url_index, url))
 
-                downloaded_count += 1
-                self.batchDownloadProgressChanged.emit(downloaded_count, non_cached_total, "Downloading playlist items...")
+            await asyncio.gather(*download_tasks)
 
-            self.downloadStatusChanged.emit("")
-            self.audio_cache.cleanup(self.max_cache_size_mb)
+            self.batchDownloadProgressChanged.emit(
+                non_cached_total, non_cached_total, "Download complete!"
+            )
+
+            max_cache_size_mb = settings.value("maxCacheSize", 1024, type=int)
+            self.audio_cache.cleanup(max_size_mb=max_cache_size_mb)
 
         asyncio.run_coroutine_threadsafe(downloader(), self.bot.loop)
 
