@@ -29,6 +29,24 @@ AnimatedPopup {
         cacheLocation = cacheInfo.cache_location
     }
     
+    // New function to properly format file URLs for different platforms
+    function getFileUrl(path) {
+        // Remove any trailing slashes for consistency
+        let cleanPath = path
+        while (cleanPath.endsWith("/") || cleanPath.endsWith("\\")) {
+            cleanPath = cleanPath.slice(0, -1)
+        }
+        
+        // On Windows, paths need to start with an extra slash
+        if (cleanPath.includes(":\\")) {
+            // Windows path detected
+            return "file:///" + cleanPath
+        } else {
+            // Unix-like path (Linux, macOS)
+            return "file://" + cleanPath
+        }
+    }
+    
     Connections {
         target: botBridge
         function onCacheInfoUpdated(size, count, location) {
@@ -150,9 +168,8 @@ AnimatedPopup {
                 Layout.preferredWidth: parent.buttonWidth
                 Layout.fillWidth: true
                 text: "Open cache folder"
-                onClicked: Qt.openUrlExternally("file:///" + botBridge.get_cache_directory())
+                onClicked: Qt.openUrlExternally(getFileUrl(botBridge.get_cache_directory()))
             }
         }
     }
 }
-
