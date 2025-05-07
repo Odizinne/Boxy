@@ -4,3 +4,4 @@ dist/
 downloaded_audio.webm
 token.txt
 __pycache__/
+boxy.pyproject.user
