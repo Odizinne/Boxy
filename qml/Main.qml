@@ -268,7 +268,12 @@ ApplicationWindow {
                     required property int index
                     required property var modelData
                     property var noChannelsItem: null
-
+                    enter: Transition {
+                        NumberAnimation { property: "opacity"; from: 0.0; to: 1.0; easing.type: Easing.Linear; duration: 110 }
+                    }
+                    exit: Transition {
+                        NumberAnimation { property: "opacity"; from: 1.0; to: 0.0; easing.type: Easing.Linear; duration: 110 }
+                    }
                     title: modelData.name
 
                     Instantiator {
