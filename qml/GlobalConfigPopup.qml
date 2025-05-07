@@ -4,6 +4,7 @@ import QtQuick.Layouts
 import "."
 
 AnimatedPopup {
+    modal: true
     ColumnLayout {
         anchors.fill: parent
         spacing: 15
