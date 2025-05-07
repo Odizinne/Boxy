@@ -5,8 +5,8 @@ MenuItem {
     id: control
     height: implicitHeight
     background: Rectangle {
+        implicitHeight: 44
         implicitWidth: 200
-        implicitHeight: 30
 
         color: !control.enabled ? control.Universal.altMediumLowColor :
                                   control.down ? control.Universal.listMediumColor :

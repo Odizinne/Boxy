@@ -2,8 +2,6 @@ import QtQuick
 import QtQuick.Layouts
 import QtQuick.Controls.Universal
 import Qt.labs.platform as Platform
-import QtCore
-import QtQuick.Templates as T
 
 import "."
 
@@ -59,7 +57,7 @@ ApplicationWindow {
         height: 30
         ToolButton {
             id: menuButton
-            height: 30
+            height: parent.height
             text: "File"
             onClicked: mainMenu.visible = !mainMenu.visible
             Menu {
@@ -82,20 +80,17 @@ ApplicationWindow {
                 }
 
                 CustomMenuItem {
-                    height: 35
                     text: "Cache settings"
                     onTriggered: cacheSettingsPopup.open()
                 }
 
                 CustomMenuItem {
-                    height: 35
                     text: "Edit token"
                     onTriggered: tokenPopup.open()
                 }
                 MenuSeparator {}
 
                 CustomMenuItem {
-                    height: 35
                     onTriggered: Qt.quit()
 
                     RowLayout {
@@ -119,9 +114,10 @@ ApplicationWindow {
 
         ToolButton {
             anchors.left: menuButton.right
-            height: 30
+            height: parent.height
             text: "Playlist"
             onClicked: playlistMenu.visible = !playlistMenu.visible
+            id: playlistButton
             Menu {
                 id: playlistMenu
                 title: qsTr("Playlist")
@@ -136,7 +132,6 @@ ApplicationWindow {
                 }
 
                 CustomMenuItem {
-                    height: 35
                     enabled: root.connectedToAPI && playlistModel.count > 0 && !root.isResolvingAny
                     onTriggered: {
                         playlistModel.clear()
@@ -161,7 +156,6 @@ ApplicationWindow {
                 }
 
                 CustomMenuItem {
-                    height: 35
                     enabled: root.connectedToAPI && !root.isResolvingAny
                     onTriggered: playlistSelectorPopup.open()
 
@@ -183,7 +177,6 @@ ApplicationWindow {
                 }
 
                 CustomMenuItem {
-                    height: 35
                     enabled: !root.isResolvingAny
                     onTriggered: root.savePlaylist()
 
@@ -201,6 +194,161 @@ ApplicationWindow {
                             opacity: 0.2
                             font.pixelSize: 12
                         }
+                    }
+                }
+            }
+        }
+
+        ToolButton {
+            id: serversToolButton
+            text: "Servers"
+            height: parent.height
+            anchors.left: playlistButton.right
+            property var serverData: ({servers: [], channels: {}})
+            property var noServersItem: null
+
+            function refreshServerData() {
+                serverData = botBridge.get_servers_with_channels()
+                serverMenuInstantiator.model = serverData.servers
+            }
+
+            onClicked: serversMenu.visible = !serversMenu.visible
+
+            Connections {
+                target: botBridge
+                function onStatusChanged(status) {
+                    if (status === "Connected") {
+                        serversToolButton.refreshServerData()
+                    }
+                }
+            }
+
+            Menu {
+                id: serversMenu
+                title: qsTr("Servers")
+                topMargin: 30
+                width: 250
+                visible: false
+                enter: Transition {
+                    NumberAnimation { property: "opacity"; from: 0.0; to: 1.0; easing.type: Easing.Linear; duration: 110 }
+                }
+                exit: Transition {
+                    NumberAnimation { property: "opacity"; from: 1.0; to: 0.0; easing.type: Easing.Linear; duration: 110 }
+                }
+
+                CustomMenuItem {
+                    text: "Refresh Server List"
+                    onTriggered: serversToolButton.refreshServerData()
+                }
+
+                CustomMenuItem {
+                    text: "Invite Boxy to server"
+                    onTriggered: {
+                        let link = botBridge.get_invitation_link()
+                        if (link) {
+                            Qt.openUrlExternally(link)
+                        }
+                    }
+                }
+
+                CustomMenuItem {
+                    text: "Disconnect"
+                    enabled: botBridge.voiceConnected
+                    onTriggered: botBridge.disconnect_voice()
+                }
+
+                MenuSeparator {}
+            }
+
+            Instantiator {
+                id: serverMenuInstantiator
+                model: serversToolButton.serverData.servers
+
+                delegate: Menu {
+                    id: serverMenu
+                    required property int index
+                    required property var modelData
+                    property var noChannelsItem: null
+
+                    title: modelData.name
+
+                    Instantiator {
+                        id: channelInstantiator
+                        model: serversToolButton.serverData.channels[modelData.id] || []
+
+                        delegate: CustomMenuItem {
+                            required property int index
+                            required property var modelData
+
+                            text: modelData.name
+
+                            onTriggered: {
+                                botBridge.connect_to_channel(serverMenu.modelData.id, modelData.id)
+                                serversMenu.close()
+                            }
+                        }
+
+                        onObjectAdded: function(index, object) {
+                            if (serverMenu.noChannelsItem) {
+                                serverMenu.removeItem(serverMenu.noChannelsItem)
+                                serverMenu.noChannelsItem = null
+                            }
+                            serverMenu.addItem(object)
+                        }
+
+                        onObjectRemoved: function(index, object) {
+                            serverMenu.removeItem(object)
+                            if (channelInstantiator.count === 0) {
+                                serverMenu.noChannelsItem = Qt.createQmlObject(
+                                    'import "." as Custom; Custom.CustomMenuItem { text: "No channels available"; enabled: false }',
+                                    serverMenu,
+                                    "noChannelsPlaceholder"
+                                )
+                                serverMenu.addItem(serverMenu.noChannelsItem)
+                            }
+                        }
+
+                        Component.onCompleted: {
+                            if (count === 0) {
+                                serverMenu.noChannelsItem = Qt.createQmlObject(
+                                    'import "." as Custom; Custom.CustomMenuItem { text: "No channels available"; enabled: false }',
+                                    serverMenu,
+                                    "noChannelsPlaceholder"
+                                )
+                                serverMenu.addItem(serverMenu.noChannelsItem)
+                            }
+                        }
+                    }
+                }
+
+                onObjectAdded: function(index, object) {
+                    if (serversToolButton.noServersItem) {
+                        serversMenu.removeItem(serversToolButton.noServersItem)
+                        serversToolButton.noServersItem = null
+                    }
+                    serversMenu.insertMenu(index + 4, object)
+                }
+
+                onObjectRemoved: function(index, object) {
+                    serversMenu.removeMenu(object)
+                    if (serverMenuInstantiator.count === 0) {
+                        serversToolButton.noServersItem = Qt.createQmlObject(
+                            'import "." as Custom; Custom.CustomMenuItem { text: "No servers available"; enabled: false }',
+                            serversMenu,
+                            "noServersPlaceholder"
+                        )
+                        serversMenu.addItem(serversToolButton.noServersItem)
+                    }
+                }
+
+                Component.onCompleted: {
+                    if (count === 0) {
+                        serversToolButton.noServersItem = Qt.createQmlObject(
+                            'import "." as Custom; Custom.CustomMenuItem { text: "No servers available"; enabled: false }',
+                            serversMenu,
+                            "noServersPlaceholder"
+                        )
+                        serversMenu.addItem(serversToolButton.noServersItem)
                     }
                 }
             }
@@ -349,13 +497,10 @@ ApplicationWindow {
         }
     }
 
-    GridLayout {
+    RowLayout {
         anchors.fill: parent
-        columnSpacing: 20
-        rowSpacing: 20
+        spacing: 20
         anchors.margins: 14
-        columns: 2
-        rows: 2
         id: appLayout
 
         Frame {
@@ -687,18 +832,18 @@ ApplicationWindow {
                         onClicked: {
                             if (newItemInput.text.trim() !== "") {
                                 if (newItemInput.text.includes("&list=") ||
-                                    newItemInput.text.includes("/playlist?list=")) {
+                                        newItemInput.text.includes("/playlist?list=")) {
                                     playlistPopup.open()
                                 } else {
                                     let idx = playlistModel.count
                                     playlistModel.append({
-                                        "userTyped": newItemInput.text.trim(),
-                                        "url": "",
-                                        "resolvedTitle": "",
-                                        "channelName": "",
-                                        "isResolving": true,
-                                        "isDownloading": false
-                                    })
+                                                             "userTyped": newItemInput.text.trim(),
+                                                             "url": "",
+                                                             "resolvedTitle": "",
+                                                             "channelName": "",
+                                                             "isResolving": true,
+                                                             "isDownloading": false
+                                                         })
                                     botBridge.resolve_title(idx, newItemInput.text.trim())
                                     newItemInput.text = ""
                                 }
@@ -852,22 +997,19 @@ ApplicationWindow {
                     Layout.topMargin: 14
                     spacing: 10
 
-                    Button {
-                        id: shuffleButton
-                        Layout.preferredWidth: height
-                        icon.source: "icons/shuffle.png"
-                        icon.width: 16
-                        icon.height: 16
-                        checkable: true
-                        enabled: root.connectedToAPI
-                        onCheckedChanged: {
-                            if (checked && repeatButton.checked) {
-                                repeatButton.checked = false
+                    RowLayout {
+                        Layout.preferredWidth: controlLyt.implicitWidth
+                        Button {
+                            id: stopPlaylistButton
+                            icon.source: "icons/stop.png"
+                            Layout.preferredWidth: height
+                            property bool isPlaying: false
+                            enabled: isPlaying
+                            onClicked: {
+                                botBridge.stop_playing()
+                                playlistView.currentIndex = 0
+                                isPlaying = false
                             }
-                            BoxySettings.shuffle = checked
-                        }
-                        Component.onCompleted: {
-                            checked = BoxySettings.shuffle
                         }
                     }
 
@@ -962,139 +1104,44 @@ ApplicationWindow {
                         Layout.fillWidth: true
                     }
 
-                    Button {
-                        id: repeatButton
-                        Layout.preferredWidth: height
-                        icon.source: "icons/repeat.png"
-                        icon.width: 16
-                        icon.height: 16
-                        checkable: true
-                        enabled: root.connectedToAPI
-                        onCheckedChanged: {
-                            botBridge.set_repeat_mode(checked)
-                            if (checked && shuffleButton.checked) {
-                                shuffleButton.checked = false
+                    RowLayout {
+                        id: controlLyt
+                        Button {
+                            id: shuffleButton
+                            Layout.preferredWidth: height
+                            icon.source: "icons/shuffle.png"
+                            icon.width: 16
+                            icon.height: 16
+                            checkable: true
+                            enabled: root.connectedToAPI
+                            onCheckedChanged: {
+                                if (checked && repeatButton.checked) {
+                                    repeatButton.checked = false
+                                }
+                                BoxySettings.shuffle = checked
                             }
-                            BoxySettings.repeat = checked
-                        }
-                        Component.onCompleted: {
-                            checked = BoxySettings.repeat
-                        }
-                    }
-                }
-            }
-        }
-
-        Frame {
-            Layout.preferredHeight: implicitHeight
-            Layout.fillWidth: true
-            GridLayout {
-                anchors.fill: parent
-                columnSpacing: 10
-                rowSpacing: 10
-                columns: 2
-
-                Label {
-                    text: "Serv:"
-                    Layout.preferredWidth: pauseButton.width
-                    Layout.alignment: Qt.AlignVCenter
-                }
-
-                ComboBox {
-                    id: serverComboBox
-                    Layout.fillWidth: true
-                    enabled: root.connectedToAPI
-                    textRole: "name"
-                    valueRole: "id"
-                    model: []
-
-                    onCurrentValueChanged: {
-                        if (currentValue) {
-                            botBridge.set_current_server(currentValue)
-                        }
-                    }
-
-                    onActivated: {
-                        if (currentText) {
-                            BoxySettings.lastServer = currentText
-                        }
-                    }
-
-                    Connections {
-                        target: botBridge
-                        function onServersChanged(servers) {
-                            serverComboBox.model = servers
-                            if (servers.length > 0) {
-                                let lastServerIndex = servers.findIndex(server => server.name === BoxySettings.lastServer)
-                                serverComboBox.currentIndex = lastServerIndex >= 0 ? lastServerIndex : 0
-                                botBridge.set_current_server(servers[serverComboBox.currentIndex].id)
+                            Component.onCompleted: {
+                                checked = BoxySettings.shuffle
                             }
                         }
-                    }
-                }
-
-                Label {
-                    id: channelListLabel
-                    text: "Chan:"
-                    Layout.preferredWidth: pauseButton.width
-                    Layout.alignment: Qt.AlignVCenter
-                }
-
-                ComboBox {
-                    id: channelComboBox
-                    Layout.fillWidth: true
-                    enabled: root.connectedToAPI && model.length > 0
-                    textRole: "name"
-                    valueRole: "id"
-                    model: []
-
-                    onCurrentValueChanged: {
-                        if (currentValue) {
-                            botBridge.set_current_channel(currentValue)
-                        }
-                    }
-
-                    onActivated: {
-                        if (currentText) {
-                            BoxySettings.lastChannel = currentText
-                        }
-                    }
-
-                    Connections {
-                        target: botBridge
-                        function onChannelsChanged(channels) {
-                            channelComboBox.model = channels
-                            if (channels.length > 0) {
-                                let lastChannelIndex = channels.findIndex(channel => channel.name === BoxySettings.lastChannel)
-                                channelComboBox.currentIndex = lastChannelIndex >= 0 ? lastChannelIndex : 0
+                        Button {
+                            id: repeatButton
+                            Layout.preferredWidth: height
+                            icon.source: "icons/repeat.png"
+                            icon.width: 16
+                            icon.height: 16
+                            checkable: true
+                            enabled: root.connectedToAPI
+                            onCheckedChanged: {
+                                botBridge.set_repeat_mode(checked)
+                                if (checked && shuffleButton.checked) {
+                                    shuffleButton.checked = false
+                                }
+                                BoxySettings.repeat = checked
                             }
-                        }
-                    }
-                }
-
-                Button {
-                    id: stopPlaylistButton
-                    icon.source: "icons/stop.png"
-                    Layout.preferredWidth: height
-                    property bool isPlaying: false
-                    enabled: isPlaying
-                    onClicked: {
-                        botBridge.stop_playing()
-                        playlistView.currentIndex = 0
-                        isPlaying = false
-                    }
-                }
-
-                Button {
-                    id: disconnectButton
-                    text: botBridge && botBridge.voiceConnected ? "Disconnect from channel" : "Connect to channel"
-                    Layout.fillWidth: true
-                    enabled: root.connectedToAPI && channelComboBox.currentValue !== undefined && channelComboBox.currentValue !== null
-                    onClicked: {
-                        if (botBridge.voiceConnected) {
-                            botBridge.disconnect_voice()
-                        } else {
-                            botBridge.connect_to_channel()
+                            Component.onCompleted: {
+                                checked = BoxySettings.repeat
+                            }
                         }
                     }
                 }
@@ -1125,13 +1172,13 @@ ApplicationWindow {
                 for (let url of urls) {
                     let idx = playlistModel.count
                     playlistModel.append({
-                        "userTyped": url,
-                        "url": "",
-                        "resolvedTitle": "",
-                        "channelName": "",
-                        "isResolving": true,
-                        "isDownloading": false
-                    })
+                                             "userTyped": url,
+                                             "url": "",
+                                             "resolvedTitle": "",
+                                             "channelName": "",
+                                             "isResolving": true,
+                                             "isDownloading": false
+                                         })
                     botBridge.resolve_title(idx, url)
                 }
                 newItemInput.text = ""
