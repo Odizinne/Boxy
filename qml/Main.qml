@@ -499,7 +499,7 @@ ApplicationWindow {
 
     RowLayout {
         anchors.fill: parent
-        spacing: 20
+        spacing: 14
         anchors.margins: 14
         id: appLayout
 
