@@ -222,6 +222,7 @@ ApplicationWindow {
 
                 MenuItem {
                     text: "Invite Boxy to server"
+                    enabled: root.connectedToAPI
                     onTriggered: {
                         let link = botBridge.get_invitation_link()
                         if (link) {
