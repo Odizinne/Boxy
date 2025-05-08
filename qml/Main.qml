@@ -597,14 +597,13 @@ ApplicationWindow {
                     IconImage {
                         id: thumbnailImage
                         Layout.rowSpan: 2
-                        property int idealSize: (parent.width * 0.30) / 2
                         Layout.preferredWidth: 128
                         Layout.preferredHeight: 128
                         fillMode: Image.PreserveAspectCrop
                         property string currentUrl: ""
                         source: currentUrl || (Material.theme === Material.Dark ?
                                                    "icons/placeholder_light.png" : "icons/placeholder_dark.png")
-                        color: Material.accent
+                        color: currentUrl !== "" ? "transparent" : Material.accent
 
                         Connections {
                             target: botBridge
