@@ -112,30 +112,24 @@ ApplicationWindow {
                 title: qsTr("File")
                 width: 200
                 visible: false
-                enter: Transition {
-                    NumberAnimation { property: "opacity"; from: 0.0; to: 1.0; easing.type: Easing.Linear; duration: 110 }
-                }
-                exit: Transition {
-                    NumberAnimation { property: "opacity"; from: 1.0; to: 0.0; easing.type: Easing.Linear; duration: 110 }
-                }
 
-                CustomMenuItem {
+                MenuItem {
                     text: "UI Config"
                     onTriggered: globalConfigPopup.open()
                 }
 
-                CustomMenuItem {
+                MenuItem {
                     text: "Cache settings"
                     onTriggered: cacheSettingsPopup.open()
                 }
 
-                CustomMenuItem {
+                MenuItem {
                     text: "Edit token"
                     onTriggered: tokenPopup.open()
                 }
                 MenuSeparator {}
 
-                CustomMenuItem {
+                MenuItem {
                     onTriggered: Qt.quit()
 
                     RowLayout {
@@ -169,14 +163,8 @@ ApplicationWindow {
                 topMargin: 30
                 width: 200
                 visible: false
-                enter: Transition {
-                    NumberAnimation { property: "opacity"; from: 0.0; to: 1.0; easing.type: Easing.Linear; duration: 110 }
-                }
-                exit: Transition {
-                    NumberAnimation { property: "opacity"; from: 1.0; to: 0.0; easing.type: Easing.Linear; duration: 110 }
-                }
 
-                CustomMenuItem {
+                MenuItem {
                     enabled: root.connectedToAPI && playlistModel.count > 0 && !root.isResolvingAny
                     onTriggered: {
                         playlistModel.clear()
@@ -200,7 +188,7 @@ ApplicationWindow {
                     }
                 }
 
-                CustomMenuItem {
+                MenuItem {
                     enabled: root.connectedToAPI && !root.isResolvingAny
                     onTriggered: playlistSelectorPopup.open()
 
@@ -221,7 +209,7 @@ ApplicationWindow {
                     }
                 }
 
-                CustomMenuItem {
+                MenuItem {
                     enabled: !root.isResolvingAny
                     onTriggered: root.savePlaylist()
 
@@ -274,19 +262,13 @@ ApplicationWindow {
                 topMargin: 30
                 width: 250
                 visible: false
-                enter: Transition {
-                    NumberAnimation { property: "opacity"; from: 0.0; to: 1.0; easing.type: Easing.Linear; duration: 110 }
-                }
-                exit: Transition {
-                    NumberAnimation { property: "opacity"; from: 1.0; to: 0.0; easing.type: Easing.Linear; duration: 110 }
-                }
 
-                CustomMenuItem {
+                MenuItem {
                     text: "Refresh Server List"
                     onTriggered: serversToolButton.refreshServerData()
                 }
 
-                CustomMenuItem {
+                MenuItem {
                     text: "Invite Boxy to server"
                     onTriggered: {
                         let link = botBridge.get_invitation_link()
@@ -296,7 +278,7 @@ ApplicationWindow {
                     }
                 }
 
-                CustomMenuItem {
+                MenuItem {
                     text: "Disconnect"
                     enabled: botBridge.voiceConnected
                     onTriggered: botBridge.disconnect_voice()
@@ -314,19 +296,13 @@ ApplicationWindow {
                     required property int index
                     required property var modelData
                     property var noChannelsItem: null
-                    enter: Transition {
-                        NumberAnimation { property: "opacity"; from: 0.0; to: 1.0; easing.type: Easing.Linear; duration: 110 }
-                    }
-                    exit: Transition {
-                        NumberAnimation { property: "opacity"; from: 1.0; to: 0.0; easing.type: Easing.Linear; duration: 110 }
-                    }
                     title: modelData.name
 
                     Instantiator {
                         id: channelInstantiator
                         model: serversToolButton.serverData.channels[modelData.id] || []
 
-                        delegate: CustomMenuItem {
+                        delegate: MenuItem {
                             required property int index
                             required property var modelData
 
@@ -350,7 +326,7 @@ ApplicationWindow {
                             serverMenu.removeItem(object)
                             if (channelInstantiator.count === 0) {
                                 serverMenu.noChannelsItem = Qt.createQmlObject(
-                                    'import "." as Custom; Custom.CustomMenuItem { text: "No channels available"; enabled: false }',
+                                    'import "." as Custom; Custom.MenuItem { text: "No channels available"; enabled: false }',
                                     serverMenu,
                                     "noChannelsPlaceholder"
                                 )
@@ -361,7 +337,7 @@ ApplicationWindow {
                         Component.onCompleted: {
                             if (count === 0) {
                                 serverMenu.noChannelsItem = Qt.createQmlObject(
-                                    'import "." as Custom; Custom.CustomMenuItem { text: "No channels available"; enabled: false }',
+                                    'import "." as Custom; Custom.MenuItem { text: "No channels available"; enabled: false }',
                                     serverMenu,
                                     "noChannelsPlaceholder"
                                 )
@@ -383,7 +359,7 @@ ApplicationWindow {
                     serversMenu.removeMenu(object)
                     if (serverMenuInstantiator.count === 0) {
                         serversToolButton.noServersItem = Qt.createQmlObject(
-                            'import "." as Custom; Custom.CustomMenuItem { text: "No servers available"; enabled: false }',
+                            'import "." as Custom; Custom.MenuItem { text: "No servers available"; enabled: false }',
                             serversMenu,
                             "noServersPlaceholder"
                         )
@@ -394,7 +370,7 @@ ApplicationWindow {
                 Component.onCompleted: {
                     if (count === 0) {
                         serversToolButton.noServersItem = Qt.createQmlObject(
-                            'import "." as Custom; Custom.CustomMenuItem { text: "No servers available"; enabled: false }',
+                            'import "." as Custom; Custom.MenuItem { text: "No servers available"; enabled: false }',
                             serversMenu,
                             "noServersPlaceholder"
                         )

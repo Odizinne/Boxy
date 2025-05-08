@@ -5,7 +5,6 @@
         "qml/AnimatedPopup.qml",
         "qml/BoxySettings.qml",
         "qml/CacheSettingsPopup.qml",
-        "qml/CustomMenuItem.qml",
         "qml/DownloadMessagePopup.qml",
         "qml/GlobalConfigPopup.qml",
         "qml/LoadPopup.qml",
