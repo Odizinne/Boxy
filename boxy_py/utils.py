@@ -3,6 +3,9 @@ import sys
 import asyncio
 import aiohttp
 from youtube_search import YoutubeSearch
+from PySide6.QtGui import QImage, QPainter, QPainterPath
+from PySide6.QtCore import Qt
+
 
 def get_script_dir():
     """Get the directory of the current script"""
@@ -69,3 +72,60 @@ async def verify_token(token):
         except Exception as e:
             print(f"Error verifying token: {e}")
             return False
+        
+def create_rounded_thumbnail(image_path, size=96, corner_radius=6):
+    """
+    Process an image to be square with rounded corners.
+    
+    Args:
+        image_path (str): Path to the image file
+        size (int): Size of the output square image
+        corner_radius (int): Radius of the rounded corners
+        
+    Returns:
+        QImage: Processed image, or None if processing failed
+    """
+    try:
+        # Load the original image
+        original = QImage(image_path)
+        if original.isNull():
+            return None
+            
+        # Calculate center crop to make it square
+        width = original.width()
+        height = original.height()
+        
+        if width > height:
+            # Landscape image - crop left and right
+            x_offset = (width - height) // 2
+            crop_rect = (x_offset, 0, height, height)
+        else:
+            # Portrait or square image - crop top and bottom
+            y_offset = (height - width) // 2
+            crop_rect = (0, y_offset, width, width)
+            
+        # Crop to square
+        cropped = original.copy(*crop_rect)
+        
+        # Scale to desired size
+        scaled = cropped.scaled(size, size, Qt.KeepAspectRatio, Qt.SmoothTransformation)
+        
+        # Create rounded version
+        rounded = QImage(size, size, QImage.Format_ARGB32)
+        rounded.fill(Qt.transparent)
+        
+        # Create a path with rounded corners
+        path = QPainterPath()
+        path.addRoundedRect(0, 0, size, size, corner_radius, corner_radius)
+        
+        # Paint the scaled image onto the transparent image using the rounded path
+        painter = QPainter(rounded)
+        painter.setClipPath(path)
+        painter.drawImage(0, 0, scaled)
+        painter.end()
+        
+        return rounded
+        
+    except Exception as e:
+        print(f"Error processing thumbnail: {e}")
+        return None

@@ -620,22 +620,23 @@ ApplicationWindow {
                         Layout.rowSpan: 2
                         Layout.preferredWidth: 96
                         Layout.preferredHeight: 96
-                        fillMode: Image.PreserveAspectCrop
+                        fillMode: Image.PreserveAspectFit
                         property string currentUrl: ""
-                        source: currentUrl || (Material.theme === Material.Dark ?
-                                                   "icons/placeholder_light.png" : "icons/placeholder_dark.png")
-
+                        property string processedUrl: currentUrl ? botBridge.process_thumbnail(currentUrl, 96, 6) : ""
+                        source: processedUrl || (Material.theme === Material.Dark ?
+                                              "icons/placeholder_light.png" : "icons/placeholder_dark.png")
+                    
                         Connections {
                             target: botBridge
                             function onThumbnailChanged(url) {
                                 thumbnailImage.currentUrl = url
                             }
                         }
-
+                    
                         visible: true
-                        clip: true
                         asynchronous: true
-                        cache: false
+                        cache: true
+                        layer.smooth: true
                     }
                 }
 

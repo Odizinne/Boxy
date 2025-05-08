@@ -3,11 +3,12 @@ import os
 import concurrent.futures
 import json
 import discord
-from PySide6.QtCore import QObject, Signal, Slot, Property, QTimer
+from PySide6.QtCore import QObject, Signal, Slot, Property, QTimer, QBuffer, QIODevice, QByteArray
+from PySide6.QtGui import QImage, QPainter, QPainterPath, QPixmap
 import yt_dlp
 from youtube_search import YoutubeSearch
 
-from boxy_py.utils import delete_file, get_first_video_url, get_script_dir
+from boxy_py.utils import delete_file, get_first_video_url, get_script_dir, create_rounded_thumbnail
 import boxy_py.config as config
 from boxy_py.audio_cache import AudioCache
 
@@ -1016,3 +1017,55 @@ class BotBridge(QObject):
         args = sys.argv[1:]
 
         os.execl(python, python, script, *args)
+    
+    @Slot(str, int, int, result=str)
+    def process_thumbnail(self, url, size=96, corner_radius=6):
+        """
+        Process a thumbnail image to be square with rounded corners.
+        Returns a data URL for use in QML.
+
+        Args:
+            url (str): URL or path of the image
+            size (int): Size of the output square image
+            corner_radius (int): Radius of the rounded corners
+
+        Returns:
+            str: Data URL containing the processed image
+        """
+        if not url or url.startswith("data:"):
+            return url  # Already a data URL or empty
+
+        # For remote URLs, download the image to a temporary file
+        if url.startswith("http"):
+            import tempfile
+            import requests
+
+            try:
+                response = requests.get(url, timeout=5)
+                if response.status_code != 200:
+                    return ""
+
+                with tempfile.NamedTemporaryFile(delete=False, suffix=".jpg") as tmp:
+                    tmp.write(response.content)
+                    tmp_path = tmp.name
+
+                processed = create_rounded_thumbnail(tmp_path, size, corner_radius)
+                os.unlink(tmp_path)  # Delete temp file
+
+            except Exception as e:
+                print(f"Error downloading image: {e}")
+                return ""
+        else:
+            # Local file
+            processed = create_rounded_thumbnail(url, size, corner_radius)
+
+        if processed is None:
+            return ""
+
+        # Convert to data URL
+        buffer = QBuffer()
+        buffer.open(QIODevice.WriteOnly)
+        processed.save(buffer, "PNG")
+        image_data = buffer.data().toBase64().data().decode("ascii")
+
+        return f"data:image/png;base64,{image_data}"
