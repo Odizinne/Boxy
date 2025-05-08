@@ -223,9 +223,9 @@ class SetupManager(QObject):
         with open(self.token_file, "w") as f:
             f.write(token)
         
-        # Emit the token so the main app can use it
         self.setupCompleted.emit(token)
-        
+    
+    @Slot(result=str)
     def get_token(self):
         """Get the saved token"""
         if not os.path.exists(self.token_file):

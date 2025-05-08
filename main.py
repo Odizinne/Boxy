@@ -3,9 +3,10 @@ import os
 import threading
 import asyncio
 import logging
+import argparse
 from PySide6.QtGui import QGuiApplication, QIcon
 from PySide6.QtQml import QQmlApplicationEngine
-from PySide6.QtCore import QUrl, QSettings
+from PySide6.QtCore import QUrl, QSettings, QTimer
 
 from boxy_py.bot import BoxyBot
 from boxy_py.bridge import BotBridge
@@ -21,6 +22,32 @@ def configure_logging():
     os.environ["QT_LOGGING_RULES"] = "qt.qpa.*=false"
     discord_player_logger = logging.getLogger('discord.player')
     discord_player_logger.setLevel(logging.WARNING)
+
+def load_setup_window(app, engine, setup_manager):
+    """Load the setup window"""
+    engine.clearComponentCache()
+    for obj in engine.rootObjects():
+        obj.deleteLater()
+    
+    # Make sure to set the setup manager before loading the QML file
+    engine.rootContext().setContextProperty("setupManager", setup_manager)
+    
+    # Get the path to the setup window QML file
+    script_dir = os.path.dirname(os.path.abspath(__file__))
+    qml_path = os.path.join(script_dir, "qml/SetupWindow.qml")
+    
+    # Load the QML file
+    engine.load(QUrl.fromLocalFile(qml_path))
+    
+    # Check if the QML file was loaded successfully
+    if not engine.rootObjects():
+        print("Error loading setup UI")
+        sys.exit(1)
+    
+    # Connect signals
+    root = engine.rootObjects()[0]
+    root.setupFinished.connect(setup_manager.save_token)
+    setup_manager.setupCompleted.connect(lambda token: start_main_app(app, engine, token))
 
 def start_main_app(app, engine, token):
     """Start the main application with the token"""
@@ -77,8 +104,9 @@ def start_main_app(app, engine, token):
     
     bot_thread = threading.Thread(target=bot_runner, daemon=True)
     bot_thread.start()
-    qml_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "qml/Main.qml")
-
+    
+    script_dir = os.path.dirname(os.path.abspath(__file__))
+    qml_path = os.path.join(script_dir, "qml/Main.qml")
     engine.load(QUrl.fromLocalFile(qml_path))
     
     if not engine.rootObjects():
@@ -88,6 +116,11 @@ def start_main_app(app, engine, token):
 
 if __name__ == "__main__":
     configure_logging()
+    
+    # Parse command line arguments
+    parser = argparse.ArgumentParser(description='Boxy Discord Music Bot')
+    parser.add_argument('--force-setup', action='store_true', help='Force the setup screen to appear')
+    args = parser.parse_args()
     
     app = QGuiApplication(sys.argv)
     engine = QQmlApplicationEngine()
@@ -99,24 +132,12 @@ if __name__ == "__main__":
     app.setWindowIcon(QIcon(icon))
     
     setup_manager = SetupManager()
-
     migrate_playlists_if_needed()
     
-    if setup_manager.is_setup_complete():
+    if setup_manager.is_setup_complete() and not args.force_setup:
         token = setup_manager.get_token()
         start_main_app(app, engine, token)
     else:
-        engine.rootContext().setContextProperty("setupManager", setup_manager)
-        qml_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "qml/SetupWindow.qml")
-        engine.load(QUrl.fromLocalFile(qml_path))
-        
-        if not engine.rootObjects():
-            print("Error loading setup UI")
-            sys.exit(1)
-        
-        root = engine.rootObjects()[0]
-        root.setupFinished.connect(setup_manager.save_token)
-
-        setup_manager.setupCompleted.connect(lambda token: start_main_app(app, engine, token))
+        load_setup_window(app, engine, setup_manager)
     
     sys.exit(app.exec())

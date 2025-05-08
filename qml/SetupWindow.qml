@@ -17,6 +17,50 @@ ApplicationWindow {
     Material.primary: getPrimaryColor()
     color: BoxySettings.darkMode ? "#303030" : "#fffbfe"
     
+    function getAccentColor() {
+        switch (BoxySettings.accentColor) {
+        case 0:  return Material.Red;
+        case 1:  return Material.Pink;
+        case 2:  return Material.Purple;
+        case 3:  return Material.DeepPurple;
+        case 4:  return Material.Indigo;
+        case 5:  return Material.Blue;
+        case 6:  return Material.LightBlue;
+        case 7:  return Material.Cyan;
+        case 8:  return Material.Teal;
+        case 9:  return Material.Green;
+        case 10: return Material.LightGreen;
+        case 11: return Material.Lime;
+        case 12: return Material.Yellow;
+        case 13: return Material.Amber;
+        case 14: return Material.Orange;
+        case 15: return Material.DeepOrange;
+        default: return Material.Red;
+        }
+    }
+
+    function getPrimaryColor() {
+        switch (BoxySettings.primaryColor) {
+        case 0:  return Material.Red;
+        case 1:  return Material.Pink;
+        case 2:  return Material.Purple;
+        case 3:  return Material.DeepPurple;
+        case 4:  return Material.Indigo;
+        case 5:  return Material.Blue;
+        case 6:  return Material.LightBlue;
+        case 7:  return Material.Cyan;
+        case 8:  return Material.Teal;
+        case 9:  return Material.Green;
+        case 10: return Material.LightGreen;
+        case 11: return Material.Lime;
+        case 12: return Material.Yellow;
+        case 13: return Material.Amber;
+        case 14: return Material.Orange;
+        case 15: return Material.DeepOrange;
+        default: return Material.Blue;
+        }
+    }
+
     property bool tokenValid: tokenInput.text.trim() !== ""
     property bool readyToGo: tokenValid && messageIntentSwitch.checked && invitedBotSwitch.checked && setupManager.ffmpegInstalled
     
