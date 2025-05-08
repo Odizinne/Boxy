@@ -101,7 +101,7 @@ ApplicationWindow {
     }
 
     header: ToolBar {
-        height: 30
+        height: 40
         ToolButton {
             id: menuButton
             height: parent.height
@@ -109,7 +109,7 @@ ApplicationWindow {
             onClicked: mainMenu.visible = !mainMenu.visible
             Menu {
                 id: mainMenu
-                topMargin: 30
+                topMargin: 40
                 title: qsTr("File")
                 width: 200
                 visible: false
@@ -161,7 +161,7 @@ ApplicationWindow {
             Menu {
                 id: playlistMenu
                 title: qsTr("Playlist")
-                topMargin: 30
+                topMargin: 40
                 width: 200
                 visible: false
 
@@ -260,7 +260,7 @@ ApplicationWindow {
             Menu {
                 id: serversMenu
                 title: qsTr("Servers")
-                topMargin: 30
+                topMargin: 40
                 width: 250
                 visible: false
 
