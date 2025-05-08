@@ -13,7 +13,7 @@ ApplicationWindow {
     height: 750
     minimumWidth: 500
     minimumHeight: 750
-    title: "Boxy GUI"
+    title: "Boxy"
     Material.theme: BoxySettings.darkMode ? Material.Dark : Material.Light
     Material.accent: Material.Pink
     Material.primary: Material.DeepPurple
@@ -344,6 +344,7 @@ ApplicationWindow {
                     source: "icons/sun.png"
                     opacity: !themeSwitch.checked ? 1 : 0
                     rotation: themeSwitch.checked ? 360 : 0
+                    mipmap: true
 
                     Behavior on rotation {
                         NumberAnimation {
@@ -368,6 +369,7 @@ ApplicationWindow {
                     source: "icons/moon.png"
                     opacity: themeSwitch.checked ? 1 : 0
                     rotation: themeSwitch.checked ? 360 : 0
+                    mipmap: true
 
                     Behavior on rotation {
                         NumberAnimation {
