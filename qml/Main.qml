@@ -1273,4 +1273,18 @@ ApplicationWindow {
         id: cacheSettingsPopup
         anchors.centerIn: parent
     }
+
+    IssuePopup {
+        id: issuePopup
+        anchors.centerIn: parent
+        parent: playlistView
+        Connections {
+            target: botBridge
+
+            function onIssue(message) {
+                issuePopup.displayText = message
+                issuePopup.open()
+            }
+        }
+    }
 }

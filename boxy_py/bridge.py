@@ -17,6 +17,7 @@ class BotBridge(QObject):
     playStateChanged = Signal(bool)
     songChanged = Signal(str)
     downloadStatusChanged = Signal(str)
+    issue = Signal(str)
     repeatModeChanged = Signal(bool)
     songLoadedChanged = Signal(bool)
     voiceConnectedChanged = Signal(bool)
@@ -304,17 +305,17 @@ class BotBridge(QObject):
 
         async def play_wrapper():
             if not self._current_channel or not self._current_server:
-                self.downloadStatusChanged.emit("Please select a server and channel first")
+                self.issue.emit("Please connect to a channel first")
                 return
 
             selected_server = discord.utils.get(self.bot.guilds, id=int(self._current_server))
             if not selected_server:
-                self.downloadStatusChanged.emit("Selected server not found")
+                self.issue.emit("Selected server not found")
                 return
 
             selected_channel = discord.utils.get(selected_server.voice_channels, id=int(self._current_channel))
             if not selected_channel:
-                self.downloadStatusChanged.emit("Selected channel not found")
+                self.issue.emit("Selected channel not found")
                 return
 
             # Check if we need to change channels
@@ -338,7 +339,7 @@ class BotBridge(QObject):
 
             if need_reconnect:
                 if all(member.bot for member in selected_channel.members):
-                    self.downloadStatusChanged.emit("Cannot join empty channel")
+                    self.issue.emit("Cannot join empty channel")
                     return
 
                 try:
@@ -346,7 +347,7 @@ class BotBridge(QObject):
                     self._voice_connected = True
                     self.voiceConnectedChanged.emit(True)
                 except Exception as e:
-                    self.downloadStatusChanged.emit(f"Failed to connect: {str(e)}")
+                    self.issue.emit(f"Failed to connect: {str(e)}")
                     return
 
             if self.bot.voice_client and (self.bot.voice_client.is_playing() or self.bot.voice_client.is_paused()):
@@ -378,21 +379,21 @@ class BotBridge(QObject):
 
         if not self.bot.voice_client or not self.bot.voice_client.is_connected():
             if not self._current_channel or not self._current_server:
-                self.downloadStatusChanged.emit("Please select a server and channel first")
+                self.issue.emit("Please select a server and channel first")
                 return
 
             selected_server = discord.utils.get(self.bot.guilds, id=int(self._current_server))
             if not selected_server:
-                self.downloadStatusChanged.emit("Selected server not found")
+                self.issue.emit("Selected server not found")
                 return
 
             selected_channel = discord.utils.get(selected_server.voice_channels, id=int(self._current_channel))
             if not selected_channel:
-                self.downloadStatusChanged.emit("Selected channel not found")
+                self.issue.emit("Selected channel not found")
                 return
 
             if all(member.bot for member in selected_channel.members):
-                self.downloadStatusChanged.emit("Cannot join empty channel")
+                self.issue.emit("Cannot join empty channel")
                 return
 
             try:
@@ -400,7 +401,7 @@ class BotBridge(QObject):
                 self._voice_connected = True
                 self.voiceConnectedChanged.emit(True)
             except Exception as e:
-                self.downloadStatusChanged.emit(f"Failed to connect: {str(e)}")
+                self.issue.emit(f"Failed to connect: {str(e)}")
                 return
 
         self.downloadStatusChanged.emit("Preparing...")
@@ -736,21 +737,21 @@ class BotBridge(QObject):
                 self._current_channel = channel_id
 
             if not channel_id_to_use or not server_id_to_use:
-                self.downloadStatusChanged.emit("Please select a server and channel first")
+                self.issue.emit("Please select a server and channel first")
                 return
 
             selected_server = discord.utils.get(self.bot.guilds, id=int(server_id_to_use))
             if not selected_server:
-                self.downloadStatusChanged.emit("Selected server not found")
+                self.issue.emit("Selected server not found")
                 return
 
             selected_channel = discord.utils.get(selected_server.voice_channels, id=int(channel_id_to_use))
             if not selected_channel:
-                self.downloadStatusChanged.emit("Selected channel not found")
+                self.issue.emit("Selected channel not found")
                 return
 
             if all(member.bot for member in selected_channel.members):
-                self.downloadStatusChanged.emit("Cannot join empty channel")
+                self.issue.emit("Cannot join empty channel")
                 return
 
             try:
@@ -759,7 +760,7 @@ class BotBridge(QObject):
                 self.voiceConnectedChanged.emit(True)
                 self.downloadStatusChanged.emit("")
             except Exception as e:
-                self.downloadStatusChanged.emit(f"Failed to connect: {str(e)}")
+                self.issue.emit(f"Failed to connect: {str(e)}")
                 return
 
         asyncio.run_coroutine_threadsafe(connect_wrapper(), self.bot.loop)
@@ -772,7 +773,7 @@ class BotBridge(QObject):
             permissions = 3212288  # read message history, view channels, speak, connect
             return f"https://discord.com/api/oauth2/authorize?client_id={client_id}&permissions={permissions}&scope=bot"
         else:
-            self.downloadStatusChanged.emit("Bot is not connected yet")
+            self.issue.emit("Bot is not connected yet")
             return ""
     
     @Slot()
@@ -1003,7 +1004,6 @@ class BotBridge(QObject):
         with open(token_path, "w") as f:
             f.write(token.strip())
 
-        self.downloadStatusChanged.emit("Token saved. Restarting application...")
         QTimer.singleShot(0, self.restart_application)
 
     @Slot()
