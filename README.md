@@ -45,3 +45,12 @@ Select server / channel where boxy should join, paste url or type search to text
 Double click on the song once fetched has finished to start playing.  
 Songs are automatically cached to avoid having to redownload each time.  
 Go easy with the play / pause and the timeline, discord does not seems to like it (it will create lag).
+
+## Resources
+
+used icons from flaticon made by:
+-freepik
+-chanut
+-nawicon
+-roundicons
+-Bharat Icons
