@@ -17,7 +17,7 @@ ApplicationWindow {
     Material.theme: BoxySettings.darkMode ? Material.Dark : Material.Light
     Material.accent: getAccentColor()
     Material.primary: getPrimaryColor()
-    color: BoxySettings.darkMode ? "#303030" : "#fffbfe"
+    color: BoxySettings.darkMode ? "#1c1a1f" : "#e8e3ea"
     property bool songLoaded: false
     property var shufflePlayedIndices: []
     property bool connectedToAPI: false
@@ -526,16 +526,19 @@ ApplicationWindow {
 
     ColumnLayout {
         anchors.fill: parent
-        spacing: 14
-        anchors.margins: 14
+        spacing: 20
+        anchors.margins: 20
         id: appLayout
 
-        Frame {
+        Pane {
             Layout.fillWidth: true
-
+            Material.background: BoxySettings.darkMode ? "#2b2930" : "#fffbfe"
+            Material.elevation: 6
+            Material.roundedScale: Material.ExtraSmallScale
             ColumnLayout {
                 id: colLayout
                 anchors.fill: parent
+                anchors.margins: 10
                 spacing: 10
 
                 RowLayout {
@@ -672,7 +675,7 @@ ApplicationWindow {
 
                     RowLayout {
                         Layout.preferredWidth: controlLyt.implicitWidth
-                        RoundButton {
+                        CustomRoundButton {
                             id: stopPlaylistButton
                             icon.source: "icons/stop.png"
                             Layout.preferredWidth: height
@@ -692,7 +695,7 @@ ApplicationWindow {
                         Layout.fillWidth: true
                     }
 
-                    RoundButton {
+                    CustomRoundButton {
                         id: playPrevButton
                         icon.source: "icons/prev.png"
                         Layout.preferredWidth: height
@@ -720,7 +723,7 @@ ApplicationWindow {
                         }
                     }
 
-                    RoundButton {
+                    CustomRoundButton {
                         id: pauseButton
                         Layout.preferredWidth: height
                         enabled: songLoaded && !downloadProgress.visible
@@ -739,7 +742,7 @@ ApplicationWindow {
                         }
                     }
 
-                    RoundButton {
+                    CustomRoundButton {
                         id: playNextButton
                         icon.source: "icons/next.png"
                         icon.width: 16
@@ -787,13 +790,14 @@ ApplicationWindow {
 
                     RowLayout {
                         id: controlLyt
-                        RoundButton {
+                        CustomRoundButton {
                             id: shuffleButton
                             Layout.preferredWidth: height
                             icon.source: "icons/shuffle.png"
                             icon.width: 16
                             icon.height: 16
                             checkable: true
+                            highlighted: checked
                             enabled: root.connectedToAPI
                             onCheckedChanged: {
                                 if (checked && repeatButton.checked) {
@@ -806,13 +810,14 @@ ApplicationWindow {
                             }
                         }
 
-                        RoundButton {
+                        CustomRoundButton {
                             id: repeatButton
                             Layout.preferredWidth: height
                             icon.source: "icons/repeat.png"
                             icon.width: 16
                             icon.height: 16
                             checkable: true
+                            highlighted: checked
                             enabled: root.connectedToAPI
                             onCheckedChanged: {
                                 botBridge.set_repeat_mode(checked)
@@ -827,14 +832,18 @@ ApplicationWindow {
                         }
                     }
                 }
+                            Item {
+                
+            }
             }
         }
 
-        Frame {
-            Layout.fillHeight: true
-            //Layout.preferredWidth: parent.width * 0.55
+        Pane {
             Layout.fillWidth: true
-            Layout.rowSpan: 2
+            Layout.fillHeight: true
+            Material.background: BoxySettings.darkMode ? "#2b2930" : "#fffbfe"
+            Material.elevation: 6
+            Material.roundedScale: Material.ExtraSmallScale
 
             ColumnLayout {
                 id: playListViewLayout
@@ -943,7 +952,6 @@ ApplicationWindow {
                             width: ListView.view.width
                             height: 50
                             enabled: !downloadProgress.visible && !root.isResolvingAny && !playlistDownloadProgress.visible
-                            highlighted: model.index === playlistView.currentIndex
 
                             MouseArea {
                                 anchors.fill: parent
@@ -1097,7 +1105,7 @@ ApplicationWindow {
                                     Layout.rightMargin: 10
                                 }
 
-                                RoundButton {
+                                CustomRoundButton {
                                     icon.source: "icons/delete.png"
                                     Layout.preferredWidth: height
                                     icon.width: width / 3
@@ -1156,7 +1164,7 @@ ApplicationWindow {
                         }
                     }
 
-                    RoundButton {
+                    CustomRoundButton {
                         id: addButton
                         icon.source: "icons/plus.png"
                         Layout.preferredWidth: height
