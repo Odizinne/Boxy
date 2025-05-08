@@ -105,6 +105,7 @@ ApplicationWindow {
                     id: tokenInput
                     Layout.fillWidth: true
                     placeholderText: "Paste your bot token here"
+                    text: setupManager.get_token() || ""
                     echoMode: TextInput.Password
                 }
                 
