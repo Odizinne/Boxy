@@ -9,9 +9,9 @@ import QtQuick.Templates as T
 ApplicationWindow {
     id: setupWindow
     visible: true
-    width: lyt.implicitWidth * 1.6
+    width: lyt.implicitWidth * 1.5
     height: lyt.implicitHeight + 30 + 40
-    minimumWidth: lyt.implicitWidth * 1.6
+    minimumWidth: lyt.implicitWidth * 1.5
     minimumHeight: lyt.implicitHeight + 30 + 40
     title: "Boxy Discord Bot Setup"
     Material.theme: BoxySettings.darkMode ? Material.Dark : Material.Light
@@ -23,7 +23,7 @@ ApplicationWindow {
         Label {
             anchors.centerIn: parent
             text: "Boxy Discord Bot Setup"
-            font.pixelSize: 16
+            font.pixelSize: 14
             font.bold: true
         }
     }
