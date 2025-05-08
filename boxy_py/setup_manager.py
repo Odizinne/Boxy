@@ -206,12 +206,16 @@ class SetupManager(QObject):
             self.ffmpegInstallInProgress = False
     
     def is_setup_complete(self):
-        """Check if token is already set up"""
+        """Check if both token is set up and FFmpeg is installed"""
+        self.ffmpegInstalled = self.check_ffmpeg_installed()
+
+        token_valid = False
         if os.path.exists(self.token_file):
             with open(self.token_file, "r") as f:
                 token = f.read().strip()
-                return token != "" and token != "REPLACE_THIS_WITH_YOUR_BOT_TOKEN"
-        return False
+                token_valid = token != "" and token != "REPLACE_THIS_WITH_YOUR_BOT_TOKEN"
+
+        return token_valid and self.ffmpegInstalled
     
     @Slot(str)
     def save_token(self, token):

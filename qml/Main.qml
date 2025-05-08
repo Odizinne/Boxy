@@ -327,7 +327,7 @@ ApplicationWindow {
                             serverMenu.removeItem(object)
                             if (channelInstantiator.count === 0) {
                                 serverMenu.noChannelsItem = Qt.createQmlObject(
-                                    'import "." as Custom; Custom.MenuItem { text: "No channels available"; enabled: false }',
+                                    'import QtQuick.Controls.Material; MenuItem { text: "No channels available"; enabled: false }',
                                     serverMenu,
                                     "noChannelsPlaceholder"
                                 )
@@ -338,7 +338,7 @@ ApplicationWindow {
                         Component.onCompleted: {
                             if (count === 0) {
                                 serverMenu.noChannelsItem = Qt.createQmlObject(
-                                    'import "." as Custom; Custom.MenuItem { text: "No channels available"; enabled: false }',
+                                    'import QtQuick.Controls.Material; MenuItem { text: "No channels available"; enabled: false }',
                                     serverMenu,
                                     "noChannelsPlaceholder"
                                 )
@@ -360,7 +360,7 @@ ApplicationWindow {
                     serversMenu.removeMenu(object)
                     if (serverMenuInstantiator.count === 0) {
                         serversToolButton.noServersItem = Qt.createQmlObject(
-                            'import "." as Custom; Custom.MenuItem { text: "No servers available"; enabled: false }',
+                            'import QtQuick.Controls.Material; MenuItem { text: "No servers available"; enabled: false }',
                             serversMenu,
                             "noServersPlaceholder"
                         )
@@ -371,7 +371,7 @@ ApplicationWindow {
                 Component.onCompleted: {
                     if (count === 0) {
                         serversToolButton.noServersItem = Qt.createQmlObject(
-                            'import "." as Custom; Custom.MenuItem { text: "No servers available"; enabled: false }',
+                            'import QtQuick.Controls.Material; MenuItem { text: "No servers available"; enabled: false }',
                             serversMenu,
                             "noServersPlaceholder"
                         )

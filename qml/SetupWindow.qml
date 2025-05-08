@@ -246,21 +246,6 @@ ApplicationWindow {
         width: popupLyt.implicitWidth + 80
         height: popupLyt.implicitHeight + 80
         
-        T.Overlay.modal: Rectangle {
-            color: setupWindow.Material.altMediumLowColor
-        }
-        T.Overlay.modeless: Rectangle {
-            color: setupWindow.Material.baseLowColor
-        }
-        enter: Transition {
-            NumberAnimation { property: "opacity"; from: 0.0; to: 1.0; easing.type: Easing.Linear; duration: 83 }
-            NumberAnimation { property: "scale"; from: control.modal ? 1.05 : 1; to: 1; easing.type: Easing.OutCubic; duration: 167 }
-        }
-        exit: Transition {
-            NumberAnimation { property: "opacity"; from: 1.0; to: 0.0; easing.type: Easing.Linear; duration: 83 }
-            NumberAnimation { property: "scale"; from: 1; to: control.modal ? 1.05 : 1; easing.type: Easing.OutCubic; duration: 167 }
-        }
-        
         ColumnLayout {
             id: popupLyt
             anchors.fill: parent
