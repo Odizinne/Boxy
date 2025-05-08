@@ -17,6 +17,7 @@ ApplicationWindow {
     Material.theme: BoxySettings.darkMode ? Material.Dark : Material.Light
     Material.accent: getAccentColor()
     Material.primary: getPrimaryColor()
+    color: BoxySettings.darkMode ? "#303030" : "#fffbfe"
     property bool songLoaded: false
     property var shufflePlayedIndices: []
     property bool connectedToAPI: false
@@ -594,7 +595,7 @@ ApplicationWindow {
                         }
                     }
 
-                    IconImage {
+                    Image {
                         id: thumbnailImage
                         Layout.rowSpan: 2
                         Layout.preferredWidth: 128
@@ -603,7 +604,6 @@ ApplicationWindow {
                         property string currentUrl: ""
                         source: currentUrl || (Material.theme === Material.Dark ?
                                                    "icons/placeholder_light.png" : "icons/placeholder_dark.png")
-                        color: currentUrl !== "" ? "transparent" : Material.accent
 
                         Connections {
                             target: botBridge
@@ -672,10 +672,12 @@ ApplicationWindow {
 
                     RowLayout {
                         Layout.preferredWidth: controlLyt.implicitWidth
-                        MaterialButton {
+                        RoundButton {
                             id: stopPlaylistButton
                             icon.source: "icons/stop.png"
                             Layout.preferredWidth: height
+                            icon.width: 16
+                            icon.height: 16
                             property bool isPlaying: false
                             enabled: isPlaying
                             onClicked: {
@@ -690,10 +692,12 @@ ApplicationWindow {
                         Layout.fillWidth: true
                     }
 
-                    MaterialButton {
+                    RoundButton {
                         id: playPrevButton
                         icon.source: "icons/prev.png"
                         Layout.preferredWidth: height
+                        icon.width: 16
+                        icon.height: 16
                         enabled: playlistView.currentIndex > 0 && stopPlaylistButton.isPlaying && !downloadProgress.visible
                         onClicked: {
                             if (shuffleButton.checked) {
@@ -716,11 +720,13 @@ ApplicationWindow {
                         }
                     }
 
-                    MaterialButton {
+                    RoundButton {
                         id: pauseButton
                         Layout.preferredWidth: height
                         enabled: songLoaded && !downloadProgress.visible
                         icon.source: "icons/play.png"
+                        icon.width: 16
+                        icon.height: 16
                         onClicked: {
                             botBridge.toggle_playback()
                         }
@@ -733,9 +739,11 @@ ApplicationWindow {
                         }
                     }
 
-                    MaterialButton {
+                    RoundButton {
                         id: playNextButton
                         icon.source: "icons/next.png"
+                        icon.width: 16
+                        icon.height: 16
                         Layout.preferredWidth: height
                         enabled: playlistView.currentIndex < (playlistModel.count - 1) && stopPlaylistButton.isPlaying && !downloadProgress.visible
                         onClicked: {
@@ -779,7 +787,7 @@ ApplicationWindow {
 
                     RowLayout {
                         id: controlLyt
-                        MaterialButton {
+                        RoundButton {
                             id: shuffleButton
                             Layout.preferredWidth: height
                             icon.source: "icons/shuffle.png"
@@ -798,7 +806,7 @@ ApplicationWindow {
                             }
                         }
 
-                        MaterialButton {
+                        RoundButton {
                             id: repeatButton
                             Layout.preferredWidth: height
                             icon.source: "icons/repeat.png"
@@ -856,7 +864,7 @@ ApplicationWindow {
 
                     TextField {
                         id: playlistName
-                        Layout.preferredHeight: addButton.implicitHeight
+                        Layout.preferredHeight: editButton.implicitHeight
                         //implicitHeight: 30
                         text: ""
                         placeholderText: "My super playlist"
@@ -935,6 +943,7 @@ ApplicationWindow {
                             width: ListView.view.width
                             height: 50
                             enabled: !downloadProgress.visible && !root.isResolvingAny && !playlistDownloadProgress.visible
+                            highlighted: model.index === playlistView.currentIndex
 
                             MouseArea {
                                 anchors.fill: parent
@@ -1088,7 +1097,7 @@ ApplicationWindow {
                                     Layout.rightMargin: 10
                                 }
 
-                                MaterialButton {
+                                RoundButton {
                                     icon.source: "icons/delete.png"
                                     Layout.preferredWidth: height
                                     icon.width: width / 3
@@ -1118,7 +1127,7 @@ ApplicationWindow {
                 ProgressBar {
                     id: playlistDownloadProgress
                     Layout.fillWidth: true
-                    Layout.bottomMargin: -5
+                    //Layout.bottomMargin: -5
                     visible: newItemInput.placeholderText === "Downloading playlist items..."
                     from: 0
                     to: 100
@@ -1131,10 +1140,11 @@ ApplicationWindow {
 
                     TextField {
                         id: newItemInput
-                        Layout.preferredHeight: addButton.implicitHeight
+                        Layout.preferredHeight: editButton.implicitHeight
                         Layout.fillWidth: true
                         placeholderText: "Enter YouTube URL or search term"
                         enabled: root.connectedToAPI
+                        //Material.containerStyle: Material.Filled
 
                         onAccepted: addButton.clicked()
                         Connections {
@@ -1146,10 +1156,12 @@ ApplicationWindow {
                         }
                     }
 
-                    MaterialButton {
+                    RoundButton {
                         id: addButton
                         icon.source: "icons/plus.png"
                         Layout.preferredWidth: height
+                        icon.width: 16
+                        icon.height: 16
                         enabled: newItemInput.text.trim() !== ""
                         onClicked: {
                             if (newItemInput.text.trim() !== "") {

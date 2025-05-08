@@ -617,7 +617,6 @@ class BotBridge(QObject):
 
                 result["channels"][server_id] = channels
 
-        print(f"Returning server data: {result}")
         return result
 
     @Slot(str)
