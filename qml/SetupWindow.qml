@@ -9,66 +9,22 @@ import QtQuick.Templates as T
 ApplicationWindow {
     id: setupWindow
     visible: true
-    width: lyt.implicitWidth * 1.7
+    width: lyt.implicitWidth * 1.6
     height: lyt.implicitHeight + 30 + 40
-    minimumWidth: lyt.implicitWidth * 1.7
+    minimumWidth: lyt.implicitWidth * 1.6
     minimumHeight: lyt.implicitHeight + 30 + 40
     title: "Boxy Discord Bot Setup"
     Material.theme: BoxySettings.darkMode ? Material.Dark : Material.Light
-    Material.accent: getAccentColor()
-    Material.primary: getPrimaryColor()
-    color: BoxySettings.darkMode ? "#303030" : "#fffbfe"
+    Material.accent: Material.Pink
+    Material.primary: Material.DeepPurple
+    color: BoxySettings.darkMode ? "#1c1a1f" : "#e8e3ea"
     header: ToolBar {
         height: 40
         Label {
             anchors.centerIn: parent
             text: "Boxy Discord Bot Setup"
-            font.pixelSize: 20
+            font.pixelSize: 16
             font.bold: true
-        }
-    }
-    
-    function getAccentColor() {
-        switch (BoxySettings.accentColor) {
-        case 0:  return Material.Red;
-        case 1:  return Material.Pink;
-        case 2:  return Material.Purple;
-        case 3:  return Material.DeepPurple;
-        case 4:  return Material.Indigo;
-        case 5:  return Material.Blue;
-        case 6:  return Material.LightBlue;
-        case 7:  return Material.Cyan;
-        case 8:  return Material.Teal;
-        case 9:  return Material.Green;
-        case 10: return Material.LightGreen;
-        case 11: return Material.Lime;
-        case 12: return Material.Yellow;
-        case 13: return Material.Amber;
-        case 14: return Material.Orange;
-        case 15: return Material.DeepOrange;
-        default: return Material.Red;
-        }
-    }
-
-    function getPrimaryColor() {
-        switch (BoxySettings.primaryColor) {
-        case 0:  return Material.Red;
-        case 1:  return Material.Pink;
-        case 2:  return Material.Purple;
-        case 3:  return Material.DeepPurple;
-        case 4:  return Material.Indigo;
-        case 5:  return Material.Blue;
-        case 6:  return Material.LightBlue;
-        case 7:  return Material.Cyan;
-        case 8:  return Material.Teal;
-        case 9:  return Material.Green;
-        case 10: return Material.LightGreen;
-        case 11: return Material.Lime;
-        case 12: return Material.Yellow;
-        case 13: return Material.Amber;
-        case 14: return Material.Orange;
-        case 15: return Material.DeepOrange;
-        default: return Material.Blue;
         }
     }
 
@@ -88,9 +44,17 @@ ApplicationWindow {
             Layout.fillHeight: true
             spacing: 20
             
-            CustomGroupBox {
+            Label {
+                text: "Create discord application"
+                Layout.bottomMargin: -15
+                Layout.leftMargin: 10
+                color: Material.accent
+            }
+            Pane {
                 Layout.fillWidth: true
-                title: "Create Discord Application"
+                Material.background: BoxySettings.darkMode ? "#2b2930" : "#fffbfe"
+                Material.elevation: 6
+                Material.roundedScale: Material.ExtraSmallScale
 
 
                 ColumnLayout {
@@ -127,12 +91,35 @@ ApplicationWindow {
                         wrapMode: Text.WordWrap
                         text: "4 - Click 'Reset Token' and copy it"
                     }
+
+                                    RowLayout {
+                    Layout.fillWidth: true
+
+                    Label {
+                        text: "I enabled Message Content Intent"
+                        font.bold: true
+                        Layout.fillWidth: true
+                    }
+
+                    Switch {
+                        id: messageIntentSwitch
+                        Layout.rightMargin: - 10
+                    }
+                }
                 }
             }
             
-            CustomGroupBox {
+            Label {
+                text: "Enter bot token"
+                Layout.bottomMargin: -15
+                Layout.leftMargin: 10
+                color: Material.accent
+            }
+            Pane {
                 Layout.fillWidth: true
-                title: "Enter Bot Token"
+                Material.background: BoxySettings.darkMode ? "#2b2930" : "#fffbfe"
+                Material.elevation: 6
+                Material.roundedScale: Material.ExtraSmallScale
 
 
                 ColumnLayout {
@@ -141,7 +128,7 @@ ApplicationWindow {
 
                     Label {
                         text: "⚠️ Never share your bot token with anyone"
-                        opacity: 0.5
+                        color: Material.foreground
                     }
 
                     TextField {
@@ -154,9 +141,17 @@ ApplicationWindow {
                 }
             }
 
-            CustomGroupBox {
+            Label {
+                text: "Install FFmpeg"
+                Layout.bottomMargin: -15
+                Layout.leftMargin: 10
+                color: Material.accent
+            }
+            Pane {
                 Layout.fillWidth: true
-                title: "Install FFmpeg"
+                Material.background: BoxySettings.darkMode ? "#2b2930" : "#fffbfe"
+                Material.elevation: 6
+                Material.roundedScale: Material.ExtraSmallScale
 
 
                 ColumnLayout {
@@ -178,24 +173,24 @@ ApplicationWindow {
                 }
             }
 
-            ColumnLayout {
-                Layout.fillWidth: true
-                spacing: 6
-                
-                RowLayout {
-                    Layout.fillWidth: true
-
-                    Label {
-                        text: "I enabled Message Content Intent"
-                        Layout.fillWidth: true
-                    }
-
-                    Switch {
-                        id: messageIntentSwitch
-                        Layout.rightMargin: - 10
-                    }
-                }
-            }
+            //ColumnLayout {
+            //    Layout.fillWidth: true
+            //    spacing: 6
+            //    
+            //    RowLayout {
+            //        Layout.fillWidth: true
+//
+            //        Label {
+            //            text: "I enabled Message Content Intent"
+            //            Layout.fillWidth: true
+            //        }
+//
+            //        Switch {
+            //            id: messageIntentSwitch
+            //            Layout.rightMargin: - 10
+            //        }
+            //    }
+            //}
 
             MaterialButton {
                 text: "Let's Go!"

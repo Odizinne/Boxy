@@ -1,7 +1,7 @@
 import QtQuick.Controls.Material
 
 Button {
-    Material.roundedScale: Material.ExtraSmallScale
+    Material.roundedScale: Material.LargeScale
     implicitWidth: Math.max(implicitBackgroundWidth + leftInset + rightInset,
                             implicitContentWidth + leftPadding + rightPadding)
     implicitHeight: Math.max(implicitBackgroundHeight + topInset + bottomInset,

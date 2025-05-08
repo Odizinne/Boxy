@@ -15,8 +15,8 @@ ApplicationWindow {
     minimumHeight: 750
     title: "Boxy GUI"
     Material.theme: BoxySettings.darkMode ? Material.Dark : Material.Light
-    Material.accent: getAccentColor()
-    Material.primary: getPrimaryColor()
+    Material.accent: Material.Pink
+    Material.primary: Material.DeepPurple
     color: BoxySettings.darkMode ? "#1c1a1f" : "#e8e3ea"
     property bool songLoaded: false
     property var shufflePlayedIndices: []
@@ -27,50 +27,6 @@ ApplicationWindow {
             if(playlistModel.get(i).isResolving) return true;
         }
         return false;
-    }
-
-    function getAccentColor() {
-        switch (BoxySettings.accentColor) {
-        case 0:  return Material.Red;
-        case 1:  return Material.Pink;
-        case 2:  return Material.Purple;
-        case 3:  return Material.DeepPurple;
-        case 4:  return Material.Indigo;
-        case 5:  return Material.Blue;
-        case 6:  return Material.LightBlue;
-        case 7:  return Material.Cyan;
-        case 8:  return Material.Teal;
-        case 9:  return Material.Green;
-        case 10: return Material.LightGreen;
-        case 11: return Material.Lime;
-        case 12: return Material.Yellow;
-        case 13: return Material.Amber;
-        case 14: return Material.Orange;
-        case 15: return Material.DeepOrange;
-        default: return Material.Red;
-        }
-    }
-
-    function getPrimaryColor() {
-        switch (BoxySettings.primaryColor) {
-        case 0:  return Material.Red;
-        case 1:  return Material.Pink;
-        case 2:  return Material.Purple;
-        case 3:  return Material.DeepPurple;
-        case 4:  return Material.Indigo;
-        case 5:  return Material.Blue;
-        case 6:  return Material.LightBlue;
-        case 7:  return Material.Cyan;
-        case 8:  return Material.Teal;
-        case 9:  return Material.Green;
-        case 10: return Material.LightGreen;
-        case 11: return Material.Lime;
-        case 12: return Material.Yellow;
-        case 13: return Material.Amber;
-        case 14: return Material.Orange;
-        case 15: return Material.DeepOrange;
-        default: return Material.Blue;
-        }
     }
 
     Shortcut {
@@ -113,11 +69,6 @@ ApplicationWindow {
                 title: qsTr("File")
                 width: 200
                 visible: false
-
-                MenuItem {
-                    text: "UI Config"
-                    onTriggered: globalConfigPopup.open()
-                }
 
                 MenuItem {
                     text: "Cache settings"
@@ -380,6 +331,70 @@ ApplicationWindow {
                 }
             }
         }
+
+            Item {
+                anchors.right: themeSwitch.left
+                height: 24
+                width: 24
+                anchors.verticalCenter: parent.verticalCenter
+
+                Image {
+                    id: sunImage
+                    anchors.fill: parent
+                    source: "icons/sun.png"
+                    opacity: !themeSwitch.checked ? 1 : 0
+                    rotation: themeSwitch.checked ? 360 : 0
+
+                    Behavior on rotation {
+                        NumberAnimation {
+                            duration: 500
+                            easing.type: Easing.OutQuad
+                        }
+                    }
+
+                    Behavior on opacity {
+                        NumberAnimation { duration: 500 }
+                    }
+
+                    MouseArea {
+                        anchors.fill: parent
+                        onClicked: themeSwitch.checked = !themeSwitch.checked
+                    }
+                }
+
+                Image {
+                    anchors.fill: parent
+                    id: moonImage
+                    source: "icons/moon.png"
+                    opacity: themeSwitch.checked ? 1 : 0
+                    rotation: themeSwitch.checked ? 360 : 0
+
+                    Behavior on rotation {
+                        NumberAnimation {
+                            duration: 500
+                            easing.type: Easing.OutQuad
+                        }
+                    }
+
+                    Behavior on opacity {
+                        NumberAnimation { duration: 100 }
+                    }
+
+                    MouseArea {
+                        anchors.fill: parent
+                        onClicked: themeSwitch.checked = !themeSwitch.checked
+                    }
+                }
+            }
+
+            Switch {
+                anchors.right: parent.right
+                height: 40
+                id: themeSwitch
+                checked: BoxySettings.darkMode
+                onClicked: BoxySettings.darkMode = checked
+                Layout.rightMargin: 10
+            }
     }
 
     function formatTime(seconds) {
@@ -538,8 +553,8 @@ ApplicationWindow {
             ColumnLayout {
                 id: colLayout
                 anchors.fill: parent
-                anchors.margins: 10
-                spacing: 10
+                anchors.margins: 5
+                spacing: 6
 
                 RowLayout {
                     Layout.fillWidth: true
@@ -601,8 +616,8 @@ ApplicationWindow {
                     Image {
                         id: thumbnailImage
                         Layout.rowSpan: 2
-                        Layout.preferredWidth: 128
-                        Layout.preferredHeight: 128
+                        Layout.preferredWidth: 96
+                        Layout.preferredHeight: 96
                         fillMode: Image.PreserveAspectCrop
                         property string currentUrl: ""
                         source: currentUrl || (Material.theme === Material.Dark ?
@@ -670,8 +685,9 @@ ApplicationWindow {
 
                 RowLayout {
                     Layout.fillWidth: true
-                    Layout.topMargin: 14
-                    //spacing: 10
+                    Layout.leftMargin: -5
+                    Layout.rightMargin: -5
+                    spacing: 0
 
                     RowLayout {
                         Layout.preferredWidth: controlLyt.implicitWidth
@@ -790,6 +806,7 @@ ApplicationWindow {
 
                     RowLayout {
                         id: controlLyt
+                        spacing: 0
                         CustomRoundButton {
                             id: shuffleButton
                             Layout.preferredWidth: height
@@ -833,6 +850,7 @@ ApplicationWindow {
                     }
                 }
                             Item {
+                                Layout.preferredHeight: 10
                 
             }
             }
@@ -849,6 +867,7 @@ ApplicationWindow {
                 id: playListViewLayout
                 spacing: 10
                 anchors.fill: parent
+                anchors.margins: 5
 
                 RowLayout {
                     Layout.fillWidth: true
@@ -857,6 +876,7 @@ ApplicationWindow {
                     MaterialButton {
                         id: downloadAllButton
                         icon.source: "icons/download.png"
+                        Material.roundedScale: Material.ExtraSmallScale
                         Layout.preferredWidth: height
                         enabled: root.connectedToAPI && playlistModel.count > 0 && !root.isResolvingAny && !downloadProgress.visible && !playlistDownloadProgress.visible
                         onClicked: {
@@ -889,6 +909,7 @@ ApplicationWindow {
                         id: editButton
                         text: "Edit"
                         checkable: true
+                        Material.roundedScale: Material.ExtraSmallScale
                         enabled: checked ? true : playlistModel.count >= 2
                     }
                 }
@@ -944,12 +965,13 @@ ApplicationWindow {
                         property bool manualNavigation: false
                         boundsBehavior: Flickable.StopAtBounds
                         ScrollBar.vertical: ScrollBar {
+                            id: scrlBar
                             policy: playlistView.contentHeight > playlistView.height ?
                                         ScrollBar.AlwaysOn : ScrollBar.AsNeeded
                         }
 
                         delegate: ItemDelegate {
-                            width: ListView.view.width
+                            width: scrlBar.visible ? ListView.view.width - 30 : ListView.view.width
                             height: 50
                             enabled: !downloadProgress.visible && !root.isResolvingAny && !playlistDownloadProgress.visible
 
@@ -1200,19 +1222,17 @@ ApplicationWindow {
 
     SavePopup {
         id: savePopup
-        parent: playlistView
         anchors.centerIn: parent
+        parent: playlistView
     }
 
     LoadPopup {
         id: playlistSelectorPopup
-        parent: playlistView
         anchors.centerIn: parent
     }
 
     PlaylistPromptPopup {
         id: playlistPopup
-        parent: playlistView
         anchors.centerIn: parent
         Connections {
             target: botBridge
@@ -1237,7 +1257,6 @@ ApplicationWindow {
 
     TokenPopup {
         id: tokenPopup
-        parent: playlistView
         anchors.centerIn: parent
     }
 
@@ -1249,13 +1268,6 @@ ApplicationWindow {
 
     CacheSettingsPopup {
         id: cacheSettingsPopup
-        parent: playlistView
-        anchors.centerIn: parent
-    }
-
-    GlobalConfigPopup {
-        id: globalConfigPopup
-        parent: playlistView
         anchors.centerIn: parent
     }
 }

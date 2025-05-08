@@ -22,13 +22,6 @@ AnimatedPopup {
         spacing: 15
         width: 350
 
-        Label {
-            text: "Discord Bot Token"
-            font.pixelSize: 16
-            font.bold: true
-            Layout.alignment: Qt.AlignHCenter
-        }
-
         RowLayout {
             Layout.fillWidth: true
             spacing: 0
