@@ -1,4 +1,4 @@
-import QtQuick.Controls.Universal
+import QtQuick.Controls.Material
 import QtQuick
 import QtQuick.Layouts
 import "."
@@ -61,7 +61,7 @@ AnimatedPopup {
             Layout.alignment: Qt.AlignHCenter
             spacing: 14
 
-            Button {
+            MaterialButton {
                 id: currentSongBtn
                 text: "Current Song"
                 onClicked: {
@@ -81,7 +81,7 @@ AnimatedPopup {
                 }
             }
 
-            Button {
+            MaterialButton {
                 id: entireBtn
                 text: "Entire Playlist"
                 onClicked: {

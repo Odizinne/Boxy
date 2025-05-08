@@ -1,4 +1,4 @@
-import QtQuick.Controls.Universal
+import QtQuick.Controls.Material
 import QtQuick
 import QtQuick.Layouts
 import "."
@@ -41,7 +41,7 @@ AnimatedPopup {
                 selectByMouse: true
             }
             
-            Button {
+            MaterialButton {
                 Layout.preferredWidth: height
                 Layout.preferredHeight: tokenInput.height
                 flat: true
@@ -72,7 +72,7 @@ AnimatedPopup {
             spacing: 10
             property int buttonWidth: Math.max(saveButton.implicitWidth, cancelButton.implicitWidth)
 
-            Button {
+            MaterialButton {
                 id: cancelButton
                 text: "Cancel"
                 Layout.fillWidth: true
@@ -80,7 +80,7 @@ AnimatedPopup {
                 onClicked: tokenPopup.close()
             }
 
-            Button {
+            MaterialButton {
                 id: saveButton
                 text: "Save and reconnect"
                 Layout.fillWidth: true

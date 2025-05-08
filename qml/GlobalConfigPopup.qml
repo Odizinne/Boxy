@@ -1,4 +1,4 @@
-import QtQuick.Controls.Universal
+import QtQuick.Controls.Material
 import QtQuick
 import QtQuick.Layouts
 import "."
@@ -11,7 +11,7 @@ AnimatedPopup {
         
         RowLayout {
             Label {
-                text: "UI color"
+                text: "Accent color"
                 Layout.alignment: Qt.AlignLeft
                 Layout.preferredWidth: 130
                 font.bold: true
@@ -23,28 +23,32 @@ AnimatedPopup {
 
             GridLayout {
                 id: colorGrid
-                columns: 6
+                columns: 8
                 rowSpacing: 8
                 columnSpacing: 8
                 Layout.alignment: Qt.AlignHCenter
 
                 Repeater {
                     model: ListModel {
-                        ListElement { color: "#FFA500" } // Orange
-                        ListElement { color: "#0078D4" } // Blue
-                        ListElement { color: "#D83B01" } // Red
-                        ListElement { color: "#00CC6A" } // Green
-                        ListElement { color: "#8764B8" } // Purple
-                        ListElement { color: "#FFB900" } // Yellow
-                        ListElement { color: "#E3008C" } // Pink
-                        ListElement { color: "#00B7C3" } // Cyan
-                        ListElement { color: "#94D0A5" } // Sage
-                        ListElement { color: "#4A154B" } // Eggplant
-                        ListElement { color: "#FF6D00" } // Pumpkin
-                        ListElement { color: "#486860" } // Forest
+                        ListElement { color: "#F44336" } // Material.Red
+                        ListElement { color: "#E91E63" } // Material.Pink
+                        ListElement { color: "#9C27B0" } // Material.Purple
+                        ListElement { color: "#673AB7" } // Material.DeepPurple
+                        ListElement { color: "#3F51B5" } // Material.Indigo
+                        ListElement { color: "#2196F3" } // Material.Blue
+                        ListElement { color: "#03A9F4" } // Material.LightBlue
+                        ListElement { color: "#00BCD4" } // Material.Cyan
+                        ListElement { color: "#009688" } // Material.Teal
+                        ListElement { color: "#4CAF50" } // Material.Green
+                        ListElement { color: "#8BC34A" } // Material.LightGreen
+                        ListElement { color: "#CDDC39" } // Material.Lime
+                        ListElement { color: "#FFEB3B" } // Material.Yellow
+                        ListElement { color: "#FFC107" } // Material.Amber
+                        ListElement { color: "#FF9800" } // Material.Orange
+                        ListElement { color: "#FF5722" } // Material.DeepOrange
                     }
 
-                    Button {
+                    MaterialButton {
                         id: colorButton
                         Layout.preferredWidth: 25
                         Layout.preferredHeight: 25
@@ -54,18 +58,89 @@ AnimatedPopup {
                         background: Rectangle {
                             anchors.fill: parent
                             color: model.color
+                            radius: 4
                             border.width: colorButton.checked ? 3 : 1
                             border.color: colorButton.checked ? "white" : Qt.darker(model.color, 1.2)
                         }
 
                         onCheckedChanged: {
                             if (checked) {
-                                BoxySettings.accentColor= model.color
+                                BoxySettings.accentColor = model.index
                             }
                         }
 
                         Component.onCompleted: {
-                            if (BoxySettings.accentColor === model.color) {
+                            if (BoxySettings.accentColor === model.index) {
+                                checked = true
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        RowLayout {
+            Label {
+                text: "Primary color"
+                Layout.alignment: Qt.AlignLeft
+                Layout.preferredWidth: 130
+                font.bold: true
+            }
+
+            ButtonGroup {
+                id: primaryColorButtonGroup
+            }
+
+            GridLayout {
+                id: primaryColorGrid
+                columns: 8
+                rowSpacing: 8
+                columnSpacing: 8
+                Layout.alignment: Qt.AlignHCenter
+
+                Repeater {
+                    model: ListModel {
+                        ListElement { color: "#F44336" } // Material.Red
+                        ListElement { color: "#E91E63" } // Material.Pink
+                        ListElement { color: "#9C27B0" } // Material.Purple
+                        ListElement { color: "#673AB7" } // Material.DeepPurple
+                        ListElement { color: "#3F51B5" } // Material.Indigo
+                        ListElement { color: "#2196F3" } // Material.Blue
+                        ListElement { color: "#03A9F4" } // Material.LightBlue
+                        ListElement { color: "#00BCD4" } // Material.Cyan
+                        ListElement { color: "#009688" } // Material.Teal
+                        ListElement { color: "#4CAF50" } // Material.Green
+                        ListElement { color: "#8BC34A" } // Material.LightGreen
+                        ListElement { color: "#CDDC39" } // Material.Lime
+                        ListElement { color: "#FFEB3B" } // Material.Yellow
+                        ListElement { color: "#FFC107" } // Material.Amber
+                        ListElement { color: "#FF9800" } // Material.Orange
+                        ListElement { color: "#FF5722" } // Material.DeepOrange
+                    }
+
+                    MaterialButton {
+                        id: primaryColorButton
+                        Layout.preferredWidth: 25
+                        Layout.preferredHeight: 25
+                        checkable: true
+                        ButtonGroup.group: primaryColorButtonGroup
+
+                        background: Rectangle {
+                            anchors.fill: parent
+                            color: model.color
+                            radius: 4
+                            border.width: primaryColorButton.checked ? 3 : 1
+                            border.color: primaryColorButton.checked ? "white" : Qt.darker(model.color, 1.2)
+                        }
+
+                        onCheckedChanged: {
+                            if (checked) {
+                                BoxySettings.primaryColor = model.index
+                            }
+                        }
+
+                        Component.onCompleted: {
+                            if (BoxySettings.primaryColor === model.index) {
                                 checked = true
                             }
                         }

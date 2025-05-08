@@ -3,7 +3,7 @@ import QtQuick.Controls
 import QtQuick.Layouts
 import QtQuick.Window
 import Qt.labs.platform as Platform
-import QtQuick.Controls.Universal
+import QtQuick.Controls.Material
 import QtQuick.Templates as T
 
 ApplicationWindow {
@@ -12,10 +12,10 @@ ApplicationWindow {
     width: lyt.implicitWidth + 30
     height: lyt.implicitHeight + 30
     title: "Boxy Discord Bot Setup"
-    color: Universal.background
+    //color: Material.background
     
-    Universal.theme: Universal.System
-    Universal.accent: Universal.Orange
+    Material.theme: Material.Dark
+    Material.accent: Material.Orange
     
     property bool tokenValid: tokenInput.text.trim() !== ""
     property bool readyToGo: tokenValid && messageIntentSwitch.checked && invitedBotSwitch.checked && setupManager.ffmpegInstalled
@@ -41,7 +41,7 @@ ApplicationWindow {
         Rectangle {
             Layout.fillWidth: true
             height: 1
-            color: Universal.foreground
+            color: Material.foreground
             opacity: 0.3
         }
         
@@ -60,7 +60,7 @@ ApplicationWindow {
                     font.bold: true
                 }
                 
-                Button {
+                MaterialButton {
                     text: "Open Discord Developer Portal"
                     Layout.alignment: Qt.AlignLeft
                     onClicked: Qt.openUrlExternally("https://discord.com/developers/applications")
@@ -164,7 +164,7 @@ ApplicationWindow {
                     Layout.fillWidth: true
                     spacing: 10
 
-                    Button {
+                    MaterialButton {
                         text: "Install FFmpeg"
                         Layout.alignment: Qt.AlignLeft
                         onClicked: ffmpegPopup.open()
@@ -221,7 +221,7 @@ ApplicationWindow {
             }
 
             // Final button
-            Button {
+            MaterialButton {
                 text: "Let's Go!"
                 Layout.alignment: Qt.AlignHCenter
                 Layout.preferredWidth: 150
@@ -247,10 +247,10 @@ ApplicationWindow {
         height: popupLyt.implicitHeight + 80
         
         T.Overlay.modal: Rectangle {
-            color: setupWindow.Universal.altMediumLowColor
+            color: setupWindow.Material.altMediumLowColor
         }
         T.Overlay.modeless: Rectangle {
-            color: setupWindow.Universal.baseLowColor
+            color: setupWindow.Material.baseLowColor
         }
         enter: Transition {
             NumberAnimation { property: "opacity"; from: 0.0; to: 1.0; easing.type: Easing.Linear; duration: 83 }
@@ -277,7 +277,7 @@ ApplicationWindow {
             Rectangle {
                 Layout.fillWidth: true
                 height: 1
-                color: Universal.foreground
+                color: Material.foreground
                 opacity: 0.3
             }
             
@@ -316,7 +316,7 @@ ApplicationWindow {
                         
                         RowLayout {
                             Layout.fillWidth: true
-                            Button {
+                            MaterialButton {
                                 text: setupManager.ffmpegInstallInProgress ? "Installing..." :
                                                                              setupManager.ffmpegInstalled ? "Installation Complete" : "Install FFmpeg"
                                 enabled: !setupManager.ffmpegInstallInProgress && !setupManager.ffmpegInstalled
@@ -358,7 +358,7 @@ ApplicationWindow {
                         Rectangle {
                             Layout.fillWidth: true
                             height: linuxCommand.height + 20
-                            color: Universal.foreground
+                            color: Material.foreground
                             opacity: 0.1
                             radius: 5
                             
@@ -382,7 +382,7 @@ ApplicationWindow {
                             }
                         }
                         
-                        Button {
+                        MaterialButton {
                             text: "Copy Command"
                             Layout.alignment: Qt.AlignRight
                             onClicked: {
@@ -412,7 +412,7 @@ ApplicationWindow {
                         Rectangle {
                             Layout.fillWidth: true
                             height: macCommand.height + 20
-                            color: Universal.foreground
+                            color: Material.foreground
                             opacity: 0.1
                             radius: 5
                             
@@ -427,7 +427,7 @@ ApplicationWindow {
                             }
                         }
                         
-                        Button {
+                        MaterialButton {
                             text: "Copy Command"
                             Layout.alignment: Qt.AlignRight
                             onClicked: {
@@ -445,7 +445,7 @@ ApplicationWindow {
                         Rectangle {
                             Layout.fillWidth: true
                             height: brewCommand.height + 20
-                            color: Universal.foreground
+                            color: Material.foreground
                             opacity: 0.1
                             radius: 5
                             
@@ -460,7 +460,7 @@ ApplicationWindow {
                             }
                         }
                         
-                        Button {
+                        MaterialButton {
                             text: "Copy Command"
                             Layout.alignment: Qt.AlignRight
                             onClicked: {
@@ -473,7 +473,7 @@ ApplicationWindow {
             }
             
             // Close button
-            Button {
+            MaterialButton {
                 text: "Close"
                 Layout.alignment: Qt.AlignHCenter
                 onClicked: ffmpegPopup.close()

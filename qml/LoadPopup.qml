@@ -1,4 +1,4 @@
-import QtQuick.Controls.Universal
+import QtQuick.Controls.Material
 import QtQuick
 import QtQuick.Layouts
 import "."
@@ -50,7 +50,7 @@ AnimatedPopup {
                             Layout.alignment: Qt.AlignCenter
                         }
 
-                        Button {
+                        MaterialButton {
                             Layout.alignment: Qt.AlignCenter
                             icon.source: "icons/trash.png"
                             icon.width: width / 2
@@ -74,7 +74,7 @@ AnimatedPopup {
             }
         }
 
-        Button {
+        MaterialButton {
             text: "Open Playlist Folder"
             Layout.fillWidth: true
             onClicked: {

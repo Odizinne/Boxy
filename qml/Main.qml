@@ -1,7 +1,8 @@
 import QtQuick
 import QtQuick.Layouts
-import QtQuick.Controls.Universal
+import QtQuick.Controls.Material
 import Qt.labs.platform as Platform
+import QtQuick.Controls.impl
 
 import "."
 
@@ -13,8 +14,9 @@ ApplicationWindow {
     minimumWidth: 500
     minimumHeight: 750
     title: "Boxy GUI"
-    Universal.theme: BoxySettings.darkMode ? Universal.Dark : Universal.Light
-    Universal.accent: BoxySettings.accentColor
+    Material.theme: BoxySettings.darkMode ? Material.Dark : Material.Light
+    Material.accent: getAccentColor()
+    Material.primary: getPrimaryColor()
     property bool songLoaded: false
     property var shufflePlayedIndices: []
     property bool connectedToAPI: false
@@ -24,6 +26,50 @@ ApplicationWindow {
             if(playlistModel.get(i).isResolving) return true;
         }
         return false;
+    }
+
+    function getAccentColor() {
+        switch (BoxySettings.accentColor) {
+        case 0:  return Material.Red;
+        case 1:  return Material.Pink;
+        case 2:  return Material.Purple;
+        case 3:  return Material.DeepPurple;
+        case 4:  return Material.Indigo;
+        case 5:  return Material.Blue;
+        case 6:  return Material.LightBlue;
+        case 7:  return Material.Cyan;
+        case 8:  return Material.Teal;
+        case 9:  return Material.Green;
+        case 10: return Material.LightGreen;
+        case 11: return Material.Lime;
+        case 12: return Material.Yellow;
+        case 13: return Material.Amber;
+        case 14: return Material.Orange;
+        case 15: return Material.DeepOrange;
+        default: return Material.Red;
+        }
+    }
+
+    function getPrimaryColor() {
+        switch (BoxySettings.primaryColor) {
+        case 0:  return Material.Red;
+        case 1:  return Material.Pink;
+        case 2:  return Material.Purple;
+        case 3:  return Material.DeepPurple;
+        case 4:  return Material.Indigo;
+        case 5:  return Material.Blue;
+        case 6:  return Material.LightBlue;
+        case 7:  return Material.Cyan;
+        case 8:  return Material.Teal;
+        case 9:  return Material.Green;
+        case 10: return Material.LightGreen;
+        case 11: return Material.Lime;
+        case 12: return Material.Yellow;
+        case 13: return Material.Amber;
+        case 14: return Material.Orange;
+        case 15: return Material.DeepOrange;
+        default: return Material.Blue;
+        }
     }
 
     Shortcut {
@@ -508,9 +554,7 @@ ApplicationWindow {
         id: appLayout
 
         Frame {
-            //Layout.fillHeight: true
             Layout.fillWidth: true
-            //Layout.preferredWidth: parent.width * 0.45
 
             ColumnLayout {
                 id: colLayout
@@ -574,7 +618,7 @@ ApplicationWindow {
                         }
                     }
 
-                    Image {
+                    IconImage {
                         id: thumbnailImage
                         Layout.rowSpan: 2
                         property int idealSize: (parent.width * 0.30) / 2
@@ -582,8 +626,9 @@ ApplicationWindow {
                         Layout.preferredHeight: 128
                         fillMode: Image.PreserveAspectCrop
                         property string currentUrl: ""
-                        source: currentUrl || (Universal.theme === Universal.Dark ?
+                        source: currentUrl || (Material.theme === Material.Dark ?
                                                    "icons/placeholder_light.png" : "icons/placeholder_dark.png")
+                        color: Material.accent
 
                         Connections {
                             target: botBridge
@@ -648,11 +693,11 @@ ApplicationWindow {
                 RowLayout {
                     Layout.fillWidth: true
                     Layout.topMargin: 14
-                    spacing: 10
+                    //spacing: 10
 
                     RowLayout {
                         Layout.preferredWidth: controlLyt.implicitWidth
-                        Button {
+                        MaterialButton {
                             id: stopPlaylistButton
                             icon.source: "icons/stop.png"
                             Layout.preferredWidth: height
@@ -670,7 +715,7 @@ ApplicationWindow {
                         Layout.fillWidth: true
                     }
 
-                    Button {
+                    MaterialButton {
                         id: playPrevButton
                         icon.source: "icons/prev.png"
                         Layout.preferredWidth: height
@@ -696,7 +741,7 @@ ApplicationWindow {
                         }
                     }
 
-                    Button {
+                    MaterialButton {
                         id: pauseButton
                         Layout.preferredWidth: height
                         enabled: songLoaded && !downloadProgress.visible
@@ -713,7 +758,7 @@ ApplicationWindow {
                         }
                     }
 
-                    Button {
+                    MaterialButton {
                         id: playNextButton
                         icon.source: "icons/next.png"
                         Layout.preferredWidth: height
@@ -759,7 +804,7 @@ ApplicationWindow {
 
                     RowLayout {
                         id: controlLyt
-                        Button {
+                        MaterialButton {
                             id: shuffleButton
                             Layout.preferredWidth: height
                             icon.source: "icons/shuffle.png"
@@ -778,7 +823,7 @@ ApplicationWindow {
                             }
                         }
 
-                        Button {
+                        MaterialButton {
                             id: repeatButton
                             Layout.preferredWidth: height
                             icon.source: "icons/repeat.png"
@@ -817,9 +862,10 @@ ApplicationWindow {
                     Layout.fillWidth: true
                     spacing: 10
 
-                    Button {
+                    MaterialButton {
                         id: downloadAllButton
                         icon.source: "icons/download.png"
+                        Layout.preferredWidth: height
                         enabled: root.connectedToAPI && playlistModel.count > 0 && !root.isResolvingAny && !downloadProgress.visible && !playlistDownloadProgress.visible
                         onClicked: {
                             stopPlaylistButton.click()
@@ -835,7 +881,8 @@ ApplicationWindow {
 
                     TextField {
                         id: playlistName
-                        Layout.preferredHeight: addButton.height
+                        Layout.preferredHeight: addButton.implicitHeight
+                        //implicitHeight: 30
                         text: ""
                         placeholderText: "My super playlist"
                         Layout.fillWidth: true
@@ -846,7 +893,7 @@ ApplicationWindow {
                         }
                     }
 
-                    Button {
+                    MaterialButton {
                         id: editButton
                         text: "Edit"
                         checkable: true
@@ -934,7 +981,7 @@ ApplicationWindow {
                             Rectangle {
                                 width: 3
                                 height: parent.height * 0.8
-                                color: Universal.accent
+                                color: Material.accent
                                 visible: model.index === playlistView.currentIndex
                                 anchors.verticalCenter: parent.verticalCenter
                             }
@@ -950,10 +997,10 @@ ApplicationWindow {
                                     spacing: 4
                                     visible: editButton.checked
 
-                                    Button {
+                                    MaterialButton {
                                         id: moveUpButton
                                         icon.source: "icons/up.png"
-                                        Layout.preferredHeight: width * 0.5
+                                        Layout.preferredHeight: 18
                                         enabled: model.index > 0
                                         onClicked: {
                                             // Store the current item data
@@ -988,10 +1035,10 @@ ApplicationWindow {
                                         }
                                     }
 
-                                    Button {
+                                    MaterialButton {
                                         id: moveDownButton
                                         icon.source: "icons/down.png"
-                                        Layout.preferredHeight: width * 0.5
+                                        Layout.preferredHeight: 18
                                         enabled: model.index < playlistModel.count - 1
                                         onClicked: {
                                             // Store the current item data
@@ -1052,8 +1099,8 @@ ApplicationWindow {
                                     id: titleFetchingIndicator
                                     visible: model.isResolving
                                     running: visible
-                                    height: 16
-                                    width: 16
+                                    Layout.preferredHeight: 36
+                                    Layout.preferredWidth: 36
                                     Layout.rightMargin: 10
                                 }
 
@@ -1061,13 +1108,14 @@ ApplicationWindow {
                                     id: downloadingIndicator
                                     visible: model.isDownloading
                                     running: visible
-                                    height: 16
-                                    width: 16
+                                    Layout.preferredHeight: 36
+                                    Layout.preferredWidth: 36
                                     Layout.rightMargin: 10
                                 }
 
-                                Button {
+                                MaterialButton {
                                     icon.source: "icons/delete.png"
+                                    Layout.preferredWidth: height
                                     icon.width: width / 3
                                     icon.height: height / 3
                                     Layout.rightMargin: 15
@@ -1108,7 +1156,7 @@ ApplicationWindow {
 
                     TextField {
                         id: newItemInput
-                        Layout.preferredHeight: addButton.height
+                        Layout.preferredHeight: addButton.implicitHeight
                         Layout.fillWidth: true
                         placeholderText: "Enter YouTube URL or search term"
                         enabled: root.connectedToAPI
@@ -1123,7 +1171,7 @@ ApplicationWindow {
                         }
                     }
 
-                    Button {
+                    MaterialButton {
                         id: addButton
                         icon.source: "icons/plus.png"
                         Layout.preferredWidth: height

@@ -14,6 +14,7 @@ from boxy_py.utils import verify_token
 from boxy_py.config import migrate_playlists_if_needed
 
 import discord
+import rc_main
 
 def configure_logging():
     """Configure logging"""

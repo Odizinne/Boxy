@@ -8,7 +8,8 @@ Settings {
     property bool repeat: false
     property bool clearCacheOnExit: false
     property int maxCacheSize: 1024 
-    property string accentColor: "#00CC6A"
+    property int accentColor: 1
+    property int primaryColor: 4
     property bool darkMode: true
     property int maxParallelDownloads: 3
 }

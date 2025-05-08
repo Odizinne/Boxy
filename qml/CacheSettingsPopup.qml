@@ -1,5 +1,5 @@
 import QtQuick
-import QtQuick.Controls.Universal
+import QtQuick.Controls.Material
 import QtQuick.Layouts
 import "."
 
@@ -69,10 +69,10 @@ AnimatedPopup {
             Label {
                 text: "Cached items:"
                 Layout.fillWidth: true
+                font.bold: true
             }
             Label {
                 text: cachedItemsCount.toString()
-                font.bold: true
             }
         }
 
@@ -83,10 +83,10 @@ AnimatedPopup {
             Label {
                 text: "Total size:"
                 Layout.fillWidth: true
+                font.bold: true
             }
             Label {
                 text: formatBytes(totalCachedSize)
-                font.bold: true
             }
         }
 
@@ -98,6 +98,7 @@ AnimatedPopup {
                 text: "Maximum cache size:"
                 Layout.preferredWidth: implicitWidth + 50
                 Layout.fillWidth: true
+                font.bold: true
             }
 
             SpinBox {
@@ -107,6 +108,7 @@ AnimatedPopup {
                 stepSize: 100
                 value: BoxySettings.maxCacheSize
                 editable: true
+                Layout.preferredHeight: 30
 
                 onValueModified: {
                     BoxySettings.maxCacheSize = value
@@ -130,6 +132,7 @@ AnimatedPopup {
             Label {
                 text: "Parallel downloads:"
                 Layout.fillWidth: true
+                font.bold: true
             }
 
             SpinBox {
@@ -137,6 +140,7 @@ AnimatedPopup {
                 from: 1
                 to: 8
                 stepSize: 1
+                Layout.preferredHeight: 30
                 value: BoxySettings.maxParallelDownloads
                 editable: true
 
@@ -161,6 +165,7 @@ AnimatedPopup {
             Label {
                 text: "Clear cache on exit:"
                 Layout.fillWidth: true
+                font.bold: true
             }
 
             Switch {
@@ -178,7 +183,7 @@ AnimatedPopup {
             spacing: 10
             property int buttonWidth: Math.max(clearBtn.implicitWidth, openBtn.implicitWidth)
 
-            Button {
+            MaterialButton {
                 id: clearBtn
                 Layout.preferredWidth: parent.buttonWidth
                 Layout.fillWidth: true
@@ -189,7 +194,7 @@ AnimatedPopup {
                 }
             }
 
-            Button {
+            MaterialButton {
                 id: openBtn
                 Layout.preferredWidth: parent.buttonWidth
                 Layout.fillWidth: true
