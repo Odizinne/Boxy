@@ -86,8 +86,8 @@ ApplicationWindow {
 
                     RowLayout {
                         anchors.fill: parent
-                        anchors.leftMargin: 12
-                        anchors.rightMargin: 12
+                        anchors.leftMargin: 16
+                        anchors.rightMargin: 16
                         Label {
                             text: "Exit"
                             Layout.fillWidth: true
@@ -95,7 +95,7 @@ ApplicationWindow {
 
                         Label {
                             text: "Ctrl + Q"
-                            opacity: 0.2
+                            opacity: 0.4
                             font.pixelSize: 12
                         }
                     }
@@ -125,8 +125,8 @@ ApplicationWindow {
 
                     RowLayout {
                         anchors.fill: parent
-                        anchors.leftMargin: 12
-                        anchors.rightMargin: 12
+                        anchors.leftMargin: 16
+                        anchors.rightMargin: 16
                         Label {
                             text: "New"
                             Layout.fillWidth: true
@@ -134,7 +134,7 @@ ApplicationWindow {
 
                         Label {
                             text: "Ctrl + N"
-                            opacity: 0.2
+                            opacity: 0.4
                             font.pixelSize: 12
                         }
                     }
@@ -146,8 +146,8 @@ ApplicationWindow {
 
                     RowLayout {
                         anchors.fill: parent
-                        anchors.leftMargin: 12
-                        anchors.rightMargin: 12
+                        anchors.leftMargin: 16
+                        anchors.rightMargin: 16
                         Label {
                             text: "Load"
                             Layout.fillWidth: true
@@ -155,7 +155,7 @@ ApplicationWindow {
 
                         Label {
                             text: "Ctrl + O"
-                            opacity: 0.2
+                            opacity: 0.4
                             font.pixelSize: 12
                         }
                     }
@@ -167,8 +167,8 @@ ApplicationWindow {
 
                     RowLayout {
                         anchors.fill: parent
-                        anchors.leftMargin: 12
-                        anchors.rightMargin: 12
+                        anchors.leftMargin: 16
+                        anchors.rightMargin: 16
                         Label {
                             text: "Save"
                             Layout.fillWidth: true
@@ -176,7 +176,7 @@ ApplicationWindow {
 
                         Label {
                             text: "Ctrl + S"
-                            opacity: 0.2
+                            opacity: 0.4
                             font.pixelSize: 12
                         }
                     }
