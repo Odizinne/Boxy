@@ -92,20 +92,20 @@ ApplicationWindow {
                         text: "4 - Click 'Reset Token' and copy it"
                     }
 
-                                    RowLayout {
-                    Layout.fillWidth: true
-
-                    Label {
-                        text: "I enabled Message Content Intent"
-                        font.bold: true
+                    RowLayout {
                         Layout.fillWidth: true
-                    }
 
-                    Switch {
-                        id: messageIntentSwitch
-                        Layout.rightMargin: - 10
+                        Label {
+                            text: "I enabled Message Content Intent"
+                            font.bold: true
+                            Layout.fillWidth: true
+                        }
+
+                        Switch {
+                            id: messageIntentSwitch
+                            Layout.rightMargin: - 10
+                        }
                     }
-                }
                 }
             }
             
@@ -176,15 +176,15 @@ ApplicationWindow {
             //ColumnLayout {
             //    Layout.fillWidth: true
             //    spacing: 6
-            //    
+            //
             //    RowLayout {
             //        Layout.fillWidth: true
-//
+            //
             //        Label {
             //            text: "I enabled Message Content Intent"
             //            Layout.fillWidth: true
             //        }
-//
+            //
             //        Switch {
             //            id: messageIntentSwitch
             //            Layout.rightMargin: - 10
@@ -217,202 +217,202 @@ ApplicationWindow {
         //height: popupLyt.implicitHeight + 80
         standardButtons: Dialog.Close
         title: "FFmpeg Installation"
-            
-            ScrollView {
-                id: ffmpegScrlView
-                anchors.fill: parent
-                ScrollBar.vertical.policy: ScrollBar.AlwaysOff
-                ScrollBar.horizontal.policy: ScrollBar.AlwaysOff
-                
+
+        ScrollView {
+            id: ffmpegScrlView
+            anchors.fill: parent
+            ScrollBar.vertical.policy: ScrollBar.AlwaysOff
+            ScrollBar.horizontal.policy: ScrollBar.AlwaysOff
+
+            ColumnLayout {
+                width: ffmpegPopup.width - 40
+                spacing: 15
+
+                Label {
+                    text: "FFmpeg is required for Boxy to process audio files."
+                    Layout.fillWidth: true
+                    wrapMode: Text.WordWrap
+                }
+
+                // Windows instructions
                 ColumnLayout {
-                    width: ffmpegPopup.width - 40
-                    spacing: 15
-                    
+                    visible: setupManager.osType === "Windows"
+                    Layout.fillWidth: true
+                    spacing: 10
+
                     Label {
-                        text: "FFmpeg is required for Boxy to process audio files."
+                        text: "For Windows:"
+                        font.bold: true
+                    }
+
+                    Label {
+                        text: "FFmpeg can be automatically downloaded and installed for you."
                         Layout.fillWidth: true
                         wrapMode: Text.WordWrap
                     }
-                    
-                    // Windows instructions
-                    ColumnLayout {
-                        visible: setupManager.osType === "Windows"
+
+                    RowLayout {
                         Layout.fillWidth: true
-                        spacing: 10
-                        
-                        Label {
-                            text: "For Windows:"
-                            font.bold: true
+                        MaterialButton {
+                            highlighted: true
+                            Material.roundedScale: Material.LargeScale
+                            text: setupManager.ffmpegInstallInProgress ? "Installing..." :
+                                                                         setupManager.ffmpegInstalled ? "Installation Complete" : "Install FFmpeg"
+                            enabled: !setupManager.ffmpegInstallInProgress && !setupManager.ffmpegInstalled
+                            Layout.alignment: Qt.AlignLeft
+                            onClicked: setupManager.installFFmpegWindows()
                         }
-                        
-                        Label {
-                            text: "FFmpeg can be automatically downloaded and installed for you."
+
+                        ProgressBar {
+                            visible: setupManager.ffmpegInstallInProgress
                             Layout.fillWidth: true
-                            wrapMode: Text.WordWrap
+                            indeterminate: true
                         }
-                        
-                        RowLayout {
-                            Layout.fillWidth: true
-                            MaterialButton {
-                                highlighted: true
-                                Material.roundedScale: Material.LargeScale
-                                text: setupManager.ffmpegInstallInProgress ? "Installing..." :
-                                                                             setupManager.ffmpegInstalled ? "Installation Complete" : "Install FFmpeg"
-                                enabled: !setupManager.ffmpegInstallInProgress && !setupManager.ffmpegInstalled
-                                Layout.alignment: Qt.AlignLeft
-                                onClicked: setupManager.installFFmpegWindows()
-                            }
 
-                            ProgressBar {
-                                visible: setupManager.ffmpegInstallInProgress
-                                Layout.fillWidth: true
-                                indeterminate: true
-                            }
+                        Label {
+                            visible: setupManager.ffmpegInstalled
+                            text: "✓ FFmpeg has been installed successfully!"
+                            color: Material.accent
+                        }
+                    }
+                }
 
-                            Label {
-                                visible: setupManager.ffmpegInstalled
-                                text: "✓ FFmpeg has been installed successfully!"
-                                color: Material.accent
+                // Linux instructions
+                ColumnLayout {
+                    visible: setupManager.osType === "Linux"
+                    Layout.fillWidth: true
+                    spacing: 10
+
+                    Label {
+                        text: "For Linux:"
+                        font.bold: true
+                    }
+
+                    Label {
+                        text: "Please run the following command in your terminal:"
+                        Layout.fillWidth: true
+                        wrapMode: Text.WordWrap
+                    }
+
+                    Rectangle {
+                        Layout.fillWidth: true
+                        height: linuxCommand.height + 20
+                        color: Material.foreground
+                        opacity: 0.1
+                        radius: 5
+
+                        TextEdit {
+                            id: linuxCommand
+                            anchors.centerIn: parent
+                            width: parent.width - 20
+                            readOnly: true
+                            selectByMouse: true
+                            wrapMode: Text.Wrap
+                            text: {
+                                if (setupManager.linuxDistro === "Ubuntu" || setupManager.linuxDistro === "Debian")
+                                    return "sudo apt install ffmpeg"
+                                else if (setupManager.linuxDistro === "Fedora")
+                                    return "sudo dnf in ffmpeg"
+                                else if (setupManager.linuxDistro === "Arch")
+                                    return "sudo pacman -S ffmpeg"
+                                else
+                                    return "# Please install ffmpeg using your distribution's package manager"
                             }
                         }
                     }
-                    
-                    // Linux instructions
-                    ColumnLayout {
-                        visible: setupManager.osType === "Linux"
-                        Layout.fillWidth: true
-                        spacing: 10
-                        
-                        Label {
-                            text: "For Linux:"
-                            font.bold: true
-                        }
-                        
-                        Label {
-                            text: "Please run the following command in your terminal:"
-                            Layout.fillWidth: true
-                            wrapMode: Text.WordWrap
-                        }
-                        
-                        Rectangle {
-                            Layout.fillWidth: true
-                            height: linuxCommand.height + 20
-                            color: Material.foreground
-                            opacity: 0.1
-                            radius: 5
-                            
-                            TextEdit {
-                                id: linuxCommand
-                                anchors.centerIn: parent
-                                width: parent.width - 20
-                                readOnly: true
-                                selectByMouse: true
-                                wrapMode: Text.Wrap
-                                text: {
-                                    if (setupManager.linuxDistro === "Ubuntu" || setupManager.linuxDistro === "Debian")
-                                        return "sudo apt install ffmpeg"
-                                    else if (setupManager.linuxDistro === "Fedora")
-                                        return "sudo dnf in ffmpeg"
-                                    else if (setupManager.linuxDistro === "Arch")
-                                        return "sudo pacman -S ffmpeg"
-                                    else
-                                        return "# Please install ffmpeg using your distribution's package manager"
-                                }
-                            }
-                        }
-                        
-                        MaterialButton {
-                            text: "Copy Command"
-                            Material.roundedScale: Material.LargeScale
-                            Layout.alignment: Qt.AlignRight
-                            onClicked: {
-                                linuxCommand.selectAll()
-                                linuxCommand.copy()
-                            }
+
+                    MaterialButton {
+                        text: "Copy Command"
+                        Material.roundedScale: Material.LargeScale
+                        Layout.alignment: Qt.AlignRight
+                        onClicked: {
+                            linuxCommand.selectAll()
+                            linuxCommand.copy()
                         }
                     }
-                    
-                    ColumnLayout {
-                        visible: setupManager.osType === "macOS"
+                }
+
+                ColumnLayout {
+                    visible: setupManager.osType === "macOS"
+                    Layout.fillWidth: true
+                    spacing: 10
+
+                    Label {
+                        text: "For macOS:"
+                        font.bold: true
+                    }
+
+                    Label {
+                        text: "Please install FFmpeg using Homebrew:"
                         Layout.fillWidth: true
-                        spacing: 10
-                        
-                        Label {
-                            text: "For macOS:"
-                            font.bold: true
+                        wrapMode: Text.WordWrap
+                    }
+
+                    Rectangle {
+                        Layout.fillWidth: true
+                        height: macCommand.height + 20
+                        color: Material.foreground
+                        opacity: 0.1
+                        radius: 5
+
+                        TextEdit {
+                            id: macCommand
+                            anchors.centerIn: parent
+                            width: parent.width - 20
+                            readOnly: true
+                            selectByMouse: true
+                            wrapMode: Text.Wrap
+                            text: "brew install ffmpeg"
                         }
-                        
-                        Label {
-                            text: "Please install FFmpeg using Homebrew:"
-                            Layout.fillWidth: true
-                            wrapMode: Text.WordWrap
+                    }
+
+                    MaterialButton {
+                        text: "Copy Command"
+                        Material.roundedScale: Material.LargeScale
+                        Layout.alignment: Qt.AlignRight
+                        onClicked: {
+                            macCommand.selectAll()
+                            macCommand.copy()
                         }
-                        
-                        Rectangle {
-                            Layout.fillWidth: true
-                            height: macCommand.height + 20
-                            color: Material.foreground
-                            opacity: 0.1
-                            radius: 5
-                            
-                            TextEdit {
-                                id: macCommand
-                                anchors.centerIn: parent
-                                width: parent.width - 20
-                                readOnly: true
-                                selectByMouse: true
-                                wrapMode: Text.Wrap
-                                text: "brew install ffmpeg"
-                            }
+                    }
+
+                    Label {
+                        text: "If you don't have Homebrew installed, install it first with:"
+                        Layout.fillWidth: true
+                        wrapMode: Text.WordWrap
+                    }
+
+                    Rectangle {
+                        Layout.fillWidth: true
+                        height: brewCommand.height + 20
+                        color: Material.foreground
+                        opacity: 0.1
+                        radius: 5
+
+                        TextEdit {
+                            id: brewCommand
+                            anchors.centerIn: parent
+                            width: parent.width - 20
+                            readOnly: true
+                            selectByMouse: true
+                            wrapMode: Text.Wrap
+                            text: '/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"'
                         }
-                        
-                        MaterialButton {
-                            text: "Copy Command"
-                            Material.roundedScale: Material.LargeScale
-                            Layout.alignment: Qt.AlignRight
-                            onClicked: {
-                                macCommand.selectAll()
-                                macCommand.copy()
-                            }
-                        }
-                        
-                        Label {
-                            text: "If you don't have Homebrew installed, install it first with:"
-                            Layout.fillWidth: true
-                            wrapMode: Text.WordWrap
-                        }
-                        
-                        Rectangle {
-                            Layout.fillWidth: true
-                            height: brewCommand.height + 20
-                            color: Material.foreground
-                            opacity: 0.1
-                            radius: 5
-                            
-                            TextEdit {
-                                id: brewCommand
-                                anchors.centerIn: parent
-                                width: parent.width - 20
-                                readOnly: true
-                                selectByMouse: true
-                                wrapMode: Text.Wrap
-                                text: '/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"'
-                            }
-                        }
-                        
-                        MaterialButton {
-                            text: "Copy Command"
-                            Layout.alignment: Qt.AlignRight
-                            Material.roundedScale: Material.LargeScale
-                            onClicked: {
-                                brewCommand.selectAll()
-                                brewCommand.copy()
-                            }
+                    }
+
+                    MaterialButton {
+                        text: "Copy Command"
+                        Layout.alignment: Qt.AlignRight
+                        Material.roundedScale: Material.LargeScale
+                        onClicked: {
+                            brewCommand.selectAll()
+                            brewCommand.copy()
                         }
                     }
                 }
             }
         }
+    }
 
 
     Dialog {

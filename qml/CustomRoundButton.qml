@@ -25,8 +25,8 @@ T.RoundButton {
     icon.width: 24
     icon.height: 24
     icon.color: !enabled ? Material.hintTextColor :
-        flat && highlighted ? Material.accentColor :
-        highlighted ? Material.primaryHighlightedTextColor : Material.foreground
+                           flat && highlighted ? Material.accentColor :
+                                                 highlighted ? Material.primaryHighlightedTextColor : Material.foreground
 
     Material.elevation: 0
     Material.background: flat ? "transparent" : undefined
@@ -40,8 +40,8 @@ T.RoundButton {
         text: control.text
         font: control.font
         color: !control.enabled ? control.Material.hintTextColor :
-            control.flat && control.highlighted ? control.Material.accentColor :
-            control.highlighted ? control.Material.primaryHighlightedTextColor : control.Material.foreground
+                                  control.flat && control.highlighted ? control.Material.accentColor :
+                                                                        control.highlighted ? control.Material.primaryHighlightedTextColor : control.Material.foreground
     }
 
     // TODO: Add a proper ripple/ink effect for mouse/touch input and focus state
@@ -51,7 +51,7 @@ T.RoundButton {
 
         radius: control.radius
         color: control.Material.buttonColor(control.Material.theme, control.Material.background,
-            control.Material.accent, control.enabled, control.flat, control.highlighted, false /*checked*/)
+                                            control.Material.accent, control.enabled, control.flat, control.highlighted, false /*checked*/)
 
         Rectangle {
             width: parent.width

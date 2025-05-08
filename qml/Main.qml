@@ -278,10 +278,10 @@ ApplicationWindow {
                             serverMenu.removeItem(object)
                             if (channelInstantiator.count === 0) {
                                 serverMenu.noChannelsItem = Qt.createQmlObject(
-                                    'import QtQuick.Controls.Material; MenuItem { text: "No channels available"; enabled: false }',
-                                    serverMenu,
-                                    "noChannelsPlaceholder"
-                                )
+                                            'import QtQuick.Controls.Material; MenuItem { text: "No channels available"; enabled: false }',
+                                            serverMenu,
+                                            "noChannelsPlaceholder"
+                                            )
                                 serverMenu.addItem(serverMenu.noChannelsItem)
                             }
                         }
@@ -289,10 +289,10 @@ ApplicationWindow {
                         Component.onCompleted: {
                             if (count === 0) {
                                 serverMenu.noChannelsItem = Qt.createQmlObject(
-                                    'import QtQuick.Controls.Material; MenuItem { text: "No channels available"; enabled: false }',
-                                    serverMenu,
-                                    "noChannelsPlaceholder"
-                                )
+                                            'import QtQuick.Controls.Material; MenuItem { text: "No channels available"; enabled: false }',
+                                            serverMenu,
+                                            "noChannelsPlaceholder"
+                                            )
                                 serverMenu.addItem(serverMenu.noChannelsItem)
                             }
                         }
@@ -311,10 +311,10 @@ ApplicationWindow {
                     serversMenu.removeMenu(object)
                     if (serverMenuInstantiator.count === 0) {
                         serversToolButton.noServersItem = Qt.createQmlObject(
-                            'import QtQuick.Controls.Material; MenuItem { text: "No servers available"; enabled: false }',
-                            serversMenu,
-                            "noServersPlaceholder"
-                        )
+                                    'import QtQuick.Controls.Material; MenuItem { text: "No servers available"; enabled: false }',
+                                    serversMenu,
+                                    "noServersPlaceholder"
+                                    )
                         serversMenu.addItem(serversToolButton.noServersItem)
                     }
                 }
@@ -322,81 +322,81 @@ ApplicationWindow {
                 Component.onCompleted: {
                     if (count === 0) {
                         serversToolButton.noServersItem = Qt.createQmlObject(
-                            'import QtQuick.Controls.Material; MenuItem { text: "No servers available"; enabled: false }',
-                            serversMenu,
-                            "noServersPlaceholder"
-                        )
+                                    'import QtQuick.Controls.Material; MenuItem { text: "No servers available"; enabled: false }',
+                                    serversMenu,
+                                    "noServersPlaceholder"
+                                    )
                         serversMenu.addItem(serversToolButton.noServersItem)
                     }
                 }
             }
         }
 
-            Item {
-                anchors.right: themeSwitch.left
-                height: 24
-                width: 24
-                anchors.verticalCenter: parent.verticalCenter
+        Item {
+            anchors.right: themeSwitch.left
+            height: 24
+            width: 24
+            anchors.verticalCenter: parent.verticalCenter
 
-                Image {
-                    id: sunImage
-                    anchors.fill: parent
-                    source: "icons/sun.png"
-                    opacity: !themeSwitch.checked ? 1 : 0
-                    rotation: themeSwitch.checked ? 360 : 0
-                    mipmap: true
+            Image {
+                id: sunImage
+                anchors.fill: parent
+                source: "icons/sun.png"
+                opacity: !themeSwitch.checked ? 1 : 0
+                rotation: themeSwitch.checked ? 360 : 0
+                mipmap: true
 
-                    Behavior on rotation {
-                        NumberAnimation {
-                            duration: 500
-                            easing.type: Easing.OutQuad
-                        }
-                    }
-
-                    Behavior on opacity {
-                        NumberAnimation { duration: 500 }
-                    }
-
-                    MouseArea {
-                        anchors.fill: parent
-                        onClicked: themeSwitch.checked = !themeSwitch.checked
+                Behavior on rotation {
+                    NumberAnimation {
+                        duration: 500
+                        easing.type: Easing.OutQuad
                     }
                 }
 
-                Image {
+                Behavior on opacity {
+                    NumberAnimation { duration: 500 }
+                }
+
+                MouseArea {
                     anchors.fill: parent
-                    id: moonImage
-                    source: "icons/moon.png"
-                    opacity: themeSwitch.checked ? 1 : 0
-                    rotation: themeSwitch.checked ? 360 : 0
-                    mipmap: true
-
-                    Behavior on rotation {
-                        NumberAnimation {
-                            duration: 500
-                            easing.type: Easing.OutQuad
-                        }
-                    }
-
-                    Behavior on opacity {
-                        NumberAnimation { duration: 100 }
-                    }
-
-                    MouseArea {
-                        anchors.fill: parent
-                        onClicked: themeSwitch.checked = !themeSwitch.checked
-                    }
+                    onClicked: themeSwitch.checked = !themeSwitch.checked
                 }
             }
 
-            Switch {
-                anchors.right: parent.right
-                height: 40
-                id: themeSwitch
-                checked: BoxySettings.darkMode
-                onClicked: BoxySettings.darkMode = checked
-                Layout.rightMargin: 10
+            Image {
+                anchors.fill: parent
+                id: moonImage
+                source: "icons/moon.png"
+                opacity: themeSwitch.checked ? 1 : 0
+                rotation: themeSwitch.checked ? 360 : 0
+                mipmap: true
+
+                Behavior on rotation {
+                    NumberAnimation {
+                        duration: 500
+                        easing.type: Easing.OutQuad
+                    }
+                }
+
+                Behavior on opacity {
+                    NumberAnimation { duration: 100 }
+                }
+
+                MouseArea {
+                    anchors.fill: parent
+                    onClicked: themeSwitch.checked = !themeSwitch.checked
+                }
             }
+        }
+
+        Switch {
+            anchors.right: parent.right
+            height: 40
+            id: themeSwitch
+            checked: BoxySettings.darkMode
+            onClicked: BoxySettings.darkMode = checked
+            Layout.rightMargin: 10
+        }
     }
 
     function formatTime(seconds) {
@@ -624,15 +624,15 @@ ApplicationWindow {
                         property string currentUrl: ""
                         property string processedUrl: currentUrl ? botBridge.process_thumbnail(currentUrl, 96, 6) : ""
                         source: processedUrl || (Material.theme === Material.Dark ?
-                                              "icons/placeholder_light.png" : "icons/placeholder_dark.png")
-                    
+                                                     "icons/placeholder_light.png" : "icons/placeholder_dark.png")
+
                         Connections {
                             target: botBridge
                             function onThumbnailChanged(url) {
                                 thumbnailImage.currentUrl = url
                             }
                         }
-                    
+
                         visible: true
                         asynchronous: true
                         cache: true
@@ -852,10 +852,10 @@ ApplicationWindow {
                         }
                     }
                 }
-                            Item {
-                                Layout.preferredHeight: 10
-                
-            }
+                Item {
+                    Layout.preferredHeight: 10
+
+                }
             }
         }
 
