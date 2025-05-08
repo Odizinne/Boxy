@@ -9,13 +9,24 @@ import QtQuick.Templates as T
 ApplicationWindow {
     id: setupWindow
     visible: true
-    width: lyt.implicitWidth + 30
-    height: lyt.implicitHeight + 30
+    width: lyt.implicitWidth * 1.7
+    height: lyt.implicitHeight + 30 + 40
+    minimumWidth: lyt.implicitWidth * 1.7
+    minimumHeight: lyt.implicitHeight + 30 + 40
     title: "Boxy Discord Bot Setup"
     Material.theme: BoxySettings.darkMode ? Material.Dark : Material.Light
     Material.accent: getAccentColor()
     Material.primary: getPrimaryColor()
     color: BoxySettings.darkMode ? "#303030" : "#fffbfe"
+    header: ToolBar {
+        height: 40
+        Label {
+            anchors.centerIn: parent
+            text: "Boxy Discord Bot Setup"
+            font.pixelSize: 20
+            font.bold: true
+        }
+    }
     
     function getAccentColor() {
         switch (BoxySettings.accentColor) {
@@ -62,7 +73,7 @@ ApplicationWindow {
     }
 
     property bool tokenValid: tokenInput.text.trim() !== ""
-    property bool readyToGo: tokenValid && messageIntentSwitch.checked && invitedBotSwitch.checked && setupManager.ffmpegInstalled
+    property bool readyToGo: tokenValid && messageIntentSwitch.checked && setupManager.ffmpegInstalled
     
     signal setupFinished(string token)
     
@@ -72,248 +83,149 @@ ApplicationWindow {
         anchors.margins: 15
         spacing: 20
         
-        // Header
-        Label {
-            text: "Boxy Discord Bot Setup"
-            font.pixelSize: 24
-            font.bold: true
-            Layout.alignment: Qt.AlignHCenter
-            Layout.topMargin: 10
-        }
-        
-        // Separator
-        Rectangle {
-            Layout.fillWidth: true
-            height: 1
-            color: Material.foreground
-            opacity: 0.3
-        }
-        
         ColumnLayout {
             Layout.fillWidth: true
             Layout.fillHeight: true
             spacing: 20
             
-            ColumnLayout {
+            CustomGroupBox {
                 Layout.fillWidth: true
-                spacing: 10
-                
-                Label {
-                    text: "Step 1: Create Discord Application"
-                    font.pixelSize: 16
-                    font.bold: true
-                }
-                
-                MaterialButton {
-                    text: "Open Discord Developer Portal"
-                    Layout.alignment: Qt.AlignLeft
-                    onClicked: Qt.openUrlExternally("https://discord.com/developers/applications")
-                }
-                
-                Label {
-                    text: "1 - Create a new application and name it 'Boxy'"
-                    Layout.fillWidth: true
-                    wrapMode: Text.WordWrap
-                }
+                title: "Create Discord Application"
 
-                Label {
-                    Layout.fillWidth: true
-                    wrapMode: Text.WordWrap
-                    text: "2 - Go to the Bot tab"
-                }
 
-                Label {
-                    Layout.fillWidth: true
-                    wrapMode: Text.WordWrap
-                    text: "3 - Enable 'Message Content Intent"
-                }
-
-                Label {
-                    Layout.fillWidth: true
-                    wrapMode: Text.WordWrap
-                    text: "4 - Click 'Reset Token' and copy it"
-                }
-            }
-            
-            ColumnLayout {
-                Layout.fillWidth: true
-                spacing: 10
-                
-                Label {
-                    text: "Step 2: Enter Bot Token"
-                    font.pixelSize: 16
-                    font.bold: true
-                }
-                
-                TextField {
-                    id: tokenInput
-                    Layout.fillWidth: true
-                    placeholderText: "Paste your bot token here"
-                    text: setupManager.get_token() || ""
-                    echoMode: TextInput.Password
-                }
-                
-                Label {
-                    text: "⚠️ Never share your bot token with anyone"
-                    color: "red"
-                }
-            }
-            
-            ColumnLayout {
-                Layout.fillWidth: true
-                spacing: 10
-                
-                Label {
-                    text: "Step 3: Invite Bot to Server"
-                    font.pixelSize: 16
-                    font.bold: true
-                }
-                
-                Label {
-                    text: "In OAuth2 → URL Generator:"
-                    Layout.fillWidth: true
-                    font.bold: true
-                    wrapMode: Text.WordWrap
-                }
-
-                Label {
-                    text: "1 - Select scope: 'bot'"
-                    Layout.fillWidth: true
-                    wrapMode: Text.WordWrap
-                }
-
-                Label {
-                    Layout.fillWidth: true
-                    wrapMode: Text.WordWrap
-                    text: "2 - Bot permissions: Send Messages, View Channels, Read Message History, Connect, Speak"
-                }
-
-                Label {
-                    Layout.fillWidth: true
-                    wrapMode: Text.WordWrap
-                    text: "3 - Copy the generated URL and use it to invite the bot to your server"
-                }
-            }
-
-            ColumnLayout {
-                Layout.fillWidth: true
-                spacing: 10
-
-                Label {
-                    text: "Step 4: Install FFmpeg"
-                    font.pixelSize: 16
-                    font.bold: true
-                }
-
-                RowLayout {
-                    Layout.fillWidth: true
-                    spacing: 10
+                ColumnLayout {
+                    anchors.fill: parent
+                    spacing: 14
 
                     MaterialButton {
-                        text: "Install FFmpeg"
+                        text: "Open Discord Developer Portal"
+                        Material.roundedScale: Material.LargeScale
                         Layout.alignment: Qt.AlignLeft
-                        onClicked: ffmpegPopup.open()
-                        enabled: !setupManager.ffmpegInstalled
+                        onClicked: Qt.openUrlExternally("https://discord.com/developers/applications")
                     }
 
                     Label {
-                        text: "✓ Installed"
-                        color: "green"
-                        font.bold: true
-                        visible: setupManager.ffmpegInstalled
+                        text: "1 - Create a new application and name it 'Boxy'"
+                        Layout.fillWidth: true
+                        wrapMode: Text.WordWrap
+                    }
+
+                    Label {
+                        Layout.fillWidth: true
+                        wrapMode: Text.WordWrap
+                        text: "2 - Go to the Bot tab"
+                    }
+
+                    Label {
+                        Layout.fillWidth: true
+                        wrapMode: Text.WordWrap
+                        text: "3 - Enable 'Message Content Intent"
+                    }
+
+                    Label {
+                        Layout.fillWidth: true
+                        wrapMode: Text.WordWrap
+                        text: "4 - Click 'Reset Token' and copy it"
+                    }
+                }
+            }
+            
+            CustomGroupBox {
+                Layout.fillWidth: true
+                title: "Enter Bot Token"
+
+
+                ColumnLayout {
+                    anchors.fill: parent
+                    spacing: 14
+
+                    Label {
+                        text: "⚠️ Never share your bot token with anyone"
+                        opacity: 0.5
+                    }
+
+                    TextField {
+                        id: tokenInput
+                        Layout.fillWidth: true
+                        placeholderText: "Paste your bot token here"
+                        text: setupManager.get_token() || ""
+                        echoMode: TextInput.Password
                     }
                 }
             }
 
-            ToolSeparator {
-                orientation: Qt.Horizontal
+            CustomGroupBox {
                 Layout.fillWidth: true
-                Layout.topMargin: -15
-                Layout.bottomMargin: -15
+                title: "Install FFmpeg"
+
+
+                ColumnLayout {
+                    anchors.fill: parent
+                    spacing: 14
+
+                    RowLayout {
+                        Layout.fillWidth: true
+                        spacing: 10
+
+                        MaterialButton {
+                            Material.roundedScale: Material.LargeScale
+                            text: setupManager.ffmpegInstalled ? "✓ FFmpeg is installed" : "Install FFmpeg"
+                            Layout.alignment: Qt.AlignLeft
+                            onClicked: ffmpegPopup.open()
+                            enabled: !setupManager.ffmpegInstalled
+                        }
+                    }
+                }
             }
 
-            // Confirmation checks
             ColumnLayout {
                 Layout.fillWidth: true
-                spacing: 10
-                //Layout.topMargin: 20
+                spacing: 6
                 
                 RowLayout {
                     Layout.fillWidth: true
-                    
-                    Switch {
-                        id: messageIntentSwitch
-                    }
-                    
+
                     Label {
                         text: "I enabled Message Content Intent"
                         Layout.fillWidth: true
                     }
-                }
-                
-                RowLayout {
-                    Layout.fillWidth: true
-                    
+
                     Switch {
-                        id: invitedBotSwitch
-                    }
-                    
-                    Label {
-                        text: "I invited the bot to my server"
-                        Layout.fillWidth: true
+                        id: messageIntentSwitch
+                        Layout.rightMargin: - 10
                     }
                 }
             }
 
-            // Final button
             MaterialButton {
                 text: "Let's Go!"
+                Material.roundedScale: Material.LargeScale
                 Layout.alignment: Qt.AlignHCenter
                 Layout.preferredWidth: 150
                 highlighted: true
                 enabled: readyToGo
                 
                 onClicked: {
-                    setupFinished(tokenInput.text.trim())
-                    setupWindow.close()
+                    instructionDialog.open()
                 }
             }
         }
     }
     
-    // FFmpeg Installation Popup
-    Popup {
+    Dialog {
         id: ffmpegPopup
-        modal: true
-        focus: true
-        closePolicy: Popup.CloseOnEscape | Popup.CloseOnPressOutside
+        //modal: true
+        //focus: true
+        //closePolicy: Popup.CloseOnEscape | Popup.CloseOnPressOutside
         anchors.centerIn: parent
-        width: popupLyt.implicitWidth + 80
-        height: popupLyt.implicitHeight + 80
-        
-        ColumnLayout {
-            id: popupLyt
-            anchors.fill: parent
-            anchors.margins: 20
-            spacing: 15
-            
-            Label {
-                text: "FFmpeg Installation"
-                font.pixelSize: 20
-                font.bold: true
-                Layout.alignment: Qt.AlignHCenter
-            }
-            
-            Rectangle {
-                Layout.fillWidth: true
-                height: 1
-                color: Material.foreground
-                opacity: 0.3
-            }
+        width: ffmpegScrlView.implicitWidth + 80
+        //height: popupLyt.implicitHeight + 80
+        standardButtons: Dialog.Close
+        title: "FFmpeg Installation"
             
             ScrollView {
-                Layout.fillWidth: true
-                Layout.fillHeight: true
+                id: ffmpegScrlView
+                anchors.fill: parent
                 ScrollBar.vertical.policy: ScrollBar.AlwaysOff
                 ScrollBar.horizontal.policy: ScrollBar.AlwaysOff
                 
@@ -347,6 +259,8 @@ ApplicationWindow {
                         RowLayout {
                             Layout.fillWidth: true
                             MaterialButton {
+                                highlighted: true
+                                Material.roundedScale: Material.LargeScale
                                 text: setupManager.ffmpegInstallInProgress ? "Installing..." :
                                                                              setupManager.ffmpegInstalled ? "Installation Complete" : "Install FFmpeg"
                                 enabled: !setupManager.ffmpegInstallInProgress && !setupManager.ffmpegInstalled
@@ -363,7 +277,7 @@ ApplicationWindow {
                             Label {
                                 visible: setupManager.ffmpegInstalled
                                 text: "✓ FFmpeg has been installed successfully!"
-                                color: "green"
+                                color: Material.accent
                             }
                         }
                     }
@@ -414,6 +328,7 @@ ApplicationWindow {
                         
                         MaterialButton {
                             text: "Copy Command"
+                            Material.roundedScale: Material.LargeScale
                             Layout.alignment: Qt.AlignRight
                             onClicked: {
                                 linuxCommand.selectAll()
@@ -422,7 +337,6 @@ ApplicationWindow {
                         }
                     }
                     
-                    // macOS instructions
                     ColumnLayout {
                         visible: setupManager.osType === "macOS"
                         Layout.fillWidth: true
@@ -459,6 +373,7 @@ ApplicationWindow {
                         
                         MaterialButton {
                             text: "Copy Command"
+                            Material.roundedScale: Material.LargeScale
                             Layout.alignment: Qt.AlignRight
                             onClicked: {
                                 macCommand.selectAll()
@@ -493,6 +408,7 @@ ApplicationWindow {
                         MaterialButton {
                             text: "Copy Command"
                             Layout.alignment: Qt.AlignRight
+                            Material.roundedScale: Material.LargeScale
                             onClicked: {
                                 brewCommand.selectAll()
                                 brewCommand.copy()
@@ -501,13 +417,34 @@ ApplicationWindow {
                     }
                 }
             }
-            
-            // Close button
-            MaterialButton {
-                text: "Close"
-                Layout.alignment: Qt.AlignHCenter
-                onClicked: ffmpegPopup.close()
+        }
+
+
+    Dialog {
+        id: instructionDialog
+        title: "How to invite Boxy on your server"
+        modal: true
+        width: 320
+        height: implicitHeight - 20
+        anchors.centerIn: parent
+        standardButtons: Dialog.Ok
+
+        ColumnLayout {
+            id: inviteLyt
+            anchors.fill: parent
+            spacing: 0
+
+            Label {
+                text: "To invite boxy to your servers, open the server section in the toolbar, and click <b>Invite to server</b>."
+                wrapMode: Text.WordWrap
+                Layout.fillWidth: true
+                textFormat: Text.RichText
             }
+        }
+
+        onAccepted: {
+            setupFinished(tokenInput.text.trim())
+            setupWindow.close()
         }
     }
 }

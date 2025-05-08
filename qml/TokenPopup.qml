@@ -61,7 +61,7 @@ AnimatedPopup {
 
         Label {
             text: "⚠️ Never share your bot token with anyone"
-            color: "yellow"
+            opacity: 0.5
             Layout.fillWidth: true
             wrapMode: Text.Wrap
         }

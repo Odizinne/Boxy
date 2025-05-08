@@ -13,6 +13,7 @@
         "qml/SetupWindow.qml",
         "qml/TokenPopup.qml",
         "qml/MaterialButton.qml",
+        "qml/CustomGroupBox.qml",
         "boxy_py/audio_cache.py",
         "boxy_py/bot.py",
         "boxy_py/bridge.py",

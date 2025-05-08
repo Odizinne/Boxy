@@ -10,7 +10,7 @@ Button {
     padding: 8
     verticalPadding: padding - 4
     spacing: 8
-    Material.elevation: 2
+    Material.elevation: 0
     topInset: 0
     bottomInset: 0
 
