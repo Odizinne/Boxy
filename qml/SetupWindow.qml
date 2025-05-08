@@ -12,10 +12,10 @@ ApplicationWindow {
     width: lyt.implicitWidth + 30
     height: lyt.implicitHeight + 30
     title: "Boxy Discord Bot Setup"
-    //color: Material.background
-    
-    Material.theme: Material.Dark
-    Material.accent: Material.Orange
+    Material.theme: BoxySettings.darkMode ? Material.Dark : Material.Light
+    Material.accent: getAccentColor()
+    Material.primary: getPrimaryColor()
+    color: BoxySettings.darkMode ? "#303030" : "#fffbfe"
     
     property bool tokenValid: tokenInput.text.trim() !== ""
     property bool readyToGo: tokenValid && messageIntentSwitch.checked && invitedBotSwitch.checked && setupManager.ffmpegInstalled
