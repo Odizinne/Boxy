@@ -9,9 +9,9 @@ import QtQuick.Templates as T
 ApplicationWindow {
     id: setupWindow
     visible: true
-    width: lyt.implicitWidth * 1.5
+    width: lyt.implicitWidth * 1.65
     height: lyt.implicitHeight + 30 + 40
-    minimumWidth: lyt.implicitWidth * 1.5
+    minimumWidth: lyt.implicitWidth * 1.65
     minimumHeight: lyt.implicitHeight + 30 + 40
     title: "Boxy Discord Bot Setup"
     Material.theme: BoxySettings.darkMode ? Material.Dark : Material.Light
