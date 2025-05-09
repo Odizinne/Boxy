@@ -17,7 +17,7 @@ ApplicationWindow {
     Material.theme: BoxySettings.darkMode ? Material.Dark : Material.Light
     Material.accent: Material.Pink
     Material.primary: Material.Indigo
-    color: BoxySettings.darkMode ? "#1c1a1f" : "#e8e3ea"
+    color: BoxySettings.darkMode ? "#1C1C1C" : "#E3E3E3"
     header: ToolBar {
         height: 40
         Label {
@@ -52,7 +52,7 @@ ApplicationWindow {
             }
             Pane {
                 Layout.fillWidth: true
-                Material.background: BoxySettings.darkMode ? "#2b2930" : "#fffbfe"
+                Material.background: BoxySettings.darkMode ? "#2B2B2B" : "#FFFFFF"
                 Material.elevation: 6
                 Material.roundedScale: Material.ExtraSmallScale
 
@@ -117,7 +117,7 @@ ApplicationWindow {
             }
             Pane {
                 Layout.fillWidth: true
-                Material.background: BoxySettings.darkMode ? "#2b2930" : "#fffbfe"
+                Material.background: BoxySettings.darkMode ? "#2B2B2B" : "#FFFFFF"
                 Material.elevation: 6
                 Material.roundedScale: Material.ExtraSmallScale
 
@@ -149,7 +149,7 @@ ApplicationWindow {
             }
             Pane {
                 Layout.fillWidth: true
-                Material.background: BoxySettings.darkMode ? "#2b2930" : "#fffbfe"
+                Material.background: BoxySettings.darkMode ? "#2B2B2B" : "#FFFFFF"
                 Material.elevation: 6
                 Material.roundedScale: Material.ExtraSmallScale
 

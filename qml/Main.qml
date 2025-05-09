@@ -16,8 +16,8 @@ ApplicationWindow {
     title: "Boxy"
     Material.theme: BoxySettings.darkMode ? Material.Dark : Material.Light
     Material.accent: Material.Pink
-    Material.primary: Material.Indigo
-    color: BoxySettings.darkMode ? "#1c1a1f" : "#e8e3ea"
+    Material.primary: Material.DeepPurple
+    color: BoxySettings.darkMode ? "#1c1c1c" : "#E3E3E3"
     property bool songLoaded: false
     property var shufflePlayedIndices: []
     property bool connectedToAPI: false
@@ -550,7 +550,7 @@ ApplicationWindow {
 
         Pane {
             Layout.fillWidth: true
-            Material.background: BoxySettings.darkMode ? "#2b2930" : "#fffbfe"
+            Material.background: BoxySettings.darkMode ? "#2b2b2b" : "#FFFFFF"
             Material.elevation: 6
             Material.roundedScale: Material.ExtraSmallScale
             ColumnLayout {
@@ -863,7 +863,7 @@ ApplicationWindow {
         Pane {
             Layout.fillWidth: true
             Layout.fillHeight: true
-            Material.background: BoxySettings.darkMode ? "#2b2930" : "#fffbfe"
+            Material.background: BoxySettings.darkMode ? "#2B2B2B" : "#FFFFFF"
             Material.elevation: 6
             Material.roundedScale: Material.ExtraSmallScale
 
