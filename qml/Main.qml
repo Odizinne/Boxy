@@ -699,8 +699,8 @@ ApplicationWindow {
                             id: stopPlaylistButton
                             icon.source: "icons/stop.png"
                             Layout.preferredWidth: height
-                            icon.width: 16
-                            icon.height: 16
+                            icon.width: 14
+                            icon.height: 14
                             property bool isPlaying: false
                             enabled: isPlaying
                             onClicked: {
@@ -719,8 +719,8 @@ ApplicationWindow {
                         id: playPrevButton
                         icon.source: "icons/prev.png"
                         Layout.preferredWidth: height
-                        icon.width: 16
-                        icon.height: 16
+                        icon.width: 14
+                        icon.height: 14
                         enabled: playlistView.currentIndex > 0 && stopPlaylistButton.isPlaying && !downloadProgress.visible
                         onClicked: {
                             if (shuffleButton.checked) {
@@ -748,8 +748,8 @@ ApplicationWindow {
                         Layout.preferredWidth: height
                         enabled: songLoaded && !downloadProgress.visible
                         icon.source: "icons/play.png"
-                        icon.width: 16
-                        icon.height: 16
+                        icon.width: 14
+                        icon.height: 14
                         onClicked: {
                             botBridge.toggle_playback()
                         }
@@ -765,8 +765,8 @@ ApplicationWindow {
                     CustomRoundButton {
                         id: playNextButton
                         icon.source: "icons/next.png"
-                        icon.width: 16
-                        icon.height: 16
+                        icon.width: 14
+                        icon.height: 14
                         Layout.preferredWidth: height
                         enabled: playlistView.currentIndex < (playlistModel.count - 1) && stopPlaylistButton.isPlaying && !downloadProgress.visible
                         onClicked: {
