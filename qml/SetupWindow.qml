@@ -16,7 +16,7 @@ ApplicationWindow {
     title: "Boxy Discord Bot Setup"
     Material.theme: BoxySettings.darkMode ? Material.Dark : Material.Light
     Material.accent: Material.Pink
-    Material.primary: Material.DeepPurple
+    Material.primary: Material.Indigo
     color: BoxySettings.darkMode ? "#1c1a1f" : "#e8e3ea"
     header: ToolBar {
         height: 40
