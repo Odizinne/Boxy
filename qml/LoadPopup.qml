@@ -78,7 +78,10 @@ AnimatedPopup {
             text: "Open Playlist Folder"
             Layout.fillWidth: true
             onClicked: {
-                Qt.openUrlExternally("file:///" + botBridge.get_playlists_directory())
+                let path = botBridge.get_playlists_directory()
+                // Check if path starts with a slash (Linux/macOS) or has a drive letter (Windows)
+                let url = path.startsWith("/") ? "file://" + path : "file:///" + path
+                Qt.openUrlExternally(url)
                 playlistSelectorPopup.close()
             }
         }
