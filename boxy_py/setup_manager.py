@@ -2,6 +2,8 @@ import os
 import platform
 import subprocess
 import threading
+import asyncio
+import requests
 from PySide6.QtCore import QObject, Signal, Slot, Property
 
 class SetupManager(QObject):
@@ -10,6 +12,8 @@ class SetupManager(QObject):
     ffmpegInstallInProgressSignal = Signal(bool)
     ffmpegInstalledSignal = Signal(bool)
     ffmpegInstallMessageSignal = Signal(str)
+    tokenValidationStatusChanged = Signal(str)
+    inviteLinkChanged = Signal(str)
     
     def __init__(self):
         super().__init__()
@@ -20,6 +24,9 @@ class SetupManager(QObject):
         self._ffmpeg_install_message = ""
         self._os_type = platform.system()
         self._linux_distro = self.get_linux_distro() if self._os_type == "Linux" else ""
+        self._token_validation_status = "Not Validated"
+        self._client_id = ""
+        self._invite_link = ""
         
     def get_config_dir(self):
         """Get platform-specific config directory"""
@@ -37,6 +44,14 @@ class SetupManager(QObject):
             os.makedirs(config_dir)
             
         return config_dir
+
+    @Property(str, notify=inviteLinkChanged)
+    def inviteLink(self):
+        return self._invite_link
+        
+    @Property(str, notify=tokenValidationStatusChanged)
+    def tokenValidationStatus(self):
+        return self._token_validation_status
     
     @Property(str, constant=True)
     def osType(self):
@@ -50,6 +65,12 @@ class SetupManager(QObject):
     def ffmpegInstallInProgress(self):
         return self._ffmpeg_install_in_progress
         
+    @tokenValidationStatus.setter
+    def tokenValidationStatus(self, value):
+        if self._token_validation_status != value:
+            self._token_validation_status = value
+            self.tokenValidationStatusChanged.emit(value)
+
     @ffmpegInstallInProgress.setter
     def ffmpegInstallInProgress(self, value):
         if self._ffmpeg_install_in_progress != value:
@@ -115,6 +136,38 @@ class SetupManager(QObject):
         except:
             return False
     
+    @Slot(str)
+    def validate_token(self, token):
+        """Validate the bot token and generate the invite link."""
+        if not token or token.strip() == "":
+            self.tokenValidationStatus = "Invalid Token"
+            return
+
+        async def validate():
+            try:
+                # Fetch client ID from Discord API
+                url = "https://discord.com/api/v10/users/@me"
+                headers = {"Authorization": f"Bot {token}"}
+                response = requests.get(url, headers=headers)
+
+                if response.status_code == 200:
+                    data = response.json()
+                    self._client_id = data.get("id")
+                    self.tokenValidationStatus = "Validated"
+
+                    # Generate the invite link
+                    permissions = 3212288
+                    self._invite_link = f"https://discord.com/api/oauth2/authorize?client_id={self._client_id}&permissions={permissions}&scope=bot"
+                    self.inviteLinkChanged.emit(self._invite_link)
+                else:
+                    self.tokenValidationStatus = "Invalid Token"
+            except Exception as e:
+                self.tokenValidationStatus = f"Error: {str(e)}"
+
+        # Run the validation in an asyncio event loop
+        loop = asyncio.get_event_loop()
+        loop.run_until_complete(validate())
+
     @Slot()
     def installFFmpegWindows(self):
         """Install FFmpeg on Windows"""

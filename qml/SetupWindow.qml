@@ -29,7 +29,7 @@ ApplicationWindow {
     }
 
     property bool tokenValid: tokenInput.text.trim() !== ""
-    property bool readyToGo: tokenValid && messageIntentSwitch.checked && setupManager.ffmpegInstalled
+    property bool readyToGo: tokenValid && setupManager.ffmpegInstalled && setupManager.tokenValidationStatus === "Validated"
     
     signal setupFinished(string token)
     
@@ -69,7 +69,7 @@ ApplicationWindow {
                     }
 
                     Label {
-                        text: "1 - Create a new application and name it 'Boxy'"
+                        text: "- Create a new application and name it 'Boxy'"
                         Layout.fillWidth: true
                         wrapMode: Text.WordWrap
                     }
@@ -77,40 +77,25 @@ ApplicationWindow {
                     Label {
                         Layout.fillWidth: true
                         wrapMode: Text.WordWrap
-                        text: "2 - Go to the Bot tab"
+                        text: "- Go to the Bot tab"
                     }
 
                     Label {
                         Layout.fillWidth: true
                         wrapMode: Text.WordWrap
-                        text: "3 - Enable 'Message Content Intent"
+                        text: "- Enable 'Message Content Intent'"
                     }
 
                     Label {
                         Layout.fillWidth: true
                         wrapMode: Text.WordWrap
-                        text: "4 - Click 'Reset Token' and copy it"
-                    }
-
-                    RowLayout {
-                        Layout.fillWidth: true
-
-                        Label {
-                            text: "I enabled Message Content Intent"
-                            font.bold: true
-                            Layout.fillWidth: true
-                        }
-
-                        Switch {
-                            id: messageIntentSwitch
-                            Layout.rightMargin: - 10
-                        }
+                        text: "- Click 'Reset Token' and copy it"
                     }
                 }
             }
             
             Label {
-                text: "Enter bot token"
+                text: "Setup Boxy and invite it to your server"
                 Layout.bottomMargin: -15
                 Layout.leftMargin: 10
                 color: Material.accent
@@ -137,6 +122,47 @@ ApplicationWindow {
                         placeholderText: "Paste your bot token here"
                         text: setupManager.get_token() || ""
                         echoMode: TextInput.Password
+                    }
+
+                    RowLayout {
+                        Layout.fillWidth: true
+                        spacing: 10
+
+                        MaterialButton {
+                            text: setupManager.tokenValidationStatus === "Validated" ? "Token is valid" : "Validate Token"
+                            Material.roundedScale: Material.LargeScale
+                            enabled: setupManager.tokenValidationStatus !== "Validated" 
+                            onClicked: {
+                                setupManager.validate_token(tokenInput.text.trim())
+                            }
+                        }
+                    }
+
+                    RowLayout {
+                        Layout.fillWidth: true
+                        spacing: 10
+                        MaterialButton {
+                            TextEdit {
+                                id: clipboardHelper
+                                visible: false
+                                text: setupManager.inviteLink
+                            }
+                            text: "Invite Boxy to your server"
+                            Material.roundedScale: Material.LargeScale
+                            enabled: setupManager.tokenValidationStatus === "Validated"
+                            onClicked: {
+                                Qt.openUrlExternally(setupManager.inviteLink)
+                                clipboardHelper.selectAll()
+                                clipboardHelper.copy()
+                            }
+                        }
+
+                        Label {
+                            text: setupManager.inviteLink
+                            color: Material.accent
+                            wrapMode: Text.WordWrap
+                            visible: false
+                        }
                     }
                 }
             }
@@ -173,25 +199,6 @@ ApplicationWindow {
                 }
             }
 
-            //ColumnLayout {
-            //    Layout.fillWidth: true
-            //    spacing: 6
-            //
-            //    RowLayout {
-            //        Layout.fillWidth: true
-            //
-            //        Label {
-            //            text: "I enabled Message Content Intent"
-            //            Layout.fillWidth: true
-            //        }
-            //
-            //        Switch {
-            //            id: messageIntentSwitch
-            //            Layout.rightMargin: - 10
-            //        }
-            //    }
-            //}
-
             MaterialButton {
                 text: "Let's Go!"
                 Material.roundedScale: Material.LargeScale
@@ -201,7 +208,8 @@ ApplicationWindow {
                 enabled: readyToGo
                 
                 onClicked: {
-                    instructionDialog.open()
+                    setupFinished(tokenInput.text.trim())
+                    setupWindow.close()
                 }
             }
         }
@@ -209,12 +217,8 @@ ApplicationWindow {
     
     Dialog {
         id: ffmpegPopup
-        //modal: true
-        //focus: true
-        //closePolicy: Popup.CloseOnEscape | Popup.CloseOnPressOutside
         anchors.centerIn: parent
         width: ffmpegScrlView.implicitWidth + 80
-        //height: popupLyt.implicitHeight + 80
         standardButtons: Dialog.Close
         title: "FFmpeg Installation"
 
@@ -411,35 +415,6 @@ ApplicationWindow {
                     }
                 }
             }
-        }
-    }
-
-
-    Dialog {
-        id: instructionDialog
-        title: "How to invite Boxy on your server"
-        modal: true
-        width: 320
-        height: implicitHeight - 20
-        anchors.centerIn: parent
-        standardButtons: Dialog.Ok
-
-        ColumnLayout {
-            id: inviteLyt
-            anchors.fill: parent
-            spacing: 0
-
-            Label {
-                text: "To invite boxy to your servers, open the server section in the toolbar, and click <b>Invite to server</b>."
-                wrapMode: Text.WordWrap
-                Layout.fillWidth: true
-                textFormat: Text.RichText
-            }
-        }
-
-        onAccepted: {
-            setupFinished(tokenInput.text.trim())
-            setupWindow.close()
         }
     }
 }
