@@ -12,4 +12,5 @@ Settings {
     property int primaryColor: 4
     property bool darkMode: true
     property int maxParallelDownloads: 3
+    property double volume: 0.8
 }

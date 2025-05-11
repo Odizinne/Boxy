@@ -3,8 +3,7 @@ import os
 import concurrent.futures
 import json
 import discord
-from PySide6.QtCore import QObject, Signal, Slot, Property, QTimer, QBuffer, QIODevice, QByteArray
-from PySide6.QtGui import QImage, QPainter, QPainterPath, QPixmap
+from PySide6.QtCore import QObject, Signal, Slot, Property, QTimer, QBuffer, QIODevice, QSettings
 import yt_dlp
 from youtube_search import YoutubeSearch
 
@@ -40,6 +39,7 @@ class BotBridge(QObject):
     urlsExtractedSignal = Signal(list)
     itemDownloadStarted = Signal(str, int)
     itemDownloadCompleted = Signal(str, int)
+    volumeChanged = Signal(float)
 
     def __init__(self, bot):
         super().__init__()
@@ -77,6 +77,9 @@ class BotBridge(QObject):
         self._position_timer = QTimer(self)
         self._position_timer.setInterval(1000)
         self._position_timer.timeout.connect(self._update_position)
+
+        self._settings = QSettings("Odizinne", "Boxy")
+        self._volume = self._settings.value("volume", 0.8, type=float)
 
         # Connect signals
         self.startTimerSignal.connect(self._position_timer.start)
@@ -471,10 +474,7 @@ class BotBridge(QObject):
                 self.downloadStatusChanged.emit("Caching audio file...")
                 audio_file = self.audio_cache.add_file(url, temp_audio_file, info)
 
-                # Check cache size and cleanup if needed
-                from PySide6.QtCore import QSettings
-                settings = QSettings("Odizinne", "Boxy")
-                max_cache_size_mb = settings.value("maxCacheSize", 1024, type=int)
+                max_cache_size_mb = self._settings.value("maxCacheSize", 1024, type=int)
 
                 # Clean up cache to stay within size limit
                 self.audio_cache.cleanup(max_size_mb=max_cache_size_mb)
@@ -495,8 +495,9 @@ class BotBridge(QObject):
                     self._position = 0
                     self.positionChanged.emit(0)
                     source = discord.FFmpegPCMAudio(self.current_audio_file)
+                    volume_transformer = discord.PCMVolumeTransformer(source, volume=self._volume)
                     self.bot.voice_client.play(
-                        source,
+                        volume_transformer,
                         after=lambda e: self.on_playback_finished(e, self.current_audio_file)
                     )
                     self.is_playing = True
@@ -873,9 +874,7 @@ class BotBridge(QObject):
 
             self.batchDownloadProgressChanged.emit(0, non_cached_total, "Downloading playlist items...")
 
-            from PySide6.QtCore import QSettings
-            settings = QSettings("Odizinne", "Boxy")
-            max_parallel_downloads = settings.value("maxParallelDownloads", 3, type=int)
+            max_parallel_downloads = self._settings.value("maxParallelDownloads", 3, type=int)
             downloaded_count = 0
             semaphore = asyncio.Semaphore(max_parallel_downloads)
             download_tasks = []
@@ -948,6 +947,20 @@ class BotBridge(QObject):
         """Get the name of the current YouTube channel"""
         return self._current_channel_name
 
+    @Property(float, notify=volumeChanged)
+    def volume(self):
+        """Get current volume level (0.0 to 1.0)"""
+        return self._volume
+    
+    @volume.setter 
+    def volume(self, value):
+        """Set volume level and update if playing"""
+        if 0.0 <= value <= 1.0 and self._volume != value:
+            self._volume = value
+            if self.bot.voice_client and self.bot.voice_client.source:
+                self.bot.voice_client.source.volume = value
+            self.volumeChanged.emit(value)
+
     @current_channel_name.setter
     def current_channel_name(self, name):
         """Set the name of the current YouTube channel"""
@@ -966,7 +979,7 @@ class BotBridge(QObject):
         if self._current_thumbnail_url != url:
             self._current_thumbnail_url = url
             self.thumbnailChanged.emit(url)
-
+    
     @Property(bool, notify=voiceConnectedChanged)
     def voiceConnected(self):
         """Get whether connected to a voice channel"""
@@ -1069,3 +1082,8 @@ class BotBridge(QObject):
         image_data = buffer.data().toBase64().data().decode("ascii")
 
         return f"data:image/png;base64,{image_data}"
+    
+    @Slot(float)
+    def set_volume(self, value):
+        """Slot for setting volume from QML"""
+        self.volume = value

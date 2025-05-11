@@ -694,7 +694,8 @@ ApplicationWindow {
                     spacing: 0
 
                     RowLayout {
-                        Layout.preferredWidth: controlLyt.implicitWidth
+                        //Layout.preferredWidth: controlLyt.implicitWidth
+                        spacing: 0
                         CustomRoundButton {
                             id: stopPlaylistButton
                             icon.source: "icons/stop.png"
@@ -707,6 +708,30 @@ ApplicationWindow {
                                 botBridge.stop_playing()
                                 playlistView.currentIndex = 0
                                 isPlaying = false
+                            }
+                        }
+
+                        CustomRoundButton {
+                            id: volumeButton
+                            icon.source: {
+                                if (BoxySettings.volume === 0) {
+                                    return "icons/volume_muted.png"
+                                } else if (BoxySettings.volume <= 0.50) {
+                                    return "icons/volume_down.png"
+                                } else if (BoxySettings.volume <= 1) {
+                                    return "icons/volume_up.png"
+                                } else {
+                                    return "icons/volume_up.png"
+                                }
+                            }
+
+                            Layout.preferredWidth: height
+                            icon.width: 18
+                            icon.height: 18
+                            property bool isPlaying: false
+                            enabled: root.connectedToAPI
+                            onClicked: {
+                                volumePopup.visible = !volumePopup.visible
                             }
                         }
                     }
@@ -745,7 +770,8 @@ ApplicationWindow {
 
                     CustomRoundButton {
                         id: pauseButton
-                        Layout.preferredWidth: height
+                        Layout.preferredWidth: implicitWidth + 8
+                        Layout.preferredHeight: implicitHeight + 8
                         enabled: songLoaded && !downloadProgress.visible
                         icon.source: "icons/play.png"
                         icon.width: 14
@@ -1285,6 +1311,31 @@ ApplicationWindow {
             function onIssue(message) {
                 issuePopup.displayText = message
                 issuePopup.open()
+            }
+        }
+    }
+
+    Popup {
+        id: volumePopup
+        x: (parent.width - width) / 2   
+        y: 10                             
+        height: 40
+        width: implicitWidth
+        Material.elevation: 10
+        closePolicy: Popup.CloseOnEscape | Popup.CloseOnPressOutside
+
+        Slider {
+            id: volumeSlider
+            anchors.leftMargin: -5
+            anchors.rightMargin: -5
+            anchors.fill: parent
+            from: 0.0
+            to: 1.0
+            value: BoxySettings.volume
+            enabled: root.connectedToAPI
+            onValueChanged: {
+                BoxySettings.volume = value
+                botBridge.set_volume(value)
             }
         }
     }
