@@ -16,7 +16,7 @@ ApplicationWindow {
     title: "Boxy"
     Material.theme: BoxySettings.darkMode ? Material.Dark : Material.Light
     Material.accent: Material.Pink
-    Material.primary: Material.DeepPurple
+    Material.primary: Material.Indigo
     color: BoxySettings.darkMode ? "#1c1c1c" : "#E3E3E3"
     property bool songLoaded: false
     property var shufflePlayedIndices: []
