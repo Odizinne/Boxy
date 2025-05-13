@@ -932,7 +932,7 @@ class BotBridge(QObject):
                 non_cached_total, non_cached_total, "Download complete!"
             )
 
-            max_cache_size_mb = settings.value("maxCacheSize", 1024, type=int)
+            max_cache_size_mb = self._settings.value("maxCacheSize", 1024, type=int)
             self.audio_cache.cleanup(max_size_mb=max_cache_size_mb)
 
         asyncio.run_coroutine_threadsafe(downloader(), self.bot.loop)
