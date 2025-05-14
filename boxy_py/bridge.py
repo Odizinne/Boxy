@@ -42,6 +42,8 @@ class BotBridge(QObject):
     itemDownloadCompleted = Signal(str, int)
     volumeChanged = Signal(float)
     mediaSessionActiveChanged = Signal(bool)
+    bulkCurrentChanged = Signal(int)
+    bulkTotalChanged = Signal(int)
 
     def __init__(self, bot):
         super().__init__()
@@ -67,6 +69,8 @@ class BotBridge(QObject):
         self._valid_token_format = True
         self._disconnecting = False
         self._volume = self._settings.value("volume", 0.8, type=float)
+        self._bulk_current = 0
+        self._bulk_total = 0
 
         # Initialize basic properties
         self.bot = bot
@@ -98,6 +102,26 @@ class BotBridge(QObject):
             self._yt_pool.shutdown(wait=False)
 
     # Property Definitions
+    @Property(int, notify=bulkCurrentChanged)
+    def bulk_current(self):
+        return self._bulk_current
+    
+    @bulk_current.setter
+    def bulk_current(self, value):
+        if self._bulk_current != value:
+            self._bulk_current = value
+            self.bulkCurrentChanged.emit(value)
+
+    @Property(int, notify=bulkTotalChanged)
+    def bulk_total(self):
+        return self._bulk_total
+    
+    @bulk_total.setter
+    def bulk_total(self, value):
+        if self._bulk_total != value:
+            self._bulk_total = value
+            self.bulkTotalChanged.emit(value)
+
     @Property(bool, notify=mediaSessionActiveChanged)
     def media_session_active(self):
         return self._media_session_active
@@ -966,7 +990,8 @@ class BotBridge(QObject):
                 self.download_status = "All items already cached"
                 return
 
-            self.batchDownloadProgressChanged.emit(0, non_cached_total, "Downloading playlist items...")
+            self.bulk_current = 0
+            self.bulk_total = non_cached_total
             self.download_status = "Downloading playlist items..."
 
             max_parallel_downloads = self._settings.value("maxParallelDownloads", 3, type=int)
@@ -1013,19 +1038,13 @@ class BotBridge(QObject):
                     finally:
                         self.itemDownloadCompleted.emit(current_url, idx)
                         downloaded_count += 1
-                        self.batchDownloadProgressChanged.emit(
-                            downloaded_count, non_cached_total,
-                            "Downloading playlist items..."
-                        )
+                        self.bulk_current = downloaded_count
 
             for url_index, url in non_cached_urls:
                 download_tasks.append(download_item(url_index, url))
 
             await asyncio.gather(*download_tasks)
 
-            self.batchDownloadProgressChanged.emit(
-                non_cached_total, non_cached_total, "Download complete!"
-            )
             self.download_status = "Download complete!"
 
             max_cache_size_mb = self._settings.value("maxCacheSize", 1024, type=int)

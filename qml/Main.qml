@@ -454,12 +454,12 @@ ApplicationWindow {
             playlistModel.setProperty(index, "isResolving", false)
         }
 
-        function onBatchDownloadProgressChanged(current, total, status) {
-            playlistDownloadProgress.from = 0
-            playlistDownloadProgress.to = total
-            playlistDownloadProgress.value = current
-            newItemInput.placeholderText = status
-        }
+        //function onBatchDownloadProgressChanged(current, total, status) {
+        //    playlistDownloadProgress.from = 0
+        //    playlistDownloadProgress.to = total
+        //    playlistDownloadProgress.value = current
+        //    newItemInput.placeholderText = status
+        //}
 
         function onPlaylistLoaded(items, title) {
             playlistModel.clear()
@@ -1128,8 +1128,8 @@ ApplicationWindow {
                     //Layout.bottomMargin: -5
                     visible: botBridge.download_status === "Downloading playlist items..."
                     from: 0
-                    to: 100
-                    value: 0
+                    to: botBridge.bulk_total
+                    value: botBridge.bulk_current
                 }
 
                 RowLayout {
