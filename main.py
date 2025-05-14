@@ -83,6 +83,8 @@ def start_main_app(app, engine, token):
                 print("Cleanup timed out")
             except Exception as e:
                 print(f"Cleanup error: {e}")
+                
+        engine.deleteLater()
     
     app.aboutToQuit.connect(cleanup)
     

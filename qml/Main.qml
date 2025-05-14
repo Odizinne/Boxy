@@ -20,7 +20,7 @@ ApplicationWindow {
     color: BoxySettings.darkMode ? "#1c1c1c" : "#E3E3E3"
     property bool songLoaded: botBridge.song_loaded
     property var shufflePlayedIndices: []
-    property bool connectedToAPI: false
+    property bool connectedToAPI: botBridge.status === "Connected"
     property bool isAutoAdvancing: false
     property bool isResolvingAny: {
         for(let i = 0; i < playlistModel.count; i++) {
@@ -444,14 +444,6 @@ ApplicationWindow {
         function onItemDownloadCompleted(url, index) {
             if (index < playlistModel.count) {
                 playlistModel.setProperty(index, "isDownloading", false)
-            }
-        }
-
-        function onStatusChanged(status) {
-            if (status === "Connected") {
-                root.connectedToAPI = true
-            } else {
-                root.connectedToAPI = false
             }
         }
 
