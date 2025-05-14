@@ -12,6 +12,7 @@ import boxy_py.config as config
 from boxy_py.audio_cache import AudioCache
 
 class BotBridge(QObject):
+    # Core signals - these are still needed for properties
     statusChanged = Signal(str)
     playStateChanged = Signal(bool)
     songChanged = Signal(str)
@@ -43,18 +44,13 @@ class BotBridge(QObject):
 
     def __init__(self, bot):
         super().__init__()
-        # Initialize basic properties
-        self.bot = bot
-        self.is_playing = False
-        self.current_guild = None
-        self.current_channel = None
-        self.repeat_mode = False
-        self.current_audio_file = None
-        self.current_url = None
-        self.song_loaded = False
-        self._changing_song = False
-
-        # State properties
+        # Initialize state properties
+        self._status = "Disconnected"
+        self._is_playing = False
+        self._song_title = ""
+        self._download_status = ""
+        self._repeat_mode = False
+        self._song_loaded = False
         self._voice_connected = False
         self._channels = []
         self._current_channel = None
@@ -62,9 +58,19 @@ class BotBridge(QObject):
         self._current_server = None
         self._duration = 0
         self._position = 0
-        self._current_thumbnail_url = None
+        self._current_thumbnail_url = ""
         self._current_channel_name = ""
         self._valid_token_format = True
+        self._disconnecting = False
+        self._volume = 0.8
+
+        # Initialize basic properties
+        self.bot = bot
+        self.current_guild = None
+        self.current_channel = None
+        self.current_audio_file = None
+        self.current_url = None
+        self._changing_song = False
 
         # Initialize the audio cache
         self.audio_cache = AudioCache()
@@ -92,6 +98,183 @@ class BotBridge(QObject):
         """Clean up resources when object is destroyed"""
         if hasattr(self, "_yt_pool"):
             self._yt_pool.shutdown(wait=False)
+
+    # Property Definitions
+    @Property(str, notify=statusChanged)
+    def status(self):
+        return self._status
+        
+    @status.setter
+    def status(self, value):
+        if self._status != value:
+            self._status = value
+            self.statusChanged.emit(value)
+    
+    @Property(bool, notify=playStateChanged)
+    def is_playing(self):
+        return self._is_playing
+        
+    @is_playing.setter
+    def is_playing(self, value):
+        if self._is_playing != value:
+            self._is_playing = value
+            self.playStateChanged.emit(value)
+    
+    @Property(str, notify=songChanged)
+    def song_title(self):
+        return self._song_title
+        
+    @song_title.setter
+    def song_title(self, value):
+        if self._song_title != value:
+            self._song_title = value
+            self.songChanged.emit(value)
+    
+    @Property(str, notify=downloadStatusChanged)
+    def download_status(self):
+        return self._download_status
+        
+    @download_status.setter
+    def download_status(self, value):
+        if self._download_status != value:
+            self._download_status = value
+            self.downloadStatusChanged.emit(value)
+    
+    @Property(bool, notify=repeatModeChanged)
+    def repeat_mode(self):
+        return self._repeat_mode
+        
+    @repeat_mode.setter
+    def repeat_mode(self, value):
+        if self._repeat_mode != value:
+            self._repeat_mode = value
+            self.repeatModeChanged.emit(value)
+    
+    @Property(bool, notify=songLoadedChanged)
+    def song_loaded(self):
+        return self._song_loaded
+        
+    @song_loaded.setter
+    def song_loaded(self, value):
+        if self._song_loaded != value:
+            self._song_loaded = value
+            self.songLoadedChanged.emit(value)
+    
+    @Property(bool, notify=voiceConnectedChanged)
+    def voice_connected(self):
+        return self._voice_connected
+        
+    @voice_connected.setter
+    def voice_connected(self, value):
+        if self._voice_connected != value:
+            self._voice_connected = value
+            self.voiceConnectedChanged.emit(value)
+    
+    @Property(list, notify=channelsChanged)
+    def channels(self):
+        return self._channels
+        
+    @channels.setter
+    def channels(self, value):
+        if self._channels != value:
+            self._channels = value
+            self.channelsChanged.emit(value)
+    
+    @Property(str, notify=currentChannelChanged)
+    def current_channel(self):
+        return self._current_channel
+        
+    @current_channel.setter
+    def current_channel(self, value):
+        if self._current_channel != value:
+            self._current_channel = value
+            self.currentChannelChanged.emit(value)
+    
+    @Property(list, notify=serversChanged)
+    def servers(self):
+        return self._servers
+        
+    @servers.setter
+    def servers(self, value):
+        if self._servers != value:
+            self._servers = value
+            self.serversChanged.emit(value)
+    
+    @Property(str, notify=currentServerChanged)
+    def current_server(self):
+        return self._current_server
+        
+    @current_server.setter
+    def current_server(self, value):
+        if self._current_server != value:
+            self._current_server = value
+            self.currentServerChanged.emit(value)
+    
+    @Property(float, notify=durationChanged)
+    def duration(self):
+        return self._duration
+        
+    @duration.setter
+    def duration(self, value):
+        if self._duration != value:
+            self._duration = value
+            self.durationChanged.emit(value)
+    
+    @Property(float, notify=positionChanged)
+    def position(self):
+        return self._position
+        
+    @position.setter
+    def position(self, value):
+        if self._position != value:
+            self._position = value
+            self.positionChanged.emit(value)
+    
+    @Property(str, notify=thumbnailChanged)
+    def thumbnail_url(self):
+        return self._current_thumbnail_url
+        
+    @thumbnail_url.setter
+    def thumbnail_url(self, value):
+        if self._current_thumbnail_url != value:
+            self._current_thumbnail_url = value
+            self.thumbnailChanged.emit(value)
+    
+    @Property(str, notify=channelNameChanged)
+    def channel_name(self):
+        return self._current_channel_name
+        
+    @channel_name.setter
+    def channel_name(self, value):
+        if self._current_channel_name != value:
+            self._current_channel_name = value
+            self.channelNameChanged.emit(value)
+    
+    @Property(bool, notify=validTokenFormatChanged)
+    def valid_token_format(self):
+        return self._valid_token_format
+        
+    @valid_token_format.setter
+    def valid_token_format(self, value):
+        if self._valid_token_format != value:
+            self._valid_token_format = value
+            self.validTokenFormatChanged.emit(value)
+    
+    @Property(bool)
+    def disconnecting(self):
+        return self._disconnecting
+    
+    @Property(float, notify=volumeChanged)
+    def volume(self):
+        return self._volume
+    
+    @volume.setter
+    def volume(self, value):
+        if 0.0 <= value <= 1.0 and self._volume != value:
+            self._volume = value
+            if self.bot.voice_client and self.bot.voice_client.source:
+                self.bot.voice_client.source.volume = value
+            self.volumeChanged.emit(value)
 
     #
     # Cache Management Methods
@@ -212,18 +395,14 @@ class BotBridge(QObject):
                 self.bot.voice_client.stop()
                 self.is_playing = False
                 self.stopTimerSignal.emit()
-                self._position = 0
-                self.positionChanged.emit(0)
-                self.playStateChanged.emit(False)
-                self.songChanged.emit("")
-                self.songLoadedChanged.emit(False)
+                self.position = 0
+                self.song_title = ""
+                self.song_loaded = False
                 self.current_audio_file = None
                 self.current_url = None
-                self.downloadStatusChanged.emit("")
-                self._current_thumbnail_url = None
-                self.thumbnailChanged.emit("")
-                self._current_channel_name = ""
-                self.channelNameChanged.emit("")
+                self.download_status = ""
+                self.thumbnail_url = ""
+                self.channel_name = ""
 
         asyncio.run_coroutine_threadsafe(stop_wrapper(), self.bot.loop)
 
@@ -242,13 +421,10 @@ class BotBridge(QObject):
             self.is_playing = True
             self.startTimerSignal.emit()
 
-        self.playStateChanged.emit(self.is_playing)
-
     @Slot(bool)
     def set_repeat_mode(self, enabled):
         """Set repeat mode on/off"""
         self.repeat_mode = enabled
-        self.repeatModeChanged.emit(enabled)
 
     @Slot(float)
     def seek(self, position):
@@ -286,8 +462,7 @@ class BotBridge(QObject):
                     )
 
             # Update position
-            self._position = position
-            self.positionChanged.emit(position)
+            self.position = position
 
             # If it was paused, pause the new source
             if not was_playing:
@@ -296,132 +471,74 @@ class BotBridge(QObject):
     @Slot(str)
     def play_url(self, url):
         """Play audio from URL or search term"""
-
         async def play_wrapper():
             if not self._current_channel or not self._current_server:
                 self.issue.emit("Please connect to a channel first")
                 return
-
+    
             selected_server = discord.utils.get(self.bot.guilds, id=int(self._current_server))
             if not selected_server:
                 self.issue.emit("Selected server not found")
                 return
-
+    
             selected_channel = discord.utils.get(selected_server.voice_channels, id=int(self._current_channel))
             if not selected_channel:
                 self.issue.emit("Selected channel not found")
                 return
-
-            # Check if we need to change channels
-            need_reconnect = True
-            if self.bot.voice_client and self.bot.voice_client.is_connected():
-                if self.bot.voice_client.channel.id == int(self._current_channel):
-                    need_reconnect = False
-                else:
-                    # Different channel, need to disconnect first
-                    await self.bot.voice_client.disconnect()
-                    self.bot.voice_client = None
-                    self.is_playing = False
-                    self._voice_connected = False
-                    self.stopTimerSignal.emit()
-                    self._position = 0
-                    self.positionChanged.emit(0)
-                    self.playStateChanged.emit(False)
-                    self.songChanged.emit("")
-                    self.songLoadedChanged.emit(False)
-                    self.voiceConnectedChanged.emit(False)
-
-            if need_reconnect:
-                if all(member.bot for member in selected_channel.members):
-                    self.issue.emit("Cannot join empty channel")
-                    return
-
-                try:
-                    self.bot.voice_client = await selected_channel.connect()
-                    self._voice_connected = True
-                    self.voiceConnectedChanged.emit(True)
-                except Exception as e:
-                    self.issue.emit(f"Failed to connect: {str(e)}")
-                    return
-
+    
+            if not self.bot.voice_client or not self.bot.voice_client.is_connected():
+                self.issue.emit("Not connected to voice channel")
+                return
+                
+            if self.bot.voice_client.channel.id != int(self._current_channel):
+                self.issue.emit("Connected to a different channel")
+                return
+    
             if self.bot.voice_client and (self.bot.voice_client.is_playing() or self.bot.voice_client.is_paused()):
                 self._changing_song = True
                 self.bot.voice_client.stop()
-
-                # Wait for it to fully stop (important!)
                 await asyncio.sleep(0.3)
             else:
                 self._changing_song = False
-
+    
             self.stopTimerSignal.emit()
             self._position = 0
-            self.positionChanged.emit(0)
-
+    
             was_repeat = self.repeat_mode
             self.repeat_mode = False
-
+    
             await self.play_from_gui(url)
-
+    
             self.repeat_mode = was_repeat
-
+    
             self._changing_song = False
-
+    
         asyncio.run_coroutine_threadsafe(play_wrapper(), self.bot.loop)
-
+    
     async def play_from_gui(self, search):
         """Download and play audio from URL or search term"""
-        # Ensure we're connected to a voice channel
         if not self.bot.voice_client or not self.bot.voice_client.is_connected():
-            if not self._current_channel_id or not self._current_server_id:
-                self.issue.emit("Please select a server and channel first")
-                return
-
-            selected_server = discord.utils.get(self.bot.guilds, id=int(self._current_server_id))
-            if not selected_server:
-                self.issue.emit("Selected server not found")
-                return
-
-            selected_channel = discord.utils.get(selected_server.voice_channels, id=int(self._current_channel_id))
-            if not selected_channel:
-                self.issue.emit("Selected channel not found")
-                return
-
-            if all(member.bot for member in selected_channel.members):
-                self.issue.emit("Cannot join empty channel")
-                return
-
-            try:
-                self.bot.voice_client = await selected_channel.connect()
-                self._voice_connected = True
-                self.voiceConnectedChanged.emit(True)
-            except Exception as e:
-                self.issue.emit(f"Failed to connect: {str(e)}")
-                return
-
-        # Stop any current playback
+            self.issue.emit("Not connected to voice channel")
+            return
+    
         if self.bot.voice_client and (self.bot.voice_client.is_playing() or self.bot.voice_client.is_paused()):
             self.bot.voice_client.stop()
-
-        self.downloadStatusChanged.emit("Preparing...")
+    
+        self._download_status = "Preparing..."
         self.stopTimerSignal.emit()
         self._position = 0
-        self.positionChanged.emit(0)
-        self.songLoadedChanged.emit(False)
-
-        # Convert search term to URL if needed
+        self._song_loaded = False
+    
         url = search if search.startswith("http") else get_first_video_url(search)
         if url is None:
-            self.downloadStatusChanged.emit("No video found")
+            self._download_status = "No video found"
             return
-
-        # Check if file is already cached
+    
         cached = self.audio_cache.get_cached_file(url)
         if cached:
-            # Use cached file
             audio_file, info = cached
             await self._play_cached_file(audio_file, info, url)
         else:
-            # Download to cache
             await self._download_and_play_file(url)
 
     async def _play_cached_file(self, audio_file, info, url):
@@ -429,16 +546,13 @@ class BotBridge(QObject):
         # Update metadata
         song_name = info['title']
         channel_name = info['channel']
-        self._duration = info['duration']
-        self._current_channel_name = channel_name
-        self._current_thumbnail_url = info['thumbnail']
+        self.duration = info['duration']
+        self.channel_name = channel_name
+        self.thumbnail_url = info['thumbnail']
 
         # Update UI
-        self.durationChanged.emit(self._duration)
-        self.songChanged.emit(song_name)
-        self.channelNameChanged.emit(channel_name)
-        self.thumbnailChanged.emit(self._current_thumbnail_url)
-        self.downloadStatusChanged.emit("Using cached file...")
+        self.song_title = song_name
+        self.download_status = "Using cached file..."
 
         # Store current file/URL
         self.current_audio_file = audio_file
@@ -465,7 +579,7 @@ class BotBridge(QObject):
                 "no_warnings": True
             }
 
-            self.downloadStatusChanged.emit("Extracting video info...")
+            self.download_status = "Extracting video info..."
 
             # Run yt_dlp in thread pool to prevent blocking
             loop = asyncio.get_event_loop()
@@ -477,18 +591,15 @@ class BotBridge(QObject):
             # Update metadata
             song_name = info["title"]
             channel_name = info.get("channel", "") or info.get("uploader", "")
-            self._duration = info.get("duration", 0)
-            self._current_channel_name = channel_name
-            self._current_thumbnail_url = info.get("thumbnail") or info.get("thumbnails", [{}])[0].get("url", "")
+            self.duration = info.get("duration", 0)
+            self.channel_name = channel_name
+            self.thumbnail_url = info.get("thumbnail") or info.get("thumbnails", [{}])[0].get("url", "")
 
             # Update UI
-            self.durationChanged.emit(self._duration)
-            self.songChanged.emit(song_name)
-            self.channelNameChanged.emit(channel_name)
-            self.thumbnailChanged.emit(self._current_thumbnail_url)
+            self.song_title = song_name
 
             # Add to cache
-            self.downloadStatusChanged.emit("Caching audio file...")
+            self.download_status = "Caching audio file..."
             audio_file = self.audio_cache.add_file(url, temp_file, info)
 
             # Clean up cache
@@ -507,16 +618,15 @@ class BotBridge(QObject):
             shutil.rmtree(temp_dir, ignore_errors=True)
 
         except Exception as e:
-            self.downloadStatusChanged.emit(f"Error: {str(e)}")
+            self.download_status = f"Error: {str(e)}"
 
     async def _start_playback(self, audio_file):
         """Start playing an audio file"""
         try:
             if os.path.exists(audio_file):
-                self.downloadStatusChanged.emit("Starting playback...")
+                self.download_status = "Starting playback..."
                 if self.bot.voice_client:
-                    self._position = 0
-                    self.positionChanged.emit(0)
+                    self.position = 0
                     source = discord.FFmpegPCMAudio(audio_file)
                     volume_transformer = discord.PCMVolumeTransformer(source, volume=self._volume)
                     self.bot.voice_client.play(
@@ -524,17 +634,16 @@ class BotBridge(QObject):
                         after=lambda e: self.on_playback_finished(e, audio_file)
                     )
                     self.is_playing = True
-                    self.playStateChanged.emit(True)
-                    self.downloadStatusChanged.emit("")
+                    self.download_status = ""
 
                     await asyncio.sleep(0.2)
 
-                    self.songLoadedChanged.emit(True)
+                    self.song_loaded = True
                     self.startTimerSignal.emit()
             else:
-                self.downloadStatusChanged.emit("Error: Audio file not found")
+                self.download_status = "Error: Audio file not found"
         except Exception as e:
-            self.downloadStatusChanged.emit(f"Playback error: {str(e)}")
+            self.download_status = f"Playback error: {str(e)}"
 
     def download_hook(self, d):
         """Progress hook for youtube-dl"""
@@ -544,13 +653,13 @@ class BotBridge(QObject):
                 total = d.get("total_bytes", 0) or d.get("total_bytes_estimate", 0)
                 if total:
                     progress = (downloaded / total) * 100
-                    self.downloadStatusChanged.emit(f"Downloading: {progress:.1f}%")
+                    self.download_status = f"Downloading: {progress:.1f}%"
                 else:
-                    self.downloadStatusChanged.emit("Downloading...")
+                    self.download_status = "Downloading..."
             except:
-                self.downloadStatusChanged.emit("Downloading...")
+                self.download_status = "Downloading..."
         elif d["status"] == "finished":
-            self.downloadStatusChanged.emit("Download complete, processing...")
+            self.download_status = "Download complete, processing..."
 
     def on_playback_finished(self, error, audio_file):
         """Called when playback finishes"""
@@ -559,16 +668,13 @@ class BotBridge(QObject):
             return
 
         self.stopTimerSignal.emit()
-        self._position = 0
-        self.positionChanged.emit(0)
+        self.position = 0
 
         if not (self.repeat_mode and audio_file == self.current_audio_file):
-            self.songLoadedChanged.emit(False)
-            self.songChanged.emit("")
-            self._current_thumbnail_url = ""
-            self._current_channel_name = ""
-            self.channelNameChanged.emit("")
-            self.thumbnailChanged.emit("")
+            self.song_loaded = False
+            self.song_title = ""
+            self.thumbnail_url = ""
+            self.channel_name = ""
 
         if error:
             return
@@ -582,17 +688,15 @@ class BotBridge(QObject):
 
     async def replay_audio(self, audio_file):
         if os.path.exists(audio_file) and audio_file == self.current_audio_file:
-            self._position = 0
-            self.positionChanged.emit(0)
+            self.position = 0
             source = discord.FFmpegPCMAudio(audio_file)
             self.bot.voice_client.play(
                 source,
                 after=lambda e: self.on_playback_finished(e, audio_file)
             )
             self.is_playing = True
-            self.playStateChanged.emit(True)
             self.startTimerSignal.emit()
-            self.songLoadedChanged.emit(True)
+            self.song_loaded = True
 
     async def cleanup(self):
         """Clean up resources when application exits"""
@@ -609,12 +713,10 @@ class BotBridge(QObject):
     def _update_position(self):
         """Update the position timer"""
         if self.bot.voice_client and (self.bot.voice_client.is_playing() or self.bot.voice_client.is_paused()):
-            self._position += 1
-            self.positionChanged.emit(self._position)
+            self.position = self._position + 1
         else:
             self.stopTimerSignal.emit()
-            self._position = 0
-            self.positionChanged.emit(0)
+            self.position = 0
 
     @Slot(result="QVariantMap")
     def get_servers_with_channels(self):
@@ -649,7 +751,7 @@ class BotBridge(QObject):
         """Extract video URLs from a YouTube playlist (non-blocking)"""
         def extractor():
             try:
-                self.downloadStatusChanged.emit("Extracting playlist info...")
+                self.download_status = "Extracting playlist info..."
 
                 urls = []
                 ydl_opts = {
@@ -674,10 +776,10 @@ class BotBridge(QObject):
                 self.urlsExtractedSignal.emit(urls)
 
             except Exception as e:
-                self.downloadStatusChanged.emit(f"Error extracting playlist: {str(e)}")
+                self.download_status = f"Error extracting playlist: {str(e)}"
                 self.urlsExtractedSignal.emit([])
             finally:
-                self.downloadStatusChanged.emit("")
+                self.download_status = ""
 
         self._yt_pool.submit(extractor)
 
@@ -686,7 +788,7 @@ class BotBridge(QObject):
         """Resolve the title and channel for a YouTube URL or search term"""
         async def resolver():
             try:
-                self.downloadStatusChanged.emit(f"Resolving title for item {index}...")
+                self.download_status = f"Resolving title for item {index}..."
 
                 title_ydl_opts = {
                     "quiet": True,
@@ -737,11 +839,11 @@ class BotBridge(QObject):
                     else:
                         self.titleResolved.emit(index, "No video found", "", "")
 
-                self.downloadStatusChanged.emit("")
+                self.download_status = ""
 
             except Exception as e:
                 self.titleResolved.emit(index, f"Error: {str(e)}", "", "")
-                self.downloadStatusChanged.emit("")
+                self.download_status = ""
 
         asyncio.run_coroutine_threadsafe(resolver(), self.bot.loop)
 
@@ -753,8 +855,8 @@ class BotBridge(QObject):
                 print("Error: connect_to_channel called with missing server_id or channel_id")
                 return
 
-            self._current_server = server_id
-            self._current_channel = channel_id
+            self.current_server = server_id
+            self.current_channel = channel_id
 
             selected_server = discord.utils.get(self.bot.guilds, id=int(server_id))
             if not selected_server:
@@ -780,13 +882,57 @@ class BotBridge(QObject):
 
             try:
                 self.bot.voice_client = await selected_channel.connect()
-                self._voice_connected = True
-                self.voiceConnectedChanged.emit(True)
-                self.downloadStatusChanged.emit("")
+                self.voice_connected = True
+                self.download_status = ""
             except Exception as e:
                 self.issue.emit(f"Failed to connect: {str(e)}")
 
         asyncio.run_coroutine_threadsafe(connect_wrapper(), self.bot.loop)
+
+    def _reset_playback_state(self):
+        """Reset all playback-related states"""
+        self.is_playing = False
+        self.song_loaded = False
+        self.stopTimerSignal.emit()
+        self.position = 0
+        self.song_title = ""
+        self.thumbnail_url = ""
+        self.channel_name = ""
+        self.voice_connected = False
+
+    @Slot()
+    def disconnect_voice(self):
+        """Disconnect from voice channel"""
+        async def disconnect_wrapper():
+            self._disconnecting = True  # Set flag to prevent auto-advancement
+            
+            # First reset all playback state
+            if self.bot.voice_client and (self.bot.voice_client.is_playing() or self.bot.voice_client.is_paused()):
+                self.bot.voice_client.stop()
+                self.is_playing = False
+                self.stopTimerSignal.emit()
+                self.position = 0
+                self.song_title = ""
+                self.song_loaded = False
+                self.current_audio_file = None
+                self.current_url = None
+                self.download_status = ""
+                self.thumbnail_url = ""
+                self.channel_name = ""
+                
+                # Wait a moment for everything to settle
+                await asyncio.sleep(0.3)
+            
+            # Now disconnect
+            if self.bot.voice_client:
+                await self.bot.voice_client.disconnect()
+                self.bot.voice_client = None
+                self.voice_connected = False
+            
+            self._disconnecting = False  # Reset the flag
+
+        # Run the disconnect operation as a single async task
+        asyncio.run_coroutine_threadsafe(disconnect_wrapper(), self.bot.loop)
 
     @Slot(result=str)
     def get_invitation_link(self):
@@ -798,62 +944,24 @@ class BotBridge(QObject):
         else:
             self.issue.emit("Bot is not connected yet")
             return ""
-    
-    @Slot()
-    def disconnect_voice(self):
-        """Disconnect from voice channel"""
-        async def disconnect_wrapper():
-            if self.bot.voice_client:
-                await self.bot.voice_client.disconnect()
-                self.bot.voice_client = None
-                self._voice_connected = False
-                self.voiceConnectedChanged.emit(False)
-
-        self.stop_playing()
-        asyncio.run_coroutine_threadsafe(disconnect_wrapper(), self.bot.loop)
-
-    @Property(list, notify=serversChanged)
-    def servers(self):
-        """Get list of available servers"""
-        return self._servers
 
     @Slot()
     def update_servers(self):
         """Update the list of available servers"""
         if self.bot:
-            self._servers = [{"name": guild.name, "id": str(guild.id)} for guild in self.bot.guilds]
-            self.serversChanged.emit(self._servers)
-
-    @Slot(str)
-    def set_current_server(self, server_id):
-        """Set the current server"""
-        self._current_server = server_id
-        self.currentServerChanged.emit(server_id)
-        self.update_channels()
-
-    @Property(list, notify=channelsChanged)
-    def channels(self):
-        """Get list of available voice channels"""
-        return self._channels
+            self.servers = [{"name": guild.name, "id": str(guild.id)} for guild in self.bot.guilds]
 
     @Slot()
     def update_channels(self):
         """Update the list of available voice channels"""
-        if not self.bot or not self._current_server:
-            self._channels = []
+        if not self.bot or not self.current_server:
+            self.channels = []
         else:
-            server = discord.utils.get(self.bot.guilds, id=int(self._current_server))
+            server = discord.utils.get(self.bot.guilds, id=int(self.current_server))
             if server:
-                self._channels = [{"name": channel.name, "id": str(channel.id)} for channel in server.voice_channels]
+                self.channels = [{"name": channel.name, "id": str(channel.id)} for channel in server.voice_channels]
             else:
-                self._channels = []
-        self.channelsChanged.emit(self._channels)
-
-    @Slot(str)
-    def set_current_channel(self, channel_id):
-        """Set the current voice channel"""
-        self._current_channel = channel_id
-        self.currentChannelChanged.emit(channel_id)
+                self.channels = []
 
     @Slot(result=str)
     def get_cache_directory(self):
@@ -875,7 +983,7 @@ class BotBridge(QObject):
             non_cached_total = len(non_cached_urls)
 
             if non_cached_total == 0:
-                self.downloadStatusChanged.emit("All items already cached")
+                self.download_status = "All items already cached"
                 return
 
             self.batchDownloadProgressChanged.emit(0, non_cached_total, "Downloading playlist items...")
@@ -948,95 +1056,6 @@ class BotBridge(QObject):
         with yt_dlp.YoutubeDL(ydl_opts) as ydl:
             return ydl.extract_info(url, download=True)
 
-    @Property(str, notify=channelNameChanged)
-    def current_channel_name(self):
-        """Get the name of the current YouTube channel"""
-        return self._current_channel_name
-
-    @Property(float, notify=volumeChanged)
-    def volume(self):
-        """Get current volume level (0.0 to 1.0)"""
-        return self._volume
-    
-    @volume.setter 
-    def volume(self, value):
-        """Set volume level and update if playing"""
-        if 0.0 <= value <= 1.0 and self._volume != value:
-            self._volume = value
-            if self.bot.voice_client and self.bot.voice_client.source:
-                self.bot.voice_client.source.volume = value
-            self.volumeChanged.emit(value)
-
-    @current_channel_name.setter
-    def current_channel_name(self, name):
-        """Set the name of the current YouTube channel"""
-        if self._current_channel_name != name:
-            self._current_channel_name = name
-            self.channelNameChanged.emit(name)
-
-    @Property(str, notify=thumbnailChanged)
-    def current_thumbnail_url(self):
-        """Get the URL of the current thumbnail"""
-        return self._current_thumbnail_url
-
-    @current_thumbnail_url.setter
-    def current_thumbnail_url(self, url):
-        """Set the URL of the current thumbnail"""
-        if self._current_thumbnail_url != url:
-            self._current_thumbnail_url = url
-            self.thumbnailChanged.emit(url)
-    
-    @Property(bool, notify=voiceConnectedChanged)
-    def voiceConnected(self):
-        """Get whether connected to a voice channel"""
-        return self._voice_connected
-
-    @Property(bool, notify=validTokenFormatChanged)
-    def validTokenFormat(self):
-        """Get whether the token format is valid"""
-        return self._valid_token_format
-
-    @validTokenFormat.setter
-    def validTokenFormat(self, value):
-        """Set whether the token format is valid"""
-        if self._valid_token_format != value:
-            self._valid_token_format = value
-            self.validTokenFormatChanged.emit(value)
-
-    @Slot(result=str)
-    def get_token(self):
-        """Get the current token from the token file"""
-        token_path = config.get_token_path()
-        if os.path.exists(token_path):
-            with open(token_path, "r") as f:
-                return f.read().strip()
-        return ""
-
-    @Slot(str)
-    def save_token(self, token):
-        """Save the token and restart the application"""
-        if not token or token.strip() == "":
-            self.downloadStatusChanged.emit("Invalid token")
-            return
-
-        token_path = config.get_token_path()
-        with open(token_path, "w") as f:
-            f.write(token.strip())
-
-        QTimer.singleShot(0, self.restart_application)
-
-    @Slot()
-    def restart_application(self):
-        """Restart the application"""
-        import sys
-        import os
-
-        python = sys.executable
-        script = os.path.abspath(sys.argv[0])
-        args = sys.argv[1:]
-
-        os.execl(python, python, script, *args)
-    
     @Slot(str, int, int, result=str)
     def process_thumbnail(self, url, size=96, corner_radius=6):
         """
@@ -1089,6 +1108,40 @@ class BotBridge(QObject):
 
         return f"data:image/png;base64,{image_data}"
     
+    @Slot(str)
+    def save_token(self, token):
+        """Save the token and restart the application"""
+        if not token or token.strip() == "":
+            self.download_status = "Invalid token"
+            return
+
+        token_path = config.get_token_path()
+        with open(token_path, "w") as f:
+            f.write(token.strip())
+
+        QTimer.singleShot(0, self.restart_application)
+
+    @Slot()
+    def restart_application(self):
+        """Restart the application"""
+        import sys
+        import os
+
+        python = sys.executable
+        script = os.path.abspath(sys.argv[0])
+        args = sys.argv[1:]
+
+        os.execl(python, python, script, *args)
+        
+    @Slot(result=str)
+    def get_token(self):
+        """Get the current token from the token file"""
+        token_path = config.get_token_path()
+        if os.path.exists(token_path):
+            with open(token_path, "r") as f:
+                return f.read().strip()
+        return ""
+        
     @Slot(float)
     def set_volume(self, value):
         """Slot for setting volume from QML"""

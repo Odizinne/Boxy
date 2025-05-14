@@ -18,15 +18,15 @@ ApplicationWindow {
     Material.accent: Material.Pink
     Material.primary: Material.Indigo
     color: BoxySettings.darkMode ? "#1c1c1c" : "#E3E3E3"
-    property bool songLoaded: false
+    property bool songLoaded: botBridge.song_loaded
     property var shufflePlayedIndices: []
     property bool connectedToAPI: false
     property bool isAutoAdvancing: false
     property bool isResolvingAny: {
         for(let i = 0; i < playlistModel.count; i++) {
-            if(playlistModel.get(i).isResolving) return true;
+            if(playlistModel.get(i).isResolving) return true
         }
-        return false;
+        return false
     }
 
     Shortcut {
@@ -233,7 +233,7 @@ ApplicationWindow {
 
                 MenuItem {
                     text: "Disconnect"
-                    enabled: botBridge.voiceConnected
+                    enabled: botBridge.voice_connected
                     onTriggered: botBridge.disconnect_voice()
                 }
 
@@ -420,11 +420,11 @@ ApplicationWindow {
             for (let i = 0; i < playlistModel.count; i++) {
                 let item = playlistModel.get(i)
                 items.push({
-                               "userTyped": item.userTyped,
-                               "url": item.url || "",
-                               "resolvedTitle": item.resolvedTitle || "",
-                               "channelName": item.channelName || ""
-                           })
+                    "userTyped": item.userTyped,
+                    "url": item.url || "",
+                    "resolvedTitle": item.resolvedTitle || "",
+                    "channelName": item.channelName || ""
+                })
             }
             botBridge.save_playlist(playlistName.text, items)
             savePopup.displayText = "Playlist saved successfully"
@@ -476,13 +476,13 @@ ApplicationWindow {
             playlistName.text = title
             items.forEach(function(item) {
                 playlistModel.append({
-                                         "userTyped": item.userTyped,
-                                         "url": item.url || "",
-                                         "resolvedTitle": item.resolvedTitle || "",
-                                         "channelName": item.channelName || "",
-                                         "isResolving": !item.resolvedTitle || !item.url || !item.channelName,
-                                         "isDownloading": false
-                                     })
+                    "userTyped": item.userTyped,
+                    "url": item.url || "",
+                    "resolvedTitle": item.resolvedTitle || "",
+                    "channelName": item.channelName || "",
+                    "isResolving": !item.resolvedTitle || !item.url || !item.channelName,
+                    "isDownloading": false
+                })
 
                 if (!item.resolvedTitle || !item.url || !item.channelName) {
                     let idx = playlistModel.count - 1
@@ -497,7 +497,7 @@ ApplicationWindow {
             }
 
             if (!loaded && !botBridge.repeat_mode && stopPlaylistButton.isPlaying &&
-                    !playlistView.manualNavigation && !isAutoAdvancing) {
+                    !playlistView.manualNavigation && !isAutoAdvancing && !botBridge.disconnecting) {
 
                 if (playlistView.currentIndex < playlistModel.count - 1) {
                     isAutoAdvancing = true
@@ -570,7 +570,7 @@ ApplicationWindow {
 
                         Label {
                             id: songLabel
-                            text: "No song playing"
+                            text: botBridge.song_title || "No song playing"
                             Layout.fillWidth: true
                             Layout.preferredWidth: parent.width * 0.85
                             horizontalAlignment: Text.AlignLeft
@@ -579,22 +579,11 @@ ApplicationWindow {
                             font.bold: true
                             wrapMode: Text.Wrap
                             maximumLineCount: 2
-                            Connections {
-                                target: botBridge
-                                function onSongChanged(songTitle) {
-                                    if (songTitle !== "" ) {
-                                        songLabel.text = songTitle
-                                    } else {
-                                        songLabel.text = "No song playing"
-                                    }
-                                    songLoaded = songTitle !== ""
-                                }
-                            }
                         }
 
                         Label {
                             id: channelLabel
-                            text: ""
+                            text: botBridge.channel_name || ""
                             Layout.fillWidth: true
                             Layout.preferredWidth: parent.width * 0.85
                             horizontalAlignment: Text.AlignLeft
@@ -603,16 +592,6 @@ ApplicationWindow {
                             font.bold: false
                             wrapMode: Text.Wrap
                             maximumLineCount: 1
-                            Connections {
-                                target: botBridge
-                                function onChannelNameChanged(channelName) {
-                                    if (channelName !== "" ) {
-                                        channelLabel.text = channelName
-                                    } else {
-                                        channelLabel.text = ""
-                                    }
-                                }
-                            }
                         }
                     }
 
@@ -622,18 +601,10 @@ ApplicationWindow {
                         Layout.preferredWidth: 96
                         Layout.preferredHeight: 96
                         fillMode: Image.PreserveAspectFit
-                        property string currentUrl: ""
+                        property string currentUrl: botBridge.thumbnail_url || ""
                         property string processedUrl: currentUrl ? botBridge.process_thumbnail(currentUrl, 96, 6) : ""
                         source: processedUrl || (Material.theme === Material.Dark ?
                                                      "icons/placeholder_light.png" : "icons/placeholder_dark.png")
-
-                        Connections {
-                            target: botBridge
-                            function onThumbnailChanged(url) {
-                                thumbnailImage.currentUrl = url
-                            }
-                        }
-
                         visible: true
                         asynchronous: true
                         cache: true
@@ -657,24 +628,13 @@ ApplicationWindow {
                         id: timelineSlider
                         Layout.fillWidth: true
                         from: 0
-                        to: 1
-                        enabled: songLoaded && !downloadProgress.visible
+                        to: botBridge.duration || 1
+                        value: botBridge.position || 0
+                        enabled: root.songLoaded && !downloadProgress.visible
 
                         onPressedChanged: {
                             if (!pressed) {
                                 botBridge.seek(value)
-                            }
-                        }
-
-                        Connections {
-                            target: botBridge
-                            function onDurationChanged(duration) {
-                                timelineSlider.to = duration
-                            }
-                            function onPositionChanged(position) {
-                                if (!timelineSlider.pressed) {
-                                    timelineSlider.value = position
-                                }
                             }
                         }
                     }
@@ -772,19 +732,12 @@ ApplicationWindow {
                         id: pauseButton
                         Layout.preferredWidth: implicitWidth + 8
                         Layout.preferredHeight: implicitHeight + 8
-                        enabled: songLoaded && !downloadProgress.visible
-                        icon.source: "icons/play.png"
+                        enabled: root.songLoaded && !downloadProgress.visible
+                        icon.source: botBridge.is_playing ? "icons/pause.png" : "icons/play.png"
                         icon.width: 14
                         icon.height: 14
                         onClicked: {
                             botBridge.toggle_playback()
-                        }
-
-                        Connections {
-                            target: botBridge
-                            function onPlayStateChanged(isPlaying) {
-                                pauseButton.icon.source = isPlaying ? "icons/pause.png" : "icons/play.png"
-                            }
                         }
                     }
 
@@ -977,7 +930,7 @@ ApplicationWindow {
 
                         Label {
                             id: connectingLabel
-                            text: botBridge && botBridge.validTokenFormat ? "Connecting to Discord API..." : "Incorrect token format"
+                            text: botBridge && botBridge.valid_token_format ? "Connecting to Discord API..." : "Incorrect token format"
                             Layout.alignment: Qt.AlignHCenter
                             font.pixelSize: 18
                         }
@@ -987,7 +940,7 @@ ApplicationWindow {
                         }
                     }
 
-                    ListView {
+ListView {
                         id: playlistView
                         anchors.fill: parent
                         model: ListModel { id: playlistModel }
@@ -1177,18 +1130,17 @@ ApplicationWindow {
                     Layout.fillWidth: true
                     indeterminate: true
                     Layout.bottomMargin: -5
-                    visible: newItemInput.placeholderText !== "Enter YouTube URL or search term" &&
-                             newItemInput.placeholderText !== "Cannot join empty channel" &&
-                             newItemInput.placeholderText !== "Downloading playlist items..." &&
-                             newItemInput.placeholderText !== "Download complete!" &&
-                             newItemInput.placeholderText !== "All items already cached"
+                    visible: botBridge.download_status !== "" &&
+                             botBridge.download_status !== "Downloading playlist items..." &&
+                             botBridge.download_status !== "Download complete!" &&
+                             botBridge.download_status !== "All items already cached"
                 }
 
                 ProgressBar {
                     id: playlistDownloadProgress
                     Layout.fillWidth: true
                     //Layout.bottomMargin: -5
-                    visible: newItemInput.placeholderText === "Downloading playlist items..."
+                    visible: botBridge.download_status === "Downloading playlist items..."
                     from: 0
                     to: 100
                     value: 0
@@ -1202,18 +1154,11 @@ ApplicationWindow {
                         id: newItemInput
                         Layout.preferredHeight: editButton.implicitHeight
                         Layout.fillWidth: true
-                        placeholderText: "Enter YouTube URL or search term"
+                        placeholderText: botBridge.download_status !== "" ? botBridge.download_status : "Enter YouTube URL or search term"
                         enabled: root.connectedToAPI
                         //Material.containerStyle: Material.Filled
 
                         onAccepted: addButton.clicked()
-                        Connections {
-                            target: botBridge
-                            function onDownloadStatusChanged(status) {
-                                newItemInput.placeholderText = status === "" ?
-                                            "Enter YouTube URL or search term" : status
-                            }
-                        }
                     }
 
                     CustomRoundButton {
