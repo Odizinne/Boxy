@@ -446,6 +446,8 @@ class BotBridge(QObject):
             was_playing = self.bot.voice_client.is_playing()
             position_ms = int(position * 1000)
             new_source = discord.FFmpegPCMAudio(self.current_audio_file, before_options=f"-ss {position_ms}ms")
+            volume_transformer = discord.PCMVolumeTransformer(new_source, volume=self._volume)
+
             original_after = getattr(self.bot.voice_client, "_player", None)
             if original_after:
                 original_after = original_after.after
@@ -456,7 +458,8 @@ class BotBridge(QObject):
             if hasattr(self.bot.voice_client, "_player") and self.bot.voice_client._player:
                 self.bot.voice_client._player.after = dummy_callback
 
-            self.bot.voice_client.source = new_source
+            self.bot.voice_client.source = volume_transformer
+
             if hasattr(self.bot.voice_client, "_player") and self.bot.voice_client._player:
                 if original_after:
                     self.bot.voice_client._player.after = original_after
@@ -468,7 +471,7 @@ class BotBridge(QObject):
             self.position = position
 
             if not was_playing:
-                self.bot.voice_client.pause()
+                self.bot.voice
 
     @Slot(str)
     def play_url(self, url):
@@ -677,17 +680,14 @@ class BotBridge(QObject):
 
         if self.repeat_mode and audio_file == self.current_audio_file:
             asyncio.run_coroutine_threadsafe(self.replay_audio(audio_file), self.bot.loop)
-        else:
-            temp_audio_file = os.path.join(get_script_dir(), "downloaded_audio.webm")
-            if audio_file == temp_audio_file and os.path.exists(temp_audio_file):
-                asyncio.run_coroutine_threadsafe(delete_file(audio_file), self.bot.loop)
 
     async def replay_audio(self, audio_file):
         if os.path.exists(audio_file) and audio_file == self.current_audio_file:
             self.position = 0
             source = discord.FFmpegPCMAudio(audio_file)
+            volume_transformer = discord.PCMVolumeTransformer(source, volume=self._volume)
             self.bot.voice_client.play(
-                source,
+                volume_transformer,
                 after=lambda e: self.on_playback_finished(e, audio_file)
             )
             self.is_playing = True
