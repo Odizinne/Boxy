@@ -680,7 +680,7 @@ ApplicationWindow {
                             icon.height: 18
                             enabled: root.connectedToAPI
                             onClicked: {
-                                volumePopup.visible = !volumePopup.visible
+                                volumePopup.open()
                             }
                         }
                     }
@@ -945,20 +945,14 @@ ApplicationWindow {
                             width: scrlBar.visible ? ListView.view.width - 30 : ListView.view.width
                             height: 50
                             enabled: !downloadProgress.visible && !root.isResolvingAny && !playlistDownloadProgress.visible
-
-                            MouseArea {
-                                anchors.fill: parent
-                                onDoubleClicked: {
-                                    playlistView.manualNavigation = true
-                                    playlistView.currentIndex = model.index
-                                    let item = playlistModel.get(model.index)
-
-                                    if (shuffleButton.checked) {
-                                        shufflePlayedIndices = [model.index]
-                                    }
-
-                                    botBridge.play_url(item.url || item.userTyped)
+                            onClicked: {
+                                playlistView.manualNavigation = true
+                                playlistView.currentIndex = model.index
+                                let item = playlistModel.get(model.index)
+                                if (shuffleButton.checked) {
+                                    shufflePlayedIndices = [model.index]
                                 }
+                                botBridge.play_url(item.url || item.userTyped)
                             }
 
                             Rectangle {
