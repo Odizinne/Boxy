@@ -1115,18 +1115,16 @@ ApplicationWindow {
                     id: downloadProgress
                     Layout.fillWidth: true
                     indeterminate: true
-                    Layout.bottomMargin: -5
-                    visible: botBridge.download_status !== "" &&
-                             botBridge.download_status !== "Downloading playlist items..." &&
-                             botBridge.download_status !== "Download complete!" &&
-                             botBridge.download_status !== "All items already cached"
+                    visible: botbridge.placeholder_status !== "" &&
+                             botbridge.placeholder_status !== "Downloading playlist items..." &&
+                             botbridge.placeholder_status !== "Download complete!" &&
+                             botbridge.placeholder_status !== "All items already cached"
                 }
 
                 ProgressBar {
                     id: playlistDownloadProgress
                     Layout.fillWidth: true
-                    //Layout.bottomMargin: -5
-                    visible: botBridge.download_status === "Downloading playlist items..."
+                    visible: botbridge.placeholder_status === "Downloading playlist items..."
                     from: 0
                     to: botBridge.bulk_total
                     value: botBridge.bulk_current
@@ -1140,7 +1138,7 @@ ApplicationWindow {
                         id: newItemInput
                         Layout.preferredHeight: editButton.implicitHeight
                         Layout.fillWidth: true
-                        placeholderText: botBridge.download_status !== "" ? botBridge.download_status : "Enter YouTube URL or search term"
+                        placeholderText: botbridge.placeholder_status !== "" ? botbridge.placeholder_status : "Enter YouTube URL or search term"
                         enabled: root.connectedToAPI
                         //Material.containerStyle: Material.Filled
 

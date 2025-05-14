@@ -16,7 +16,7 @@ class BotBridge(QObject):
     statusChanged = Signal(str)
     playStateChanged = Signal(bool)
     songChanged = Signal(str)
-    downloadStatusChanged = Signal(str)
+    placeholderStatusChanged = Signal(str)
     issue = Signal(str)
     repeatModeChanged = Signal(bool)
     songLoadedChanged = Signal(bool)
@@ -54,7 +54,7 @@ class BotBridge(QObject):
         self._status = "Disconnected"
         self._is_playing = False
         self._song_title = ""
-        self._download_status = ""
+        self._placeholder_status = ""
         self._repeat_mode = False
         self._song_loaded = False
         self._voice_connected = False
@@ -162,15 +162,15 @@ class BotBridge(QObject):
             self._song_title = value
             self.songChanged.emit(value)
     
-    @Property(str, notify=downloadStatusChanged)
-    def download_status(self):
-        return self._download_status
+    @Property(str, notify=placeholderStatusChanged)
+    def placeholder_status(self):
+        return self._placeholder_status
         
-    @download_status.setter
-    def download_status(self, value):
-        if self._download_status != value:
-            self._download_status = value
-            self.downloadStatusChanged.emit(value)
+    @placeholder_status.setter
+    def placeholder_status(self, value):
+        if self._placeholder_status != value:
+            self._placeholder_status = value
+            self.placeholderStatusChanged.emit(value)
     
     @Property(bool, notify=repeatModeChanged)
     def repeat_mode(self):
@@ -416,7 +416,7 @@ class BotBridge(QObject):
                 self.song_loaded = False
                 self.current_audio_file = None
                 self.current_url = None
-                self.download_status = ""
+                self.placeholder_status = ""
                 self.thumbnail_url = ""
                 self.channel_name = ""
 
@@ -540,14 +540,14 @@ class BotBridge(QObject):
         if self.bot.voice_client and (self.bot.voice_client.is_playing() or self.bot.voice_client.is_paused()):
             self.bot.voice_client.stop()
     
-        self._download_status = "Preparing..."
+        self.placeholder_status = "Preparing..."
         self.stopTimerSignal.emit()
         self._position = 0
         self._song_loaded = False
     
         url = search if search.startswith("http") else get_first_video_url(search)
         if url is None:
-            self._download_status = "No video found"
+            self.placeholder_status = "No video found"
             return
         
         self.media_session_active = True
@@ -570,7 +570,7 @@ class BotBridge(QObject):
 
         # Update UI
         self.song_title = song_name
-        self.download_status = "Using cached file..."
+        self.placeholder_status = "Using cached file..."
 
         # Store current file/URL
         self.current_audio_file = audio_file
@@ -597,7 +597,7 @@ class BotBridge(QObject):
                 "no_warnings": True
             }
 
-            self.download_status = "Extracting video info..."
+            self.placeholder_status = "Extracting video info..."
 
             # Run yt_dlp in thread pool to prevent blocking
             loop = asyncio.get_event_loop()
@@ -617,7 +617,7 @@ class BotBridge(QObject):
             self.song_title = song_name
 
             # Add to cache
-            self.download_status = "Caching audio file..."
+            self.placeholder_status = "Caching audio file..."
             audio_file = self.audio_cache.add_file(url, temp_file, info)
 
             # Clean up cache
@@ -636,13 +636,13 @@ class BotBridge(QObject):
             shutil.rmtree(temp_dir, ignore_errors=True)
 
         except Exception as e:
-            self.download_status = f"Error: {str(e)}"
+            self.placeholder_status = f"Error: {str(e)}"
 
     async def _start_playback(self, audio_file):
         """Start playing an audio file"""
         try:
             if os.path.exists(audio_file):
-                self.download_status = "Starting playback..."
+                self.placeholder_status = "Starting playback..."
                 if self.bot.voice_client:
                     self.position = 0
                     source = discord.FFmpegPCMAudio(audio_file)
@@ -652,16 +652,16 @@ class BotBridge(QObject):
                         after=lambda e: self.on_playback_finished(e, audio_file)
                     )
                     self.is_playing = True
-                    self.download_status = ""
+                    self.placeholder_status = ""
 
                     await asyncio.sleep(0.2)
 
                     self.song_loaded = True
                     self.startTimerSignal.emit()
             else:
-                self.download_status = "Error: Audio file not found"
+                self.placeholder_status = "Error: Audio file not found"
         except Exception as e:
-            self.download_status = f"Playback error: {str(e)}"
+            self.placeholder_status = f"Playback error: {str(e)}"
 
     def download_hook(self, d):
         """Progress hook for youtube-dl"""
@@ -671,13 +671,13 @@ class BotBridge(QObject):
                 total = d.get("total_bytes", 0) or d.get("total_bytes_estimate", 0)
                 if total:
                     progress = (downloaded / total) * 100
-                    self.download_status = f"Downloading: {progress:.1f}%"
+                    self.placeholder_status = f"Downloading: {progress:.1f}%"
                 else:
-                    self.download_status = "Downloading..."
+                    self.placeholder_status = "Downloading..."
             except:
-                self.download_status = "Downloading..."
+                self.placeholder_status = "Downloading..."
         elif d["status"] == "finished":
-            self.download_status = "Download complete, processing..."
+            self.placeholder_status = "Download complete, processing..."
 
     def on_playback_finished(self, error, audio_file):
         """Called when playback finishes"""
@@ -769,7 +769,7 @@ class BotBridge(QObject):
         """Extract video URLs from a YouTube playlist (non-blocking)"""
         def extractor():
             try:
-                self.download_status = "Extracting playlist info..."
+                self.placeholder_status = "Extracting playlist info..."
 
                 urls = []
                 ydl_opts = {
@@ -794,10 +794,10 @@ class BotBridge(QObject):
                 self.urlsExtractedSignal.emit(urls)
 
             except Exception as e:
-                self.download_status = f"Error extracting playlist: {str(e)}"
+                self.placeholder_status = f"Error extracting playlist: {str(e)}"
                 self.urlsExtractedSignal.emit([])
             finally:
-                self.download_status = ""
+                self.placeholder_status = ""
 
         self._yt_pool.submit(extractor)
 
@@ -806,7 +806,7 @@ class BotBridge(QObject):
         """Resolve the title and channel for a YouTube URL or search term"""
         async def resolver():
             try:
-                self.download_status = f"Resolving title for item {index}..."
+                self.placeholder_status = f"Resolving title for item {index}..."
 
                 title_ydl_opts = {
                     "quiet": True,
@@ -857,11 +857,11 @@ class BotBridge(QObject):
                     else:
                         self.titleResolved.emit(index, "No video found", "", "")
 
-                self.download_status = ""
+                self.placeholder_status = ""
 
             except Exception as e:
                 self.titleResolved.emit(index, f"Error: {str(e)}", "", "")
-                self.download_status = ""
+                self.placeholder_status = ""
 
         asyncio.run_coroutine_threadsafe(resolver(), self.bot.loop)
 
@@ -901,7 +901,7 @@ class BotBridge(QObject):
             try:
                 self.bot.voice_client = await selected_channel.connect()
                 self.voice_connected = True
-                self.download_status = ""
+                self.placeholder_status = ""
             except Exception as e:
                 self.issue.emit(f"Failed to connect: {str(e)}")
 
@@ -987,12 +987,12 @@ class BotBridge(QObject):
             non_cached_total = len(non_cached_urls)
 
             if non_cached_total == 0:
-                self.download_status = "All items already cached"
+                self.placeholder_status = "All items already cached"
                 return
 
             self.bulk_current = 0
             self.bulk_total = non_cached_total
-            self.download_status = "Downloading playlist items..."
+            self.placeholder_status = "Downloading playlist items..."
 
             max_parallel_downloads = self._settings.value("maxParallelDownloads", 3, type=int)
             downloaded_count = 0
@@ -1045,7 +1045,7 @@ class BotBridge(QObject):
 
             await asyncio.gather(*download_tasks)
 
-            self.download_status = "Download complete!"
+            self.placeholder_status = "Download complete!"
 
             max_cache_size_mb = self._settings.value("maxCacheSize", 1024, type=int)
             self.audio_cache.cleanup(max_size_mb=max_cache_size_mb)
@@ -1113,7 +1113,7 @@ class BotBridge(QObject):
     def save_token(self, token):
         """Save the token and restart the application"""
         if not token or token.strip() == "":
-            self.download_status = "Invalid token"
+            self.placeholder_status = "Invalid token"
             return
 
         token_path = config.get_token_path()
