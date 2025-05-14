@@ -623,7 +623,7 @@ ApplicationWindow {
                         id: timelineSlider
                         Layout.fillWidth: true
                         from: 0
-                        to: botBridge.duration || 1
+                        to: botBridge.duration || 0
                         value: botBridge.position || 0
                         enabled: root.songLoaded && !downloadProgress.visible
 
