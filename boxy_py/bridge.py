@@ -967,6 +967,7 @@ class BotBridge(QObject):
                 return
 
             self.batchDownloadProgressChanged.emit(0, non_cached_total, "Downloading playlist items...")
+            self.download_status = "Downloading playlist items..."
 
             max_parallel_downloads = self._settings.value("maxParallelDownloads", 3, type=int)
             downloaded_count = 0
@@ -1025,6 +1026,7 @@ class BotBridge(QObject):
             self.batchDownloadProgressChanged.emit(
                 non_cached_total, non_cached_total, "Download complete!"
             )
+            self.download_status = "Download complete!"
 
             max_cache_size_mb = self._settings.value("maxCacheSize", 1024, type=int)
             self.audio_cache.cleanup(max_size_mb=max_cache_size_mb)
