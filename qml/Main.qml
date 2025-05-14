@@ -491,7 +491,7 @@ ApplicationWindow {
                 isAutoAdvancing = false
             }
 
-            if (!loaded && !botBridge.repeat_mode && stopPlaylistButton.isPlaying &&
+            if (!loaded && !botBridge.repeat_mode && botBridge.media_session_active &&
                     !playlistView.manualNavigation && !isAutoAdvancing && !botBridge.disconnecting) {
 
                 if (playlistView.currentIndex < playlistModel.count - 1) {
@@ -507,7 +507,6 @@ ApplicationWindow {
 
                         if (availableIndices.length === 0) {
                             shufflePlayedIndices = []
-                            stopPlaylistButton.isPlaying = false
                             playlistView.currentIndex = 0
                             isAutoAdvancing = false
                             return
@@ -527,7 +526,6 @@ ApplicationWindow {
                         botBridge.play_url(item.url || item.userTyped)
                     }
                 } else {
-                    stopPlaylistButton.isPlaying = false
                     playlistView.currentIndex = 0
                     isAutoAdvancing = false
                 }
@@ -649,7 +647,6 @@ ApplicationWindow {
                     spacing: 0
 
                     RowLayout {
-                        //Layout.preferredWidth: controlLyt.implicitWidth
                         spacing: 0
                         CustomRoundButton {
                             id: stopPlaylistButton
@@ -657,12 +654,10 @@ ApplicationWindow {
                             Layout.preferredWidth: height
                             icon.width: 14
                             icon.height: 14
-                            property bool isPlaying: false
-                            enabled: isPlaying
+                            enabled: botBridge.media_session_active
                             onClicked: {
                                 botBridge.stop_playing()
                                 playlistView.currentIndex = 0
-                                isPlaying = false
                             }
                         }
 
@@ -683,7 +678,6 @@ ApplicationWindow {
                             Layout.preferredWidth: height
                             icon.width: 18
                             icon.height: 18
-                            property bool isPlaying: false
                             enabled: root.connectedToAPI
                             onClicked: {
                                 volumePopup.visible = !volumePopup.visible
@@ -701,7 +695,7 @@ ApplicationWindow {
                         Layout.preferredWidth: height
                         icon.width: 14
                         icon.height: 14
-                        enabled: playlistView.currentIndex > 0 && stopPlaylistButton.isPlaying && !downloadProgress.visible
+                        enabled: playlistView.currentIndex > 0 && botBridge.media_session_active && !downloadProgress.visible
                         onClicked: {
                             if (shuffleButton.checked) {
                                 const currentPos = shufflePlayedIndices.indexOf(playlistView.currentIndex)
@@ -742,7 +736,7 @@ ApplicationWindow {
                         icon.width: 14
                         icon.height: 14
                         Layout.preferredWidth: height
-                        enabled: playlistView.currentIndex < (playlistModel.count - 1) && stopPlaylistButton.isPlaying && !downloadProgress.visible
+                        enabled: playlistView.currentIndex < (playlistModel.count - 1) && botBridge.media_session_active && !downloadProgress.visible
                         onClicked: {
                             if (shuffleButton.checked) {
                                 let availableIndices = []
@@ -754,7 +748,6 @@ ApplicationWindow {
 
                                 if (availableIndices.length === 0) {
                                     shufflePlayedIndices = []
-                                    stopPlaylistButton.isPlaying = false
                                     playlistView.currentIndex = 0
                                     return
                                 }
@@ -935,7 +928,7 @@ ApplicationWindow {
                         }
                     }
 
-ListView {
+                    ListView {
                         id: playlistView
                         anchors.fill: parent
                         model: ListModel { id: playlistModel }
@@ -963,9 +956,7 @@ ListView {
                                     if (shuffleButton.checked) {
                                         shufflePlayedIndices = [model.index]
                                     }
-                                    if (!stopPlaylistButton.isPlaying) {
-                                        stopPlaylistButton.isPlaying = true
-                                    }
+
                                     botBridge.play_url(item.url || item.userTyped)
                                 }
                             }

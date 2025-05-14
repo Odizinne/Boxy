@@ -41,12 +41,14 @@ class BotBridge(QObject):
     itemDownloadStarted = Signal(str, int)
     itemDownloadCompleted = Signal(str, int)
     volumeChanged = Signal(float)
+    mediaSessionActiveChanged = Signal(bool)
 
     def __init__(self, bot):
         super().__init__()
         # Initialize state properties
         self._settings = QSettings("Odizinne", "Boxy")
 
+        self._media_session_active = False
         self._status = "Disconnected"
         self._is_playing = False
         self._song_title = ""
@@ -96,6 +98,16 @@ class BotBridge(QObject):
             self._yt_pool.shutdown(wait=False)
 
     # Property Definitions
+    @Property(bool, notify=mediaSessionActiveChanged)
+    def media_session_active(self):
+        return self._media_session_active
+    
+    @media_session_active.setter
+    def media_session_active(self, value):
+        if self._media_session_active != value:
+            self._media_session_active = value
+            self.mediaSessionActiveChanged.emit(value)
+    
     @Property(str, notify=statusChanged)
     def status(self):
         return self._status
@@ -372,6 +384,7 @@ class BotBridge(QObject):
         async def stop_wrapper():
             if self.bot.voice_client and (self.bot.voice_client.is_playing() or self.bot.voice_client.is_paused()):
                 self.bot.voice_client.stop()
+                self.media_session_active = False
                 self.is_playing = False
                 self.stopTimerSignal.emit()
                 self.position = 0
@@ -512,6 +525,8 @@ class BotBridge(QObject):
         if url is None:
             self._download_status = "No video found"
             return
+        
+        self.media_session_active = True
     
         cached = self.audio_cache.get_cached_file(url)
         if cached:
