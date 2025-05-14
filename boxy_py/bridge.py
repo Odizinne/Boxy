@@ -12,7 +12,6 @@ import boxy_py.config as config
 from boxy_py.audio_cache import AudioCache
 
 class BotBridge(QObject):
-    # Core signals - these are still needed for properties
     statusChanged = Signal(str)
     playStateChanged = Signal(bool)
     songChanged = Signal(str)
@@ -47,9 +46,7 @@ class BotBridge(QObject):
 
     def __init__(self, bot):
         super().__init__()
-        # Initialize state properties
         self._settings = QSettings("Odizinne", "Boxy")
-
         self._media_session_active = False
         self._status = "Disconnected"
         self._is_playing = False
@@ -446,29 +443,20 @@ class BotBridge(QObject):
     def seek(self, position):
         """Seek to position in current audio"""
         if self.bot.voice_client and (self.bot.voice_client.is_playing() or self.bot.voice_client.is_paused()):
-            # Store the current state
             was_playing = self.bot.voice_client.is_playing()
-
-            # Create new audio source with the seek position
             position_ms = int(position * 1000)
             new_source = discord.FFmpegPCMAudio(self.current_audio_file, before_options=f"-ss {position_ms}ms")
-
-            # Save the original after callback
             original_after = getattr(self.bot.voice_client, "_player", None)
             if original_after:
                 original_after = original_after.after
 
-            # Create a dummy callback to prevent state changes
             def dummy_callback(error):
                 pass
 
             if hasattr(self.bot.voice_client, "_player") and self.bot.voice_client._player:
                 self.bot.voice_client._player.after = dummy_callback
 
-            # Replace the source
             self.bot.voice_client.source = new_source
-
-            # Restore the original callback if it existed
             if hasattr(self.bot.voice_client, "_player") and self.bot.voice_client._player:
                 if original_after:
                     self.bot.voice_client._player.after = original_after
@@ -477,10 +465,8 @@ class BotBridge(QObject):
                         e, self.current_audio_file
                     )
 
-            # Update position
             self.position = position
 
-            # If it was paused, pause the new source
             if not was_playing:
                 self.bot.voice_client.pause()
 
@@ -500,14 +486,6 @@ class BotBridge(QObject):
             selected_channel = discord.utils.get(selected_server.voice_channels, id=int(self._current_channel))
             if not selected_channel:
                 self.issue.emit("Selected channel not found")
-                return
-    
-            if not self.bot.voice_client or not self.bot.voice_client.is_connected():
-                self.issue.emit("Not connected to voice channel")
-                return
-                
-            if self.bot.voice_client.channel.id != int(self._current_channel):
-                self.issue.emit("Connected to a different channel")
                 return
     
             if self.bot.voice_client and (self.bot.voice_client.is_playing() or self.bot.voice_client.is_paused()):
@@ -721,12 +699,6 @@ class BotBridge(QObject):
         if self.bot.voice_client:
             await self.bot.voice_client.disconnect()
             self.bot.voice_client = None
-            temp_audio_file = os.path.join(get_script_dir(), "downloaded_audio.webm")
-            if self.current_audio_file == temp_audio_file and os.path.exists(temp_audio_file):
-                await delete_file(temp_audio_file)
-
-        # Note: We don't clear cache here - that's handled by main.py checking settings
-        # Just cleanup active resources
 
     def _update_position(self):
         """Update the position timer"""

@@ -50,7 +50,7 @@ AnimatedPopup {
             cacheLocation = location
         }
 
-        function onDownloadStatusChanged(status) {
+        function onStatusChanged(status) {
             if (status === "") {
                 refreshCacheInfo()
             }
