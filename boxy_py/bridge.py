@@ -204,9 +204,6 @@ class BotBridge(QObject):
         except Exception as e:
             self.playlistSaved.emit(f"Error loading playlist: {str(e)}")
 
-    #
-    # Playback Control Methods
-    #
     @Slot()
     def stop_playing(self):
         """Stop playback and clean up resources"""
@@ -220,12 +217,6 @@ class BotBridge(QObject):
                 self.playStateChanged.emit(False)
                 self.songChanged.emit("")
                 self.songLoadedChanged.emit(False)
-
-                # Only delete the temporary file, not cached files
-                temp_audio_file = os.path.join(get_script_dir(), "downloaded_audio.webm")
-                if self.current_audio_file == temp_audio_file and os.path.exists(temp_audio_file):
-                    await delete_file(temp_audio_file)
-
                 self.current_audio_file = None
                 self.current_url = None
                 self.downloadStatusChanged.emit("")
@@ -379,18 +370,18 @@ class BotBridge(QObject):
 
     async def play_from_gui(self, search):
         """Download and play audio from URL or search term"""
-
+        # Ensure we're connected to a voice channel
         if not self.bot.voice_client or not self.bot.voice_client.is_connected():
-            if not self._current_channel or not self._current_server:
+            if not self._current_channel_id or not self._current_server_id:
                 self.issue.emit("Please select a server and channel first")
                 return
 
-            selected_server = discord.utils.get(self.bot.guilds, id=int(self._current_server))
+            selected_server = discord.utils.get(self.bot.guilds, id=int(self._current_server_id))
             if not selected_server:
                 self.issue.emit("Selected server not found")
                 return
 
-            selected_channel = discord.utils.get(selected_server.voice_channels, id=int(self._current_channel))
+            selected_channel = discord.utils.get(selected_server.voice_channels, id=int(self._current_channel_id))
             if not selected_channel:
                 self.issue.emit("Selected channel not found")
                 return
@@ -407,98 +398,130 @@ class BotBridge(QObject):
                 self.issue.emit(f"Failed to connect: {str(e)}")
                 return
 
-        self.downloadStatusChanged.emit("Preparing...")
-        temp_audio_file = os.path.join(get_script_dir(), "downloaded_audio.webm")
-
+        # Stop any current playback
         if self.bot.voice_client and (self.bot.voice_client.is_playing() or self.bot.voice_client.is_paused()):
             self.bot.voice_client.stop()
 
+        self.downloadStatusChanged.emit("Preparing...")
         self.stopTimerSignal.emit()
         self._position = 0
         self.positionChanged.emit(0)
+        self.songLoadedChanged.emit(False)
 
-        if os.path.exists(temp_audio_file):
-            await delete_file(temp_audio_file)
-            await asyncio.sleep(0.1)
-
+        # Convert search term to URL if needed
         url = search if search.startswith("http") else get_first_video_url(search)
-
         if url is None:
             self.downloadStatusChanged.emit("No video found")
             return
 
-        self.songLoadedChanged.emit(False)
+        # Check if file is already cached
         cached = self.audio_cache.get_cached_file(url)
-
         if cached:
+            # Use cached file
             audio_file, info = cached
-            song_name = info['title']
-            channel_name = info['channel']
-            self._duration = info['duration']
-            self.durationChanged.emit(self._duration)
+            await self._play_cached_file(audio_file, info, url)
+        else:
+            # Download to cache
+            await self._download_and_play_file(url)
+
+    async def _play_cached_file(self, audio_file, info, url):
+        """Play a file that's already in the cache"""
+        # Update metadata
+        song_name = info['title']
+        channel_name = info['channel']
+        self._duration = info['duration']
+        self._current_channel_name = channel_name
+        self._current_thumbnail_url = info['thumbnail']
+
+        # Update UI
+        self.durationChanged.emit(self._duration)
+        self.songChanged.emit(song_name)
+        self.channelNameChanged.emit(channel_name)
+        self.thumbnailChanged.emit(self._current_thumbnail_url)
+        self.downloadStatusChanged.emit("Using cached file...")
+
+        # Store current file/URL
+        self.current_audio_file = audio_file
+        self.current_url = url
+
+        # Start playback
+        await self._start_playback(audio_file)
+
+    async def _download_and_play_file(self, url):
+        """Download a file and add it to cache before playing"""
+        try:
+            # Create a temporary directory for download
+            import tempfile
+            temp_dir = tempfile.mkdtemp()
+            temp_file = os.path.join(temp_dir, "audio.webm")
+
+            # Configure downloader
+            ydl_opts = {
+                "format": "bestaudio/best",
+                "outtmpl": temp_file,
+                "noplaylist": True,
+                "progress_hooks": [self.download_hook],
+                "quiet": True,
+                "no_warnings": True
+            }
+
+            self.downloadStatusChanged.emit("Extracting video info...")
+
+            # Run yt_dlp in thread pool to prevent blocking
+            loop = asyncio.get_event_loop()
+            info = await loop.run_in_executor(
+                self._yt_pool,
+                lambda: self._extract_video_info(url, ydl_opts)
+            )
+
+            # Update metadata
+            song_name = info["title"]
+            channel_name = info.get("channel", "") or info.get("uploader", "")
+            self._duration = info.get("duration", 0)
             self._current_channel_name = channel_name
+            self._current_thumbnail_url = info.get("thumbnail") or info.get("thumbnails", [{}])[0].get("url", "")
+
+            # Update UI
+            self.durationChanged.emit(self._duration)
             self.songChanged.emit(song_name)
             self.channelNameChanged.emit(channel_name)
+            self.thumbnailChanged.emit(self._current_thumbnail_url)
+
+            # Add to cache
+            self.downloadStatusChanged.emit("Caching audio file...")
+            audio_file = self.audio_cache.add_file(url, temp_file, info)
+
+            # Clean up cache
+            max_cache_size_mb = self._settings.value("maxCacheSize", 1024, type=int)
+            self.audio_cache.cleanup(max_size_mb=max_cache_size_mb)
+
+            # Store current file/URL
             self.current_audio_file = audio_file
             self.current_url = url
-            self._current_thumbnail_url = info['thumbnail']
-            self.thumbnailChanged.emit(self._current_thumbnail_url)
-            self.downloadStatusChanged.emit("Using cached file...")
-        else:
-            try:
-                ydl_opts = {
-                    "format": "bestaudio/best",
-                    "outtmpl": temp_audio_file,
-                    "noplaylist": True,
-                    "progress_hooks": [self.download_hook],
-                    "quiet" : True,
-                    "no_warnings": True
-                }
 
-                self.downloadStatusChanged.emit("Extracting video info...")
+            # Start playback
+            await self._start_playback(audio_file)
 
-                # Run yt_dlp in thread pool to prevent blocking asyncio event loop
-                loop = asyncio.get_event_loop()
-                info = await loop.run_in_executor(
-                    self._yt_pool,
-                    lambda: self._extract_video_info(url, ydl_opts)
-                )
+            # Clean up temp directory
+            import shutil
+            shutil.rmtree(temp_dir, ignore_errors=True)
 
-                song_name = info["title"]
-                channel_name = info.get("channel", "") or info.get("uploader", "")
-                self._duration = info.get("duration", 0)
-                self.durationChanged.emit(self._duration)
-                self._current_channel_name = channel_name
-                self.songChanged.emit(song_name)
-                self.channelNameChanged.emit(channel_name)
-                self.downloadStatusChanged.emit("Caching audio file...")
-                audio_file = self.audio_cache.add_file(url, temp_audio_file, info)
+        except Exception as e:
+            self.downloadStatusChanged.emit(f"Error: {str(e)}")
 
-                max_cache_size_mb = self._settings.value("maxCacheSize", 1024, type=int)
-
-                # Clean up cache to stay within size limit
-                self.audio_cache.cleanup(max_size_mb=max_cache_size_mb)
-
-                self.current_audio_file = audio_file
-                self.current_url = url
-                self._current_thumbnail_url = info.get("thumbnail") or info.get("thumbnails", [{}])[0].get("url", "")
-                self.thumbnailChanged.emit(self._current_thumbnail_url)
-
-            except Exception as e:
-                self.downloadStatusChanged.emit(f"Error: {str(e)}")
-                return
-
+    async def _start_playback(self, audio_file):
+        """Start playing an audio file"""
         try:
-            if os.path.exists(self.current_audio_file):
+            if os.path.exists(audio_file):
                 self.downloadStatusChanged.emit("Starting playback...")
                 if self.bot.voice_client:
                     self._position = 0
                     self.positionChanged.emit(0)
-                    source = discord.FFmpegPCMAudio(self.current_audio_file)
+                    source = discord.FFmpegPCMAudio(audio_file)
                     volume_transformer = discord.PCMVolumeTransformer(source, volume=self._volume)
                     self.bot.voice_client.play(
                         volume_transformer,
-                        after=lambda e: self.on_playback_finished(e, self.current_audio_file)
+                        after=lambda e: self.on_playback_finished(e, audio_file)
                     )
                     self.is_playing = True
                     self.playStateChanged.emit(True)
@@ -510,7 +533,6 @@ class BotBridge(QObject):
                     self.startTimerSignal.emit()
             else:
                 self.downloadStatusChanged.emit("Error: Audio file not found")
-
         except Exception as e:
             self.downloadStatusChanged.emit(f"Playback error: {str(e)}")
 
@@ -724,29 +746,22 @@ class BotBridge(QObject):
         asyncio.run_coroutine_threadsafe(resolver(), self.bot.loop)
 
     @Slot(str, str)
-    def connect_to_channel(self, server_id=None, channel_id=None):
-        """Connect to the specified voice channel or the currently selected one"""
+    def connect_to_channel(self, server_id, channel_id):
+        """Connect to the specified voice channel"""
         async def connect_wrapper():
-            # Use provided parameters if available, otherwise use existing properties
-            server_id_to_use = server_id if server_id is not None else self._current_server
-            channel_id_to_use = channel_id if channel_id is not None else self._current_channel
-
-            # Store the selections
-            if server_id is not None:
-                self._current_server = server_id
-            if channel_id is not None:
-                self._current_channel = channel_id
-
-            if not channel_id_to_use or not server_id_to_use:
-                self.issue.emit("Please select a server and channel first")
+            if not server_id or not channel_id:
+                print("Error: connect_to_channel called with missing server_id or channel_id")
                 return
 
-            selected_server = discord.utils.get(self.bot.guilds, id=int(server_id_to_use))
+            self._current_server = server_id
+            self._current_channel = channel_id
+
+            selected_server = discord.utils.get(self.bot.guilds, id=int(server_id))
             if not selected_server:
                 self.issue.emit("Selected server not found")
                 return
 
-            selected_channel = discord.utils.get(selected_server.voice_channels, id=int(channel_id_to_use))
+            selected_channel = discord.utils.get(selected_server.voice_channels, id=int(channel_id))
             if not selected_channel:
                 self.issue.emit("Selected channel not found")
                 return
@@ -755,6 +770,14 @@ class BotBridge(QObject):
                 self.issue.emit("Cannot join empty channel")
                 return
 
+            if self.bot.voice_client and self.bot.voice_client.is_connected():
+                if self.bot.voice_client.channel.id == int(channel_id):
+                    return
+                else:
+                    await self.bot.voice_client.disconnect()
+                    self.bot.voice_client = None
+                    self._reset_playback_state()
+
             try:
                 self.bot.voice_client = await selected_channel.connect()
                 self._voice_connected = True
@@ -762,7 +785,6 @@ class BotBridge(QObject):
                 self.downloadStatusChanged.emit("")
             except Exception as e:
                 self.issue.emit(f"Failed to connect: {str(e)}")
-                return
 
         asyncio.run_coroutine_threadsafe(connect_wrapper(), self.bot.loop)
 
@@ -784,26 +806,10 @@ class BotBridge(QObject):
             if self.bot.voice_client:
                 await self.bot.voice_client.disconnect()
                 self.bot.voice_client = None
-                self.is_playing = False
                 self._voice_connected = False
-                self.stopTimerSignal.emit()
-                self._position = 0
-                self.positionChanged.emit(0)
-                self.playStateChanged.emit(False)
-                self.songChanged.emit("")
-                self.songLoadedChanged.emit(False)
                 self.voiceConnectedChanged.emit(False)
-                temp_audio_file = os.path.join(get_script_dir(), "downloaded_audio.webm")
-                if self.current_audio_file == temp_audio_file and os.path.exists(temp_audio_file):
-                    await delete_file(temp_audio_file)
-                self.current_audio_file = None
-                self.current_url = None
-                self.downloadStatusChanged.emit("")
-                self._current_thumbnail_url = ""
-                self.thumbnailChanged.emit("")
-                self._current_channel_name = ""
-                self.channelNameChanged.emit("")
 
+        self.stop_playing()
         asyncio.run_coroutine_threadsafe(disconnect_wrapper(), self.bot.loop)
 
     @Property(list, notify=serversChanged)
