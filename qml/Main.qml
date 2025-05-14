@@ -492,6 +492,11 @@ ApplicationWindow {
         }
 
         function onSongLoadedChanged(loaded) {
+            if (botBridge.disconnecting) {
+                console.log("Ignoring songLoadedChanged during disconnect");
+                return;
+            }
+
             if (loaded) {
                 isAutoAdvancing = false
             }

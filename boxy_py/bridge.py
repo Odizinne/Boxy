@@ -903,35 +903,21 @@ class BotBridge(QObject):
     @Slot()
     def disconnect_voice(self):
         """Disconnect from voice channel"""
-        async def disconnect_wrapper():
-            self._disconnecting = True  # Set flag to prevent auto-advancement
-            
-            # First reset all playback state
-            if self.bot.voice_client and (self.bot.voice_client.is_playing() or self.bot.voice_client.is_paused()):
-                self.bot.voice_client.stop()
-                self.is_playing = False
-                self.stopTimerSignal.emit()
-                self.position = 0
-                self.song_title = ""
-                self.song_loaded = False
-                self.current_audio_file = None
-                self.current_url = None
-                self.download_status = ""
-                self.thumbnail_url = ""
-                self.channel_name = ""
-                
-                # Wait a moment for everything to settle
-                await asyncio.sleep(0.3)
-            
-            # Now disconnect
-            if self.bot.voice_client:
-                await self.bot.voice_client.disconnect()
-                self.bot.voice_client = None
-                self.voice_connected = False
-            
-            self._disconnecting = False  # Reset the flag
+        self._disconnecting = True  # Set flag immediately
 
-        # Run the disconnect operation as a single async task
+        async def disconnect_wrapper():
+            try:
+                self.stop_playing()
+
+                if self.bot.voice_client:
+                    await self.bot.voice_client.disconnect()
+                    self.bot.voice_client = None
+                    self._voice_connected = False
+
+                    await asyncio.sleep(0.2)
+            finally:
+                self._disconnecting = False
+
         asyncio.run_coroutine_threadsafe(disconnect_wrapper(), self.bot.loop)
 
     @Slot(result=str)
