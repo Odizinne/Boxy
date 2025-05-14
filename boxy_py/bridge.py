@@ -45,6 +45,8 @@ class BotBridge(QObject):
     def __init__(self, bot):
         super().__init__()
         # Initialize state properties
+        self._settings = QSettings("Odizinne", "Boxy")
+
         self._status = "Disconnected"
         self._is_playing = False
         self._song_title = ""
@@ -62,12 +64,10 @@ class BotBridge(QObject):
         self._current_channel_name = ""
         self._valid_token_format = True
         self._disconnecting = False
-        self._volume = 0.8
+        self._volume = self._settings.value("volume", 0.8, type=float)
 
         # Initialize basic properties
         self.bot = bot
-        self.current_guild = None
-        self.current_channel = None
         self.current_audio_file = None
         self.current_url = None
         self._changing_song = False
@@ -76,16 +76,12 @@ class BotBridge(QObject):
         self.audio_cache = AudioCache()
 
         # Cache settings
-        self.max_cache_size_mb = 500
-        self.max_cache_age_days = 30
+        self.max_cache_size_mb = self._settings.value("maxCacheSize", 1024, type=int)
 
-        # Set up position timer
         self._position_timer = QTimer(self)
         self._position_timer.setInterval(1000)
         self._position_timer.timeout.connect(self._update_position)
 
-        self._settings = QSettings("Odizinne", "Boxy")
-        self._volume = self._settings.value("volume", 0.8, type=float)
 
         # Connect signals
         self.startTimerSignal.connect(self._position_timer.start)
@@ -276,9 +272,6 @@ class BotBridge(QObject):
                 self.bot.voice_client.source.volume = value
             self.volumeChanged.emit(value)
 
-    #
-    # Cache Management Methods
-    #
     @Slot(result=dict)
     def get_cache_info(self):
         """Get information about the cache"""
@@ -294,20 +287,6 @@ class BotBridge(QObject):
             'file_count': file_count,
             'cache_location': self.audio_cache.cache_dir
         }
-
-    @Slot(int, int)
-    def set_cache_settings(self, max_size_mb, max_age_days):
-        """Update cache settings and cleanup old files"""
-        self.max_cache_size_mb = max_size_mb
-        self.max_cache_age_days = max_age_days
-        self.audio_cache.cleanup(max_size_mb)
-
-        cache_info = self.get_cache_info()
-        self.cacheInfoUpdated.emit(
-            cache_info['total_size'],
-            cache_info['file_count'],
-            cache_info['cache_location']
-        )
 
     @Slot()
     def clear_cache(self):
