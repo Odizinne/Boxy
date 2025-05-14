@@ -1,8 +1,6 @@
 import QtQuick
 import QtQuick.Layouts
 import QtQuick.Controls.Material
-import Qt.labs.platform as Platform
-import QtQuick.Controls.impl
 
 import "."
 
