@@ -433,6 +433,12 @@ ApplicationWindow {
     Connections {
         target: botBridge
 
+        function onVoiceConnectedChanged(connected) {
+            if (!connected) {
+                playlistView.currentIndex = 0
+            }
+        }
+
         function onItemDownloadStarted(url, index) {
             if (index < playlistModel.count) {
                 playlistModel.setProperty(index, "isDownloading", true)
@@ -483,7 +489,6 @@ ApplicationWindow {
 
         function onSongLoadedChanged(loaded) {
             if (botBridge.disconnecting) {
-                console.log("Ignoring songLoadedChanged during disconnect");
                 return;
             }
 

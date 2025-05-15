@@ -1,6 +1,4 @@
 import asyncio
-import os
-import discord
 from discord.ext import commands
 from boxy_py.utils import delete_file
 
@@ -24,20 +22,22 @@ class BoxyBot(commands.Bot):
         if voice_state is None:
             return
 
-        if len(voice_state.channel.members) == 1:
-            await voice_state.disconnect()
-            self.voice_client = None
-
+        if len(voice_state.channel.members) == 1 and voice_state.channel.members[0].id == self.user.id:
             if self.bridge:
+                self.bridge._disconnecting = True
+                self.bridge.media_session_active = False
                 self.bridge.is_playing = False
-                self.bridge._voice_connected = False
-                self.bridge.playStateChanged.emit(False)
-                self.bridge.songChanged.emit("")
-                self.bridge.channelNameChanged.emit("")
-                self.bridge.songLoadedChanged.emit(False)
-                self.bridge.voiceConnectedChanged.emit(False)
-                if self.bridge.current_audio_file and os.path.exists(self.bridge.current_audio_file):
-                    await delete_file(self.bridge.current_audio_file)
+                self.bridge.stopTimerSignal.emit()
+                self.bridge.position = 0
+                self.bridge.song_title = ""
+                self.bridge.song_loaded = False
                 self.bridge.current_audio_file = None
                 self.bridge.current_url = None
-                self.bridge.downloadStatusChanged.emit("")
+                self.bridge.placeholder_status = ""
+                self.bridge.thumbnail_url = ""
+                self.bridge.channel_name = ""
+                self.bridge.voice_connected = False
+                self.bridge._disconnecting = False
+
+            await voice_state.disconnect()
+            self.voice_client = None

@@ -893,7 +893,7 @@ class BotBridge(QObject):
     @Slot()
     def disconnect_voice(self):
         """Disconnect from voice channel"""
-        self._disconnecting = True  # Set flag immediately
+        self._disconnecting = True
 
         async def disconnect_wrapper():
             try:
@@ -902,7 +902,7 @@ class BotBridge(QObject):
                 if self.bot.voice_client:
                     await self.bot.voice_client.disconnect()
                     self.bot.voice_client = None
-                    self._voice_connected = False
+                    self.voice_connected = False
 
                     await asyncio.sleep(0.2)
             finally:
