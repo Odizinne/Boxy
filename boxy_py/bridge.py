@@ -966,6 +966,8 @@ class BotBridge(QObject):
                     await self.bot.voice_client.disconnect()
                     self.bot.voice_client = None
                     self.voice_connected = False
+                    self._current_channel = ""
+                    self._current_server = ""
     
                 await asyncio.sleep(0.2)
             finally:
