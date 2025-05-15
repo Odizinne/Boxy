@@ -833,8 +833,7 @@ ApplicationWindow {
                     }
                 }
                 Item {
-                    Layout.preferredHeight: 10
-
+                    Layout.preferredHeight: 0
                 }
             }
         }
