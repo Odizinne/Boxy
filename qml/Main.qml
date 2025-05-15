@@ -495,7 +495,7 @@ ApplicationWindow {
             }
 
             if (!loaded && !botBridge.repeat_mode && botBridge.media_session_active &&
-                    !playlistView.manualNavigation && !isAutoAdvancing && !botBridge.disconnecting) {
+                    !isAutoAdvancing && !botBridge.disconnecting) {
 
                 if (playlistView.currentIndex < playlistModel.count - 1) {
                     isAutoAdvancing = true
@@ -533,8 +533,6 @@ ApplicationWindow {
                     isAutoAdvancing = false
                 }
             }
-
-            playlistView.manualNavigation = false
         }
     }
 
@@ -710,7 +708,6 @@ ApplicationWindow {
                             if (shuffleButton.checked) {
                                 const currentPos = shufflePlayedIndices.indexOf(playlistView.currentIndex)
                                 if (currentPos > 0) {
-                                    playlistView.manualNavigation = true
                                     const prevIndex = shufflePlayedIndices[currentPos - 1]
                                     playlistView.currentIndex = prevIndex
                                     let item = playlistModel.get(prevIndex)
@@ -718,7 +715,6 @@ ApplicationWindow {
                                 }
                             } else {
                                 if (playlistView.currentIndex > 0) {
-                                    playlistView.manualNavigation = true
                                     playlistView.currentIndex--
                                     let item = playlistModel.get(playlistView.currentIndex)
                                     botBridge.play_url(item.url || item.userTyped)
@@ -765,14 +761,12 @@ ApplicationWindow {
                                 const randomIndex = Math.floor(Math.random() * availableIndices.length)
                                 const nextIndex = availableIndices[randomIndex]
 
-                                playlistView.manualNavigation = true
                                 shufflePlayedIndices.push(nextIndex)
                                 playlistView.currentIndex = nextIndex
                                 let item = playlistModel.get(nextIndex)
                                 botBridge.play_url(item.url || item.userTyped)
                             } else {
                                 if (playlistView.currentIndex < (playlistModel.count - 1)) {
-                                    playlistView.manualNavigation = true
                                     playlistView.currentIndex++
                                     let item = playlistModel.get(playlistView.currentIndex)
                                     botBridge.play_url(item.url || item.userTyped)
