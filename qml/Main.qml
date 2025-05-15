@@ -607,6 +607,13 @@ ApplicationWindow {
                         asynchronous: true
                         cache: true
                         layer.smooth: true
+                        Pane {
+                            visible: thumbnailImage.processedUrl
+                            Material.background: "transparent"
+                            Material.elevation: 6
+                            anchors.fill: parent
+                            z: -1
+                        }
                     }
                 }
 
