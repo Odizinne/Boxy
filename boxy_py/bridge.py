@@ -399,25 +399,29 @@ class BotBridge(QObject):
         except Exception as e:
             self.playlistSaved.emit(f"Error loading playlist: {str(e)}")
 
+    async def _stop_playing_async(self):
+        """Async version of stop_playing that can be awaited"""
+        if self.bot.voice_client and (self.bot.voice_client.is_playing() or self.bot.voice_client.is_paused()):
+            self.bot.voice_client.stop()
+            self.media_session_active = False
+            self.is_playing = False
+            self.stopTimerSignal.emit()
+            self.position = 0
+            self.song_title = ""
+            self.song_loaded = False
+            self.current_audio_file = None
+            self.current_url = None
+            self.placeholder_status = ""
+            self.thumbnail_url = ""
+            self.channel_name = ""
+
+            if self.bot:
+                await self.bot.change_presence(activity=None)
+
     @Slot()
     def stop_playing(self):
         """Stop playback and clean up resources"""
-        async def stop_wrapper():
-            if self.bot.voice_client and (self.bot.voice_client.is_playing() or self.bot.voice_client.is_paused()):
-                self.bot.voice_client.stop()
-                self.media_session_active = False
-                self.is_playing = False
-                self.stopTimerSignal.emit()
-                self.position = 0
-                self.song_title = ""
-                self.song_loaded = False
-                self.current_audio_file = None
-                self.current_url = None
-                self.placeholder_status = ""
-                self.thumbnail_url = ""
-                self.channel_name = ""
-
-        asyncio.run_coroutine_threadsafe(stop_wrapper(), self.bot.loop)
+        asyncio.run_coroutine_threadsafe(self._stop_playing_async(), self.bot.loop)
 
     @Slot()
     def toggle_playback(self):
@@ -504,7 +508,6 @@ class BotBridge(QObject):
                         if self.voice_connected and self.bot.voice_client and self.bot.voice_client.is_connected():
                             break
                         await asyncio.sleep(0.1)
-
                     if not self.voice_connected:
                         self.issue.emit("Failed to connect to voice channel")
                         return
@@ -512,6 +515,9 @@ class BotBridge(QObject):
                     self.issue.emit("Please connect to a channel first")
                     return
 
+                #self.issue.emit("Please connect to a channel first")
+                #return
+            
             selected_server = discord.utils.get(self.bot.guilds, id=int(self._current_server))
             if not selected_server:
                 self.issue.emit("Selected server not found")
@@ -673,10 +679,28 @@ class BotBridge(QObject):
 
                     self.song_loaded = True
                     self.startTimerSignal.emit()
+
+                    await self.update_rich_presence()
             else:
                 self.placeholder_status = "Error: Audio file not found"
         except Exception as e:
             self.placeholder_status = f"Playback error: {str(e)}"
+
+    async def update_rich_presence(self):
+        if not self.bot or not self.song_title:
+            return
+
+        if self.is_playing and self.song_title:
+            activity = discord.Activity(
+                type=discord.ActivityType.listening,
+                name=self.song_title,
+                details=f"by {self.channel_name}" if self.channel_name else None,
+                state="via Boxy Music Bot"
+            )
+
+            await self.bot.change_presence(activity=activity)
+        else:
+            await self.bot.change_presence(activity=None)
 
     def download_hook(self, d):
         """Progress hook for youtube-dl"""
@@ -714,6 +738,9 @@ class BotBridge(QObject):
 
         if self.repeat_mode and audio_file == self.current_audio_file:
             asyncio.run_coroutine_threadsafe(self.replay_audio(audio_file), self.bot.loop)
+
+        if not (self.repeat_mode and audio_file == self.current_audio_file):
+            asyncio.run_coroutine_threadsafe(self.update_rich_presence(), self.bot.loop)
 
     async def replay_audio(self, audio_file):
         if os.path.exists(audio_file) and audio_file == self.current_audio_file:
@@ -928,20 +955,22 @@ class BotBridge(QObject):
     def disconnect_voice(self):
         """Disconnect from voice channel"""
         self._disconnecting = True
-
+    
         async def disconnect_wrapper():
             try:
-                self.stop_playing()
-
+                # First stop any playback and wait for it to complete
+                await self._stop_playing_async()
+    
+                # Now disconnect
                 if self.bot.voice_client:
                     await self.bot.voice_client.disconnect()
                     self.bot.voice_client = None
                     self.voice_connected = False
-
-                    await asyncio.sleep(0.2)
+    
+                await asyncio.sleep(0.2)
             finally:
                 self._disconnecting = False
-
+    
         asyncio.run_coroutine_threadsafe(disconnect_wrapper(), self.bot.loop)
 
     @Slot(result=str)

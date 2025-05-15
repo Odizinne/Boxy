@@ -1,6 +1,5 @@
 import asyncio
 from discord.ext import commands
-from boxy_py.utils import delete_file
 
 
 class BoxyBot(commands.Bot):
@@ -10,6 +9,7 @@ class BoxyBot(commands.Bot):
         self.bridge = None
 
     async def on_ready(self):
+        await self.bridge.update_rich_presence()
         if self.bridge:
             self.bridge.status = "Connected"
             self.bridge._voice_connected = False
