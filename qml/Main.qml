@@ -973,6 +973,7 @@ ApplicationWindow {
                                 color: Material.accent
                                 visible: model.index === playlistView.currentIndex
                                 anchors.verticalCenter: parent.verticalCenter
+                                radius: 8
                             }
 
                             RowLayout {
