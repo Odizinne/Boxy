@@ -19,6 +19,7 @@ AnimatedPopup {
     ColumnLayout {
         id: tokenLayout
         anchors.centerIn: parent
+        anchors.margins: 10
         spacing: 15
         width: 350
 

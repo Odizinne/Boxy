@@ -20,6 +20,7 @@ AnimatedPopup {
     ColumnLayout {
         id: playlistLayout
         anchors.centerIn: parent
+        anchors.margins: 10
         spacing: 14
 
         Label {

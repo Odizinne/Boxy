@@ -5,23 +5,23 @@ import "."
 
 AnimatedPopup {
     id: playlistSelectorPopup
-    parent: playlistView
     width: 350
     height: 350
-    anchors.centerIn: parent
     modal: true
 
     ColumnLayout {
         anchors.fill: parent
-        anchors.margins: 0
+        anchors.margins: 10
         spacing: 10
 
         ScrollView {
+            id: scrlView
             Layout.fillWidth: true
             Layout.fillHeight: true
             clip: true
-            ScrollBar.vertical.policy: playlistList.model.count > 5 ?
+            ScrollBar.vertical.policy: playlistList.model.count > 7 ?
                                            ScrollBar.AlwaysOn : ScrollBar.AlwaysOff
+            property bool scrollBarVisible: ScrollBar.vertical.policy === ScrollBar.AlwaysOn 
 
             ListView {
                 id: playlistList
@@ -32,7 +32,7 @@ AnimatedPopup {
                 boundsBehavior: Flickable.StopAtBounds
 
                 delegate: ItemDelegate {
-                    width: playlistList.width
+                    width: scrlView.scrollBarVisible ? playlistList.width - 30: playlistList.width
                     height: 40
                     required property string name
                     required property string filePath
@@ -50,11 +50,11 @@ AnimatedPopup {
                             Layout.alignment: Qt.AlignCenter
                         }
 
-                        MaterialButton {
+                        CustomRoundButton {
                             Layout.alignment: Qt.AlignCenter
                             icon.source: "icons/trash.png"
-                            icon.width: width / 2
-                            icon.height: height / 2
+                            icon.width: 16
+                            icon.height: 16
                             visible: filePath !== ""
                             flat: true
                             onClicked: {

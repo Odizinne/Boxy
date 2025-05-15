@@ -60,6 +60,7 @@ AnimatedPopup {
     ColumnLayout {
         id: contentColumn
         anchors.fill: parent
+        anchors.margins: 10
         spacing: 15
 
         RowLayout {
