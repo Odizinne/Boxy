@@ -7,7 +7,7 @@ from PySide6.QtCore import QObject, Signal, Slot, Property, QTimer, QBuffer, QIO
 import yt_dlp
 from youtube_search import YoutubeSearch
 
-from boxy_py.utils import delete_file, get_first_video_url, get_script_dir, create_rounded_thumbnail
+from boxy_py.utils import get_first_video_url, create_rounded_thumbnail
 import boxy_py.config as config
 from boxy_py.audio_cache import AudioCache
 
