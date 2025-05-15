@@ -951,13 +951,15 @@ ApplicationWindow {
                             height: 50
                             enabled: !downloadProgress.visible && !root.isResolvingAny && !playlistDownloadProgress.visible
                             onClicked: {
-                                playlistView.manualNavigation = true
-                                playlistView.currentIndex = model.index
-                                let item = playlistModel.get(model.index)
-                                if (shuffleButton.checked) {
-                                    shufflePlayedIndices = [model.index]
+                                if (model.index !== playlistView.currentIndex || !botBridge.is_playing) {
+                                    playlistView.manualNavigation = true
+                                    playlistView.currentIndex = model.index
+                                    let item = playlistModel.get(model.index)
+                                    if (shuffleButton.checked) {
+                                        shufflePlayedIndices = [model.index]
+                                    }
+                                    botBridge.play_url(item.url || item.userTyped)
                                 }
-                                botBridge.play_url(item.url || item.userTyped)
                             }
 
                             Rectangle {
@@ -982,10 +984,13 @@ ApplicationWindow {
                                     MaterialButton {
                                         id: moveUpButton
                                         icon.source: "icons/up.png"
-                                        Layout.preferredHeight: 18
+                                        icon.width: 14
+                                        icon.height: 14
+                                        Layout.preferredHeight: 16
+                                        Layout.preferredWidth: 40
+                                        Material.roundedScale: Material.NotRounded
                                         enabled: model.index > 0
                                         onClicked: {
-                                            // Store the current item data
                                             let currentItem = {
                                                 userTyped: playlistModel.get(model.index).userTyped,
                                                 url: playlistModel.get(model.index).url,
@@ -994,7 +999,6 @@ ApplicationWindow {
                                                 isResolving: playlistModel.get(model.index).isResolving
                                             }
 
-                                            // Store the item above
                                             let aboveIndex = model.index - 1
                                             let aboveItem = {
                                                 userTyped: playlistModel.get(aboveIndex).userTyped,
@@ -1004,11 +1008,9 @@ ApplicationWindow {
                                                 isResolving: playlistModel.get(aboveIndex).isResolving
                                             }
 
-                                            // Swap the items
                                             playlistModel.set(aboveIndex, currentItem)
                                             playlistModel.set(model.index, aboveItem)
 
-                                            // Update currentIndex if needed
                                             if (playlistView.currentIndex === model.index) {
                                                 playlistView.currentIndex--
                                             } else if (playlistView.currentIndex === model.index - 1) {
@@ -1020,10 +1022,13 @@ ApplicationWindow {
                                     MaterialButton {
                                         id: moveDownButton
                                         icon.source: "icons/down.png"
-                                        Layout.preferredHeight: 18
+                                        icon.width: 14
+                                        icon.height: 14
+                                        Layout.preferredHeight: 16
+                                        Layout.preferredWidth: 40
+                                        Material.roundedScale: Material.NotRounded
                                         enabled: model.index < playlistModel.count - 1
                                         onClicked: {
-                                            // Store the current item data
                                             let currentItem = {
                                                 userTyped: playlistModel.get(model.index).userTyped,
                                                 url: playlistModel.get(model.index).url,
@@ -1032,7 +1037,6 @@ ApplicationWindow {
                                                 isResolving: playlistModel.get(model.index).isResolving
                                             }
 
-                                            // Store the item below
                                             let belowIndex = model.index + 1
                                             let belowItem = {
                                                 userTyped: playlistModel.get(belowIndex).userTyped,
@@ -1042,11 +1046,9 @@ ApplicationWindow {
                                                 isResolving: playlistModel.get(belowIndex).isResolving
                                             }
 
-                                            // Swap the items
                                             playlistModel.set(belowIndex, currentItem)
                                             playlistModel.set(model.index, belowItem)
 
-                                            // Update currentIndex if needed
                                             if (playlistView.currentIndex === model.index) {
                                                 playlistView.currentIndex++
                                             } else if (playlistView.currentIndex === model.index + 1) {
@@ -1097,10 +1099,8 @@ ApplicationWindow {
 
                                 CustomRoundButton {
                                     icon.source: "icons/delete.png"
-                                    Layout.preferredWidth: height
-                                    icon.width: width / 3
-                                    icon.height: height / 3
-                                    Layout.rightMargin: 15
+                                    icon.width: 12
+                                    icon.height: 12
                                     visible: editButton.checked
                                     onClicked: playlistModel.remove(model.index)
                                     flat: true
