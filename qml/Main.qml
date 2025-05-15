@@ -465,13 +465,6 @@ ApplicationWindow {
             playlistModel.setProperty(index, "isResolving", false)
         }
 
-        //function onBatchDownloadProgressChanged(current, total, status) {
-        //    playlistDownloadProgress.from = 0
-        //    playlistDownloadProgress.to = total
-        //    playlistDownloadProgress.value = current
-        //    newItemInput.placeholderText = status
-        //}
-
         function onPlaylistLoaded(items, title) {
             playlistModel.clear()
             playlistName.text = title
@@ -842,7 +835,7 @@ ApplicationWindow {
                 }
             }
         }
-
+        
         Pane {
             Layout.fillWidth: true
             Layout.fillHeight: true

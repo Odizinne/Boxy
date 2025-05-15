@@ -29,22 +29,16 @@ def load_setup_window(app, engine, setup_manager):
     for obj in engine.rootObjects():
         obj.deleteLater()
     
-    # Make sure to set the setup manager before loading the QML file
     engine.rootContext().setContextProperty("setupManager", setup_manager)
-    
-    # Get the path to the setup window QML file
     script_dir = os.path.dirname(os.path.abspath(__file__))
     qml_path = os.path.join(script_dir, "qml/SetupWindow.qml")
     
-    # Load the QML file
     engine.load(QUrl.fromLocalFile(qml_path))
     
-    # Check if the QML file was loaded successfully
     if not engine.rootObjects():
         print("Error loading setup UI")
         sys.exit(1)
     
-    # Connect signals
     root = engine.rootObjects()[0]
     root.setupFinished.connect(setup_manager.save_token)
     setup_manager.setupCompleted.connect(lambda token: start_main_app(app, engine, token))
@@ -119,7 +113,6 @@ def start_main_app(app, engine, token):
 if __name__ == "__main__":
     configure_logging()
     
-    # Parse command line arguments
     parser = argparse.ArgumentParser(description='Boxy Discord Music Bot')
     parser.add_argument('--force-setup', action='store_true', help='Force the setup screen to appear')
     args = parser.parse_args()
