@@ -954,14 +954,15 @@ ApplicationWindow {
                             width: scrlBar.visible ? ListView.view.width - 30 : ListView.view.width
                             height: 50
                             enabled: !downloadProgress.visible && !root.isResolvingAny && !playlistDownloadProgress.visible
-                            onClicked: {
-                                if (model.index !== playlistView.currentIndex || !botBridge.is_playing) {
-                                    playlistView.manualNavigation = true
+                            MouseArea {
+                                anchors.fill: parent
+                                onDoubleClicked: {
                                     playlistView.currentIndex = model.index
                                     let item = playlistModel.get(model.index)
                                     if (shuffleButton.checked) {
                                         shufflePlayedIndices = [model.index]
                                     }
+
                                     botBridge.play_url(item.url || item.userTyped)
                                 }
                             }
