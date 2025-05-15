@@ -942,16 +942,16 @@ ApplicationWindow {
                         anchors.fill: parent
                         model: ListModel { id: playlistModel }
                         spacing: 5
-                        property bool manualNavigation: false
                         boundsBehavior: Flickable.StopAtBounds
                         ScrollBar.vertical: ScrollBar {
                             id: scrlBar
                             policy: playlistView.contentHeight > playlistView.height ?
-                                        ScrollBar.AlwaysOn : ScrollBar.AsNeeded
+                                        ScrollBar.AlwaysOn : ScrollBar.AlwaysOff
+                            property bool shown: policy === ScrollBar.AlwaysOn
                         }
 
                         delegate: ItemDelegate {
-                            width: scrlBar.visible ? ListView.view.width - 30 : ListView.view.width
+                            width: scrlBar.shown ? ListView.view.width - 30 : ListView.view.width
                             height: 50
                             enabled: !downloadProgress.visible && !root.isResolvingAny && !playlistDownloadProgress.visible
                             MouseArea {
@@ -1253,28 +1253,9 @@ ApplicationWindow {
         }
     }
 
-    Popup {
+    VolumePopup {
         id: volumePopup
         x: (parent.width - width) / 2   
         y: 10                             
-        height: 40
-        width: implicitWidth
-        Material.elevation: 10
-        closePolicy: Popup.CloseOnEscape | Popup.CloseOnPressOutside
-
-        Slider {
-            id: volumeSlider
-            anchors.leftMargin: -5
-            anchors.rightMargin: -5
-            anchors.fill: parent
-            from: 0.0
-            to: 1.0
-            value: BoxySettings.volume
-            enabled: root.connectedToAPI
-            onValueChanged: {
-                BoxySettings.volume = value
-                botBridge.set_volume(value)
-            }
-        }
     }
 }
