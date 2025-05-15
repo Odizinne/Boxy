@@ -3,11 +3,12 @@ import QtQuick.Controls.Material
 import QtQuick.Layouts
 import "."
 
-AnimatedPopup {
+Popup {
     property int totalCachedSize: 0
     property int cachedItemsCount: 0
     property string cacheLocation: ""
     modal: true
+    closePolicy: Popup.CloseOnEscape | Popup.CloseOnPressOutside
     
     Component.onCompleted: {
         refreshCacheInfo()

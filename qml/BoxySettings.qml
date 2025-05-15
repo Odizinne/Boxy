@@ -13,4 +13,5 @@ Settings {
     property bool darkMode: true
     property int maxParallelDownloads: 3
     property double volume: 0.8
+    property string autoJoinUserId: ""
 }

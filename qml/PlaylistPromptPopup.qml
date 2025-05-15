@@ -3,10 +3,11 @@ import QtQuick
 import QtQuick.Layouts
 import "."
 
-AnimatedPopup {
+Popup {
     id: playlistPopup
     height: playlistLayout.height + 30
     modal: true
+    closePolicy: Popup.CloseOnEscape | Popup.CloseOnPressOutside
 
     onClosed: {
         busyIndicator.visible = false

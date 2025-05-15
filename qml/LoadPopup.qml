@@ -3,11 +3,12 @@ import QtQuick
 import QtQuick.Layouts
 import "."
 
-AnimatedPopup {
+Popup {
     id: playlistSelectorPopup
     width: 350
     height: 350
     modal: true
+    closePolicy: Popup.CloseOnEscape | Popup.CloseOnPressOutside
 
     ColumnLayout {
         anchors.fill: parent

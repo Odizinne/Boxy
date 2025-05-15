@@ -473,43 +473,77 @@ class BotBridge(QObject):
             if not was_playing:
                 self.bot.voice
 
+    @Slot(str, result=bool)
+    def find_and_join_user(self, user_id):
+        """Find a user by ID and join their voice channel if they are in one."""
+        print(user_id)
+        if not user_id or not user_id.isdigit():
+            return False
+
+        user_id = int(user_id)
+
+        for guild in self.bot.guilds:
+            for voice_channel in guild.voice_channels:
+                for member in voice_channel.members:
+                    if member.id == user_id:
+                        server_id = str(guild.id)
+                        channel_id = str(voice_channel.id)
+                        self.connect_to_channel(server_id, channel_id)
+                        return True
+
+        return False
+
     @Slot(str)
     def play_url(self, url):
         """Play audio from URL or search term"""
         async def play_wrapper():
             if not self._current_channel or not self._current_server:
-                self.issue.emit("Please connect to a channel first")
-                return
-    
+                default_user_id = self._settings.value("autoJoinUserId", "", type=str)
+                if default_user_id and self.find_and_join_user(default_user_id):
+                    for _ in range(50): 
+                        if self.voice_connected and self.bot.voice_client and self.bot.voice_client.is_connected():
+                            break
+                        await asyncio.sleep(0.1)
+
+                    if not self.voice_connected:
+                        self.issue.emit("Failed to connect to voice channel")
+                        return
+                else:
+                    self.issue.emit("Please connect to a channel first")
+                    return
+
             selected_server = discord.utils.get(self.bot.guilds, id=int(self._current_server))
             if not selected_server:
                 self.issue.emit("Selected server not found")
                 return
-    
+
             selected_channel = discord.utils.get(selected_server.voice_channels, id=int(self._current_channel))
             if not selected_channel:
                 self.issue.emit("Selected channel not found")
                 return
-    
+
             if self.bot.voice_client and (self.bot.voice_client.is_playing() or self.bot.voice_client.is_paused()):
                 self._changing_song = True
                 self.bot.voice_client.stop()
-                await asyncio.sleep(0.3)
+                for _ in range(30):  
+                    if not self.bot.voice_client.is_playing() and not self.bot.voice_client.is_paused():
+                        break
+                    await asyncio.sleep(0.1)
             else:
                 self._changing_song = False
-    
+
             self.stopTimerSignal.emit()
             self._position = 0
-    
+
             was_repeat = self.repeat_mode
             self.repeat_mode = False
-    
+
             await self.play_from_gui(url)
-    
+
             self.repeat_mode = was_repeat
-    
+
             self._changing_song = False
-    
+
         asyncio.run_coroutine_threadsafe(play_wrapper(), self.bot.loop)
     
     async def play_from_gui(self, search):

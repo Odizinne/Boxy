@@ -3,11 +3,12 @@ import QtQuick
 import QtQuick.Layouts
 import "."
 
-AnimatedPopup {
+Popup {
     id: tokenPopup
     width: tokenLayout.width + 40
     height: tokenLayout.height + 40
     modal: true
+    closePolicy: Popup.CloseOnEscape | Popup.CloseOnPressOutside
 
     property string currentToken: ""
 

@@ -69,6 +69,11 @@ ApplicationWindow {
                 visible: false
 
                 MenuItem {
+                    text: "General settings"
+                    onTriggered: generalConfigPopup.open()
+                }
+
+                MenuItem {
                     text: "Cache settings"
                     onTriggered: cacheSettingsPopup.open()
                 }
@@ -1232,6 +1237,11 @@ ApplicationWindow {
 
     CacheSettingsPopup {
         id: cacheSettingsPopup
+        anchors.centerIn: parent
+    }
+
+    GeneralConfigPopup {
+        id: generalConfigPopup
         anchors.centerIn: parent
     }
 

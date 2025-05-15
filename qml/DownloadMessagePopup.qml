@@ -2,7 +2,7 @@ import QtQuick.Controls.Material
 import QtQuick
 import "."
 
-AnimatedPopup {
+Popup {
     id: savePopup
     width: saveLabel.width + 40
     height: saveLabel.height + 30
