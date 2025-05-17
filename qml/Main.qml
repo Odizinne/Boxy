@@ -1,6 +1,7 @@
 import QtQuick
 import QtQuick.Layouts
 import QtQuick.Controls.Material
+import QtQuick.Effects
 
 import "."
 
@@ -540,12 +541,23 @@ ApplicationWindow {
                         asynchronous: true
                         cache: true
                         layer.smooth: true
-                        Pane {
+                        RectangularShadow {
                             visible: thumbnailImage.processedUrl
-                            Material.background: "transparent"
-                            Material.elevation: 9
                             anchors.fill: parent
+                            anchors.margins: -4
+                            blur: 32
+                            spread: 3
+                            color: Material.accent
                             z: -1
+                            opacity: botBridge.audio_level
+                            radius: 0
+                            Behavior on opacity {
+                                NumberAnimation {
+                                    duration: 200
+                                    easing.type: Easing.OutQuad
+                                }
+                            }
+                            offset: Qt.vector2d(0.0, 0.0)
                         }
                     }
                 }
