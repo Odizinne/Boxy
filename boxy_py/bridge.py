@@ -480,7 +480,6 @@ class BotBridge(QObject):
     @Slot(str, result=bool)
     def find_and_join_user(self, user_id):
         """Find a user by ID and join their voice channel if they are in one."""
-        print(user_id)
         if not user_id or not user_id.isdigit():
             return False
 

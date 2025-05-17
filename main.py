@@ -6,7 +6,7 @@ import logging
 import argparse
 from PySide6.QtGui import QGuiApplication, QIcon
 from PySide6.QtQml import QQmlApplicationEngine
-from PySide6.QtCore import QUrl, QSettings, QTimer
+from PySide6.QtCore import QUrl, QSettings
 
 from boxy_py.bot import BoxyBot
 from boxy_py.bridge import BotBridge
