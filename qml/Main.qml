@@ -421,12 +421,12 @@ ApplicationWindow {
 
     function savePlaylist() {
         if (playlistName.text.trim() === "") {
-            savePopup.displayText = "You must name the playlist"
-            savePopup.visible = true
+            notificationPopup.displayText = "You must name the playlist"
+            notificationPopup.visible = true
             return
         } else if (!playlistModel.count > 0) {
-            savePopup.displayText = "Cannot save empty playlist"
-            savePopup.visible = true
+            notificationPopup.displayText = "Cannot save empty playlist"
+            notificationPopup.visible = true
             return
         } else {
             let items = []
@@ -440,8 +440,8 @@ ApplicationWindow {
                 })
             }
             botBridge.save_playlist(playlistName.text, items)
-            savePopup.displayText = "Playlist saved successfully"
-            savePopup.visible = true
+            notificationPopup.displayText = "Playlist saved successfully"
+            notificationPopup.visible = true
         }
     }
 
@@ -872,7 +872,8 @@ ApplicationWindow {
                                 urls.push(item.url || item.userTyped)
                             }
                             botBridge.download_all_playlist_items(urls)
-                            downloadMessagePopup.visible = true
+                            notificationPopup.displayText = "Downloading any non cached files"
+                            notificationPopup.visible = true
                         }
                     }
 
@@ -1185,13 +1186,6 @@ ApplicationWindow {
         }
     }
 
-
-    SavePopup {
-        id: savePopup
-        anchors.centerIn: parent
-        parent: playlistView
-    }
-
     LoadPopup {
         id: playlistSelectorPopup
         anchors.centerIn: parent
@@ -1226,12 +1220,6 @@ ApplicationWindow {
         anchors.centerIn: parent
     }
 
-    DownloadMessagePopup {
-        id: downloadMessagePopup
-        parent: playlistView
-        anchors.centerIn: parent
-    }
-
     CacheSettingsPopup {
         id: cacheSettingsPopup
         anchors.centerIn: parent
@@ -1242,16 +1230,16 @@ ApplicationWindow {
         anchors.centerIn: parent
     }
 
-    IssuePopup {
-        id: issuePopup
+    NotificationPopup {
+        id: notificationPopup
         anchors.centerIn: parent
         parent: playlistView
         Connections {
             target: botBridge
 
             function onIssue(message) {
-                issuePopup.displayText = message
-                issuePopup.open()
+                notificationPopup.displayText = message
+                notificationPopup.open()
             }
         }
     }
