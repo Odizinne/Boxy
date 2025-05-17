@@ -1,6 +1,5 @@
 pragma Singleton
 import QtCore
-import QtQuick
 
 Settings {
     id: settings
@@ -14,4 +13,5 @@ Settings {
     property int maxParallelDownloads: 3
     property double volume: 0.8
     property string autoJoinUserId: ""
+    property int accentColorIndex: 5
 }

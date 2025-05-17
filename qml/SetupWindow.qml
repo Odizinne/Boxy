@@ -11,9 +11,9 @@ ApplicationWindow {
     minimumHeight: lyt.implicitHeight + 30 + 40
     title: "Boxy"
     Material.theme: BoxySettings.darkMode ? Material.Dark : Material.Light
-    Material.accent: Material.Pink
-    Material.primary: Material.Indigo
-    color: BoxySettings.darkMode ? "#1C1C1C" : "#E3E3E3"
+    Material.accent: Colors.accentColor
+    Material.primary: Colors.primaryColor
+    color: Colors.backgroundColor
     header: ToolBar {
         height: 40
         Label {
@@ -48,7 +48,7 @@ ApplicationWindow {
             }
             Pane {
                 Layout.fillWidth: true
-                Material.background: BoxySettings.darkMode ? "#2B2B2B" : "#FFFFFF"
+                Material.background: Colors.paneColor
                 Material.elevation: 6
                 Material.roundedScale: Material.ExtraSmallScale
 
@@ -98,7 +98,7 @@ ApplicationWindow {
             }
             Pane {
                 Layout.fillWidth: true
-                Material.background: BoxySettings.darkMode ? "#2B2B2B" : "#FFFFFF"
+                Material.background: Colors.paneColor
                 Material.elevation: 6
                 Material.roundedScale: Material.ExtraSmallScale
 
@@ -171,7 +171,7 @@ ApplicationWindow {
             }
             Pane {
                 Layout.fillWidth: true
-                Material.background: BoxySettings.darkMode ? "#2B2B2B" : "#FFFFFF"
+                Material.background: Colors.paneColor
                 Material.elevation: 6
                 Material.roundedScale: Material.ExtraSmallScale
 

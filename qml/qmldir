@@ -1,1 +1,2 @@
 singleton BoxySettings 1.0 BoxySettings.qml
+singleton Colors 1.0 Colors.qml

@@ -10,11 +10,12 @@ ApplicationWindow {
     minimumWidth: container.width
     minimumHeight: 700
     Material.theme: BoxySettings.darkMode ? Material.Dark : Material.Light
-    Material.accent: Material.Pink
-    Material.primary: Material.Indigo
-    color: BoxySettings.darkMode ? "#1C1C1C" : "#E3E3E3"
+    Material.accent: Colors.accentColor
+    Material.primary: Colors.primaryColor
+    color: Colors.backgroundColor
     header: ToolBar {
         height: 40
+        Material.elevation: 8
         Label {
             anchors.centerIn: parent
             text: "Boxy Settings"
@@ -106,7 +107,7 @@ ApplicationWindow {
                     Layout.fillWidth: true
                     Layout.preferredWidth: 450
                     Layout.preferredHeight: implicitHeight + 20
-                    Material.background: BoxySettings.darkMode ? "#2B2B2B" : "#FFFFFF"
+                    Material.background: Colors.paneColor
                     Material.elevation: 6
                     Material.roundedScale: Material.ExtraSmallScale
                     ColumnLayout {
@@ -266,7 +267,7 @@ ApplicationWindow {
                     Layout.fillWidth: true
                     Layout.preferredWidth: 450
                     Layout.preferredHeight: implicitHeight + 20
-                    Material.background: BoxySettings.darkMode ? "#2B2B2B" : "#FFFFFF"
+                    Material.background: Colors.paneColor
                     Material.elevation: 6
                     Material.roundedScale: Material.ExtraSmallScale
                     ColumnLayout {
@@ -337,7 +338,7 @@ ApplicationWindow {
                     Layout.fillWidth: true
                     Layout.preferredWidth: 450
                     Layout.preferredHeight: implicitHeight + 20
-                    Material.background: BoxySettings.darkMode ? "#2B2B2B" : "#FFFFFF"
+                    Material.background: Colors.paneColor
                     Material.elevation: 6
                     Material.roundedScale: Material.ExtraSmallScale
                     ColumnLayout {
@@ -393,7 +394,7 @@ ApplicationWindow {
                 }
                 Pane {
                     Layout.fillWidth: true
-                    Material.background: BoxySettings.darkMode ? "#2B2B2B" : "#FFFFFF"
+                    Material.background: Colors.paneColor
                     Layout.preferredWidth: 450
                     Layout.preferredHeight: implicitHeight + 20
                     Material.elevation: 6
@@ -467,6 +468,76 @@ ApplicationWindow {
                                 id: themeSwitch
                                 checked: BoxySettings.darkMode
                                 onClicked: BoxySettings.darkMode = checked
+                                Layout.rightMargin: -10
+                            }
+                        }
+
+                        RowLayout {
+                            Layout.fillWidth: true
+                            spacing: 10
+
+                            Label {
+                                text: "Color"
+                                Layout.fillWidth: true
+                            }
+
+                            ColumnLayout {
+                                spacing: 8
+
+                                RowLayout {
+                                    spacing: 8
+
+                                    Repeater {
+                                        model: 5
+
+                                        Rectangle {
+                                            width: 30
+                                            height: 30
+                                            radius: 5
+                                            color: Colors.colorPairs[index][0] 
+                                            border.width: BoxySettings.accentColorIndex === index ? 2 : 0
+                                            border.color: BoxySettings.darkMode ? "#FFFFFF" : "#000000"
+
+                                            MouseArea {
+                                                anchors.fill: parent
+                                                onClicked: BoxySettings.accentColorIndex = index
+                                                cursorShape: Qt.PointingHandCursor
+                                            }
+
+                                            Behavior on border.width {
+                                                NumberAnimation { duration: 100 }
+                                            }
+                                        }
+                                    }
+                                }
+
+                                RowLayout {
+                                    spacing: 8
+
+                                    Repeater {
+                                        model: 5
+
+                                        Rectangle {
+                                            width: 30
+                                            height: 30
+                                            radius: 5
+
+                                            color: Colors.colorPairs[index + 5][0]
+                                            border.width: BoxySettings.accentColorIndex === (index + 5) ? 2 : 0
+                                            border.color: BoxySettings.darkMode ? "#FFFFFF" : "#000000"
+
+                                            MouseArea {
+                                                anchors.fill: parent
+                                                onClicked: BoxySettings.accentColorIndex = index + 5
+                                                cursorShape: Qt.PointingHandCursor
+                                            }
+
+                                            Behavior on border.width {
+                                                NumberAnimation { duration: 100 }
+                                            }
+                                        }
+                                    }
+                                }
                             }
                         }
                     }

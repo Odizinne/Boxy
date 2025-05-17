@@ -13,9 +13,9 @@ ApplicationWindow {
     minimumHeight: 750
     title: "Boxy"
     Material.theme: BoxySettings.darkMode ? Material.Dark : Material.Light
-    Material.accent: Material.Pink
-    Material.primary: Material.Indigo
-    color: BoxySettings.darkMode ? "#1c1c1c" : "#E3E3E3"
+    Material.accent: Colors.accentColor
+    Material.primary: Colors.primaryColor
+    color: Colors.backgroundColor
     property bool songLoaded: botBridge.song_loaded
     property var shufflePlayedIndices: []
     property bool connectedToAPI: botBridge.status === "Connected"
@@ -80,6 +80,7 @@ ApplicationWindow {
                 visible: false
 
                 MenuItem {
+                    font.bold: true
                     text: "Settings"
                     onTriggered: configurationWindow.show()
                 }
@@ -480,7 +481,7 @@ ApplicationWindow {
 
         Pane {
             Layout.fillWidth: true
-            Material.background: BoxySettings.darkMode ? "#2b2b2b" : "#FFFFFF"
+            Material.background: Colors.paneColor
             Material.elevation: 6
             Material.roundedScale: Material.ExtraSmallScale
             ColumnLayout {
@@ -770,7 +771,7 @@ ApplicationWindow {
         Pane {
             Layout.fillWidth: true
             Layout.fillHeight: true
-            Material.background: BoxySettings.darkMode ? "#2B2B2B" : "#FFFFFF"
+            Material.background: Colors.paneColor
             Material.elevation: 6
             Material.roundedScale: Material.ExtraSmallScale
 
