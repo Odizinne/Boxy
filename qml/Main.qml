@@ -79,19 +79,10 @@ ApplicationWindow {
                 visible: false
 
                 MenuItem {
-                    text: "General settings"
-                    onTriggered: generalConfigPopup.open()
+                    text: "Settings"
+                    onTriggered: configurationWindow.show()
                 }
 
-                MenuItem {
-                    text: "Cache settings"
-                    onTriggered: cacheSettingsPopup.open()
-                }
-
-                MenuItem {
-                    text: "Edit token"
-                    onTriggered: tokenPopup.open()
-                }
                 MenuSeparator {}
 
                 MenuItem {
@@ -344,72 +335,6 @@ ApplicationWindow {
                     }
                 }
             }
-        }
-
-        Item {
-            anchors.right: themeSwitch.left
-            height: 24
-            width: 24
-            anchors.verticalCenter: parent.verticalCenter
-
-            Image {
-                id: sunImage
-                anchors.fill: parent
-                source: "icons/sun.png"
-                opacity: !themeSwitch.checked ? 1 : 0
-                rotation: themeSwitch.checked ? 360 : 0
-                mipmap: true
-
-                Behavior on rotation {
-                    NumberAnimation {
-                        duration: 500
-                        easing.type: Easing.OutQuad
-                    }
-                }
-
-                Behavior on opacity {
-                    NumberAnimation { duration: 500 }
-                }
-
-                MouseArea {
-                    anchors.fill: parent
-                    onClicked: themeSwitch.checked = !themeSwitch.checked
-                }
-            }
-
-            Image {
-                anchors.fill: parent
-                id: moonImage
-                source: "icons/moon.png"
-                opacity: themeSwitch.checked ? 1 : 0
-                rotation: themeSwitch.checked ? 360 : 0
-                mipmap: true
-
-                Behavior on rotation {
-                    NumberAnimation {
-                        duration: 500
-                        easing.type: Easing.OutQuad
-                    }
-                }
-
-                Behavior on opacity {
-                    NumberAnimation { duration: 100 }
-                }
-
-                MouseArea {
-                    anchors.fill: parent
-                    onClicked: themeSwitch.checked = !themeSwitch.checked
-                }
-            }
-        }
-
-        Switch {
-            anchors.right: parent.right
-            height: 40
-            id: themeSwitch
-            checked: BoxySettings.darkMode
-            onClicked: BoxySettings.darkMode = checked
-            Layout.rightMargin: 10
         }
     }
 
@@ -1215,21 +1140,6 @@ ApplicationWindow {
         }
     }
 
-    TokenPopup {
-        id: tokenPopup
-        anchors.centerIn: parent
-    }
-
-    CacheSettingsPopup {
-        id: cacheSettingsPopup
-        anchors.centerIn: parent
-    }
-
-    GeneralConfigPopup {
-        id: generalConfigPopup
-        anchors.centerIn: parent
-    }
-
     NotificationPopup {
         id: notificationPopup
         anchors.centerIn: parent
@@ -1248,5 +1158,10 @@ ApplicationWindow {
         id: volumePopup
         x: (parent.width - width) / 2   
         y: 10                             
+    }
+    
+    ConfigurationWindow {
+        id: configurationWindow
+        visible: false
     }
 }

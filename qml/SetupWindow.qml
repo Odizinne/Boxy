@@ -9,7 +9,7 @@ ApplicationWindow {
     height: lyt.implicitHeight + 30 + 40
     minimumWidth: lyt.implicitWidth * 1.65
     minimumHeight: lyt.implicitHeight + 30 + 40
-    title: "Boxy Discord Bot Setup"
+    title: "Boxy"
     Material.theme: BoxySettings.darkMode ? Material.Dark : Material.Light
     Material.accent: Material.Pink
     Material.primary: Material.Indigo
