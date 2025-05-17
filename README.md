@@ -33,7 +33,7 @@ This command will install python3.13 and required dependencies, as well as creat
 from Boxy directory:
 
 ```bash
-pip install -r requierments.txt
+pip install -r requirements.txt
 python3 boxy.py
 ```
 
