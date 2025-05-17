@@ -644,6 +644,13 @@ class BotBridge(QObject):
             max_cache_size_mb = self._settings.value("maxCacheSize", 1024, type=int)
             self.audio_cache.cleanup(max_size_mb=max_cache_size_mb)
 
+            cache_info = self.get_cache_info()
+            self.cacheInfoUpdated.emit(
+                cache_info['total_size'],
+                cache_info['file_count'],
+                cache_info['cache_location']
+            )
+
             # Store current file/URL
             self.current_audio_file = audio_file
             self.current_url = url
@@ -1075,6 +1082,14 @@ class BotBridge(QObject):
                         self.itemDownloadCompleted.emit(current_url, idx)
                         downloaded_count += 1
                         self.bulk_current = downloaded_count
+                        max_cache_size_mb = self._settings.value("maxCacheSize", 1024, type=int)
+                        self.audio_cache.cleanup(max_size_mb=max_cache_size_mb)
+                        cache_info = self.get_cache_info()
+                        self.cacheInfoUpdated.emit(
+                            cache_info['total_size'],
+                            cache_info['file_count'],
+                            cache_info['cache_location']
+                        )
 
             for url_index, url in non_cached_urls:
                 download_tasks.append(download_item(url_index, url))
@@ -1083,8 +1098,7 @@ class BotBridge(QObject):
 
             self.placeholder_status = "Download complete!"
 
-            max_cache_size_mb = self._settings.value("maxCacheSize", 1024, type=int)
-            self.audio_cache.cleanup(max_size_mb=max_cache_size_mb)
+
 
         asyncio.run_coroutine_threadsafe(downloader(), self.bot.loop)
 

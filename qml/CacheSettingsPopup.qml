@@ -114,7 +114,6 @@ Popup {
 
                 onValueModified: {
                     BoxySettings.maxCacheSize = value
-                    botBridge.set_cache_settings(BoxySettings.maxCacheSize, 30)
                 }
 
                 textFromValue: function(value, locale) {
