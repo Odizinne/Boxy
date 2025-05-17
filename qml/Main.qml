@@ -338,6 +338,16 @@ ApplicationWindow {
                 }
             }
         }
+        Label {
+            anchors.right: parent.right
+            anchors.rightMargin: 15
+            text: botBridge.status
+            verticalAlignment: Text.AlignVCenter
+            opacity: 0.7
+            height: parent.height
+            font.pixelSize: 15
+            color: Colors.primaryForeground
+        }
     }
 
     function formatTime(seconds) {

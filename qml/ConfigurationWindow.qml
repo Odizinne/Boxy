@@ -5,10 +5,12 @@ import QtQuick.Controls.Material
 ApplicationWindow {
     id: configurationWindow
     visible: true
-    width: container.width
+    width: lyt.implicitWidth + 30 + 16
     height: 700
-    minimumWidth: container.width
+    minimumWidth: lyt.implicitWidth + 30 + 16
+    maximumWidth: lyt.implicitWidth + 30 + 16
     minimumHeight: 700
+    maximumHeight: 700
     Material.theme: BoxySettings.darkMode ? Material.Dark : Material.Light
     Material.accent: Colors.accentColor
     Material.primary: Colors.primaryColor
@@ -81,311 +83,28 @@ ApplicationWindow {
             }
         }
     }
+
     ScrollView {
-        anchors.fill: parent
         id: scrlView
+        width: container.width
+        height: Math.min(parent.height, container.height)
         contentWidth: container.width
         contentHeight: container.height
+        anchors.fill: parent
+        ScrollBar.vertical.policy: ScrollBar.AlwaysOn
 
         Item {
             id: container
             width: lyt.implicitWidth + 30
             height: lyt.implicitHeight + 30
+            anchors.fill: parent
 
             ColumnLayout {
                 id: lyt
                 anchors.fill: parent
                 anchors.margins: 15
                 spacing: 20
-                Label {
-                    text: "Cache settings"
-                    Layout.bottomMargin: -15
-                    Layout.leftMargin: 10
-                    color: Material.accent
-                }
-                Pane {
-                    Layout.fillWidth: true
-                    Layout.preferredWidth: 450
-                    Layout.preferredHeight: implicitHeight + 20
-                    Material.background: Colors.paneColor
-                    Material.elevation: 6
-                    Material.roundedScale: Material.ExtraSmallScale
-                    ColumnLayout {
-                        id: contentColumn
-                        anchors.fill: parent
-                        anchors.margins: 10
-                        spacing: 15
 
-                        RowLayout {
-                            Layout.preferredHeight: 30
-                            spacing: 10
-
-                            Label {
-                                text: "Cached items:"
-                                Layout.fillWidth: true
-                                font.bold: true
-                            }
-                            Label {
-                                text: configurationWindow.cachedItemsCount.toString()
-                            }
-                        }
-
-                        RowLayout {
-                            Layout.preferredHeight: 30
-                            spacing: 10
-
-                            Label {
-                                text: "Total size:"
-                                Layout.fillWidth: true
-                                font.bold: true
-                            }
-                            Label {
-                                text: configurationWindow.formatBytes(configurationWindow.totalCachedSize)
-                            }
-                        }
-
-                        RowLayout {
-                            Layout.preferredHeight: 30
-                            spacing: 10
-
-                            Label {
-                                text: "Maximum cache size:"
-                                Layout.preferredWidth: implicitWidth + 50
-                                Layout.fillWidth: true
-                                font.bold: true
-                            }
-
-                            SpinBox {
-                                id: cacheSizeSpinBox
-                                from: 100
-                                to: 10000
-                                stepSize: 100
-                                value: BoxySettings.maxCacheSize
-                                editable: true
-                                Layout.preferredHeight: 30
-
-                                onValueModified: {
-                                    BoxySettings.maxCacheSize = value
-                                }
-
-                                textFromValue: function(value, locale) {
-                                    return value + " MB"
-                                }
-
-                                valueFromText: function(text, locale) {
-                                    return parseInt(text)
-                                }
-                            }
-                        }
-
-                        RowLayout {
-                            Layout.preferredHeight: 30
-                            spacing: 10
-
-                            Label {
-                                text: "Parallel downloads:"
-                                Layout.fillWidth: true
-                                font.bold: true
-                            }
-
-                            SpinBox {
-                                id: parallelDownloadsSpinBox
-                                from: 1
-                                to: 8
-                                stepSize: 1
-                                Layout.preferredHeight: 30
-                                value: BoxySettings.maxParallelDownloads
-                                editable: true
-
-                                onValueModified: {
-                                    BoxySettings.maxParallelDownloads = value
-                                }
-
-                                textFromValue: function(value, locale) {
-                                    return value.toString()
-                                }
-
-                                valueFromText: function(text, locale) {
-                                    return parseInt(text)
-                                }
-                            }
-                        }
-
-                        RowLayout {
-                            Layout.preferredHeight: 30
-                            spacing: 10
-
-                            Label {
-                                text: "Clear cache on exit:"
-                                Layout.fillWidth: true
-                                font.bold: true
-                            }
-
-                            Switch {
-                                id: clearCacheSwitch
-                                checked: BoxySettings.clearCacheOnExit
-                                Layout.rightMargin: -5
-                                onCheckedChanged: {
-                                    BoxySettings.clearCacheOnExit = checked
-                                }
-                            }
-                        }
-
-                        RowLayout {
-                            Layout.fillWidth: true
-                            spacing: 10
-                            property int buttonWidth: Math.max(clearBtn.implicitWidth, openBtn.implicitWidth)
-
-                            MaterialButton {
-                                id: clearBtn
-                                Layout.preferredWidth: parent.buttonWidth
-                                Layout.fillWidth: true
-                                text: "Clear Cache Now"
-                                onClicked: {
-                                    botBridge.clear_cache()
-                                    configurationWindow.refreshCacheInfo()
-                                }
-                            }
-
-                            MaterialButton {
-                                id: openBtn
-                                Layout.preferredWidth: parent.buttonWidth
-                                Layout.fillWidth: true
-                                text: "Open cache folder"
-                                onClicked: Qt.openUrlExternally(configurationWindow.getFileUrl(botBridge.get_cache_directory()))
-                            }
-                        }
-                    }
-                }
-                Label {
-                    text: "Discord bot token"
-                    Layout.bottomMargin: -15
-                    Layout.leftMargin: 10
-                    color: Material.accent
-                }
-                Pane {
-                    Layout.fillWidth: true
-                    Layout.preferredWidth: 450
-                    Layout.preferredHeight: implicitHeight + 20
-                    Material.background: Colors.paneColor
-                    Material.elevation: 6
-                    Material.roundedScale: Material.ExtraSmallScale
-                    ColumnLayout {
-                        id: tokenLayout
-                        anchors.fill: parent
-                        anchors.margins: 10
-                        spacing: 15
-
-                        RowLayout {
-                            Layout.fillWidth: true
-                            spacing: 0
-
-                            TextField {
-                                id: tokenInput
-                                Layout.fillWidth: true
-                                placeholderText: "Enter your Discord bot token"
-                                echoMode: TextInput.Password
-                                selectByMouse: true
-                            }
-
-                            CustomRoundButton {
-                                //Layout.preferredWidth: height
-                                //Layout.preferredHeight: tokenInput.height
-                                flat: true
-                                icon.source: "icons/reveal.png"
-                                icon.width: 20
-                                icon.height: 20
-                                Layout.rightMargin: -10
-
-                                onClicked: {
-                                    if (tokenInput.echoMode === TextInput.Password) {
-                                        tokenInput.echoMode = TextInput.Normal
-                                    } else {
-                                        tokenInput.echoMode = TextInput.Password
-                                    }
-                                }
-                            }
-                        }
-
-                        Label {
-                            text: "⚠️ Never share your bot token with anyone"
-                            opacity: 0.7
-                            color: Material.foreground
-                            Layout.fillWidth: true
-                            wrapMode: Text.Wrap
-                        }
-
-                        MaterialButton {
-                            id: saveButton
-                            text: "Save and reconnect"
-                            Layout.fillWidth: true
-                            highlighted: true
-                            enabled: tokenInput.text.trim() !== "" && tokenInput.text !== configurationWindow.currentToken
-                            onClicked: {
-                                botBridge.save_token(tokenInput.text.trim())
-                                configurationWindow.close()
-                            }
-                        }
-                    }
-                }
-                Label {
-                    text: "Auto-join user's channel"
-                    Layout.bottomMargin: -15
-                    Layout.leftMargin: 10
-                    color: Material.accent
-                }
-                Pane {
-                    Layout.fillWidth: true
-                    Layout.preferredWidth: 450
-                    Layout.preferredHeight: implicitHeight + 20
-                    Material.background: Colors.paneColor
-                    Material.elevation: 6
-                    Material.roundedScale: Material.ExtraSmallScale
-                    ColumnLayout {
-                        id: configLayout
-                        anchors.fill: parent
-                        anchors.margins: 10
-                        spacing: 15
-
-                        ColumnLayout {
-                            Layout.fillWidth: true
-                            spacing: 12
-
-                            Label {
-                                text: "If not connected when starting a song, try to join the person with this user ID:"
-                                Layout.fillWidth: true
-                                font.bold: true
-                                wrapMode: Text.WordWrap
-                                Layout.bottomMargin: 12
-                            }
-
-                            TextField {
-                                id: userIdInput
-                                Layout.fillWidth: true
-                                placeholderText: "Enter Discord User ID"
-                                selectByMouse: true
-                                Layout.preferredHeight: 35
-                                validator: RegularExpressionValidator { regularExpression: /^\d*$/ }
-                                onTextChanged: {
-                                    if (!/^\d*$/.test(text)) {
-                                        var cursorPos = cursorPosition
-                                        text = text.replace(/\D/g, '')
-                                        cursorPosition = cursorPos - (text.length - text.length)
-                                        BoxySettings.autoJoinUserId = text
-                                    }
-                                }
-                            }
-
-                            Label {
-                                text: "The Discord user ID is a unique number identifying each user. To get it, enable Developer Mode in Discord settings, then right-click a user and select 'Copy ID'."
-                                font.pixelSize: 12
-                                opacity: 0.5
-                                Layout.fillWidth: true
-                                wrapMode: Text.WordWrap
-                            }
-                        }
-                    }
-                }
                 Label {
                     text: "Ui settings"
                     Layout.bottomMargin: -15
@@ -538,6 +257,290 @@ ApplicationWindow {
                                         }
                                     }
                                 }
+                            }
+                        }
+                    }
+                }
+                Label {
+                    text: "Cache settings"
+                    Layout.bottomMargin: -15
+                    Layout.leftMargin: 10
+                    color: Material.accent
+                }
+                Pane {
+                    Layout.fillWidth: true
+                    Layout.preferredWidth: 450
+                    Layout.preferredHeight: implicitHeight + 20
+                    Material.background: Colors.paneColor
+                    Material.elevation: 6
+                    Material.roundedScale: Material.ExtraSmallScale
+                    ColumnLayout {
+                        id: contentColumn
+                        anchors.fill: parent
+                        anchors.margins: 10
+                        spacing: 15
+
+                        RowLayout {
+                            Layout.preferredHeight: 30
+                            spacing: 10
+
+                            Label {
+                                text: "Cached items:"
+                                Layout.fillWidth: true
+                            }
+                            Label {
+                                text: configurationWindow.cachedItemsCount.toString()
+                            }
+                        }
+
+                        RowLayout {
+                            Layout.preferredHeight: 30
+                            spacing: 10
+
+                            Label {
+                                text: "Total size:"
+                                Layout.fillWidth: true
+                            }
+                            Label {
+                                text: configurationWindow.formatBytes(configurationWindow.totalCachedSize)
+                            }
+                        }
+
+                        RowLayout {
+                            Layout.preferredHeight: 30
+                            spacing: 10
+
+                            Label {
+                                text: "Maximum cache size:"
+                                Layout.preferredWidth: implicitWidth + 50
+                                Layout.fillWidth: true
+                            }
+
+                            SpinBox {
+                                id: cacheSizeSpinBox
+                                from: 100
+                                to: 10000
+                                stepSize: 100
+                                value: BoxySettings.maxCacheSize
+                                editable: true
+                                Layout.preferredHeight: 30
+
+                                onValueModified: {
+                                    BoxySettings.maxCacheSize = value
+                                }
+
+                                textFromValue: function(value, locale) {
+                                    return value + " MB"
+                                }
+
+                                valueFromText: function(text, locale) {
+                                    return parseInt(text)
+                                }
+                            }
+                        }
+
+                        RowLayout {
+                            Layout.preferredHeight: 30
+                            spacing: 10
+
+                            Label {
+                                text: "Parallel downloads:"
+                                Layout.fillWidth: true
+                            }
+
+                            SpinBox {
+                                id: parallelDownloadsSpinBox
+                                from: 1
+                                to: 8
+                                stepSize: 1
+                                Layout.preferredHeight: 30
+                                value: BoxySettings.maxParallelDownloads
+                                editable: true
+
+                                onValueModified: {
+                                    BoxySettings.maxParallelDownloads = value
+                                }
+
+                                textFromValue: function(value, locale) {
+                                    return value.toString()
+                                }
+
+                                valueFromText: function(text, locale) {
+                                    return parseInt(text)
+                                }
+                            }
+                        }
+
+                        RowLayout {
+                            Layout.preferredHeight: 30
+                            spacing: 10
+
+                            Label {
+                                text: "Clear cache on exit:"
+                                Layout.fillWidth: true
+                            }
+
+                            Switch {
+                                id: clearCacheSwitch
+                                checked: BoxySettings.clearCacheOnExit
+                                Layout.rightMargin: -5
+                                onCheckedChanged: {
+                                    BoxySettings.clearCacheOnExit = checked
+                                }
+                            }
+                        }
+
+                        RowLayout {
+                            Layout.fillWidth: true
+                            spacing: 10
+                            property int buttonWidth: Math.max(clearBtn.implicitWidth, openBtn.implicitWidth)
+
+                            MaterialButton {
+                                id: clearBtn
+                                Layout.preferredWidth: parent.buttonWidth
+                                Layout.fillWidth: true
+                                Material.roundedScale: Material.ExtraSmallScale
+                                text: "Clear Cache Now"
+                                onClicked: {
+                                    botBridge.clear_cache()
+                                    configurationWindow.refreshCacheInfo()
+                                }
+                            }
+
+                            MaterialButton {
+                                id: openBtn
+                                Layout.preferredWidth: parent.buttonWidth
+                                Layout.fillWidth: true
+                                Material.roundedScale: Material.ExtraSmallScale
+                                text: "Open cache folder"
+                                onClicked: Qt.openUrlExternally(configurationWindow.getFileUrl(botBridge.get_cache_directory()))
+                            }
+                        }
+                    }
+                }
+                Label {
+                    text: "Discord bot token"
+                    Layout.bottomMargin: -15
+                    Layout.leftMargin: 10
+                    color: Material.accent
+                }
+                Pane {
+                    Layout.fillWidth: true
+                    Layout.preferredWidth: 450
+                    Layout.preferredHeight: implicitHeight + 20
+                    Material.background: Colors.paneColor
+                    Material.elevation: 6
+                    Material.roundedScale: Material.ExtraSmallScale
+                    ColumnLayout {
+                        id: tokenLayout
+                        anchors.fill: parent
+                        anchors.margins: 10
+                        spacing: 15
+
+                        RowLayout {
+                            Layout.fillWidth: true
+                            spacing: 0
+
+                            TextField {
+                                id: tokenInput
+                                Layout.fillWidth: true
+                                placeholderText: "Enter your Discord bot token"
+                                echoMode: TextInput.Password
+                                selectByMouse: true
+                            }
+
+                            CustomRoundButton {
+                                flat: true
+                                icon.source: "icons/reveal.png"
+                                icon.width: 20
+                                icon.height: 20
+                                Layout.rightMargin: -10
+
+                                onClicked: {
+                                    if (tokenInput.echoMode === TextInput.Password) {
+                                        tokenInput.echoMode = TextInput.Normal
+                                    } else {
+                                        tokenInput.echoMode = TextInput.Password
+                                    }
+                                }
+                            }
+                        }
+
+                        Label {
+                            text: "⚠️ Never share your bot token with anyone"
+                            opacity: 0.7
+                            color: Material.foreground
+                            Layout.fillWidth: true
+                            wrapMode: Text.Wrap
+                        }
+
+                        MaterialButton {
+                            id: saveButton
+                            text: "Save and reconnect"
+                            Material.roundedScale: Material.ExtraSmallScale
+                            highlighted: true
+                            enabled: tokenInput.text.trim() !== "" && tokenInput.text !== configurationWindow.currentToken
+                            onClicked: {
+                                botBridge.save_token(tokenInput.text.trim())
+                                configurationWindow.close()
+                            }
+                        }
+                    }
+                }
+                Label {
+                    text: "Auto-join user's channel"
+                    Layout.bottomMargin: -15
+                    Layout.leftMargin: 10
+                    color: Material.accent
+                }
+                Pane {
+                    Layout.fillWidth: true
+                    Layout.preferredWidth: 450
+                    Layout.preferredHeight: implicitHeight + 20
+                    Material.background: Colors.paneColor
+                    Material.elevation: 6
+                    Material.roundedScale: Material.ExtraSmallScale
+                    ColumnLayout {
+                        id: configLayout
+                        anchors.fill: parent
+                        anchors.margins: 10
+                        spacing: 15
+
+                        ColumnLayout {
+                            Layout.fillWidth: true
+                            spacing: 12
+
+                            Label {
+                                text: "If not connected when starting a song, try to join the person with this user ID:"
+                                Layout.fillWidth: true
+                                font.bold: true
+                                wrapMode: Text.WordWrap
+                                Layout.bottomMargin: 12
+                            }
+
+                            TextField {
+                                id: userIdInput
+                                Layout.fillWidth: true
+                                placeholderText: "Enter Discord User ID"
+                                selectByMouse: true
+                                Layout.preferredHeight: 35
+                                validator: RegularExpressionValidator { regularExpression: /^\d*$/ }
+                                onTextChanged: {
+                                    if (!/^\d*$/.test(text)) {
+                                        var cursorPos = cursorPosition
+                                        text = text.replace(/\D/g, '')
+                                        cursorPosition = cursorPos - (text.length - text.length)
+                                        BoxySettings.autoJoinUserId = text
+                                    }
+                                }
+                            }
+
+                            Label {
+                                text: "The Discord user ID is a unique number identifying each user. To get it, enable Developer Mode in Discord settings, then right-click a user and select 'Copy ID'."
+                                font.pixelSize: 12
+                                opacity: 0.5
+                                Layout.fillWidth: true
+                                wrapMode: Text.WordWrap
                             }
                         }
                     }
