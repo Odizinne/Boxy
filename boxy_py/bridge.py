@@ -48,6 +48,10 @@ class BotBridge(QObject):
     startAudioLevelTimer = Signal()
     stopAudioLevelTimer = Signal()
     seekingEnabledChanged = Signal(bool)
+    resolvingChanged = Signal(bool)
+    downloadingChanged = Signal(bool)
+    downloadProgressChanged = Signal(float)
+    downloadProgressTotalChanged = Signal(float)
 
     def __init__(self, bot):
         super().__init__()
@@ -75,6 +79,10 @@ class BotBridge(QObject):
         self._bulk_total = 0
         self._audio_level = 0.0
         self._seeking_enabled = True
+        self._resolving = False
+        self._downloading = False
+        self._download_progress = 0.0
+        self._download_progress_total = 1.0
 
         self.bot = bot
         self.current_audio_file = None
@@ -102,6 +110,26 @@ class BotBridge(QObject):
         """This is now just a fallback in case the audio source isn't providing levels"""
         if not self.is_playing:
             self.audio_level = 0.0
+
+    @Property(float, notify=downloadProgressChanged)
+    def download_progress(self):
+        return self._download_progress
+
+    @download_progress.setter
+    def download_progress(self, value):
+        if self._download_progress != value:
+            self._download_progress = value
+            self.downloadProgressChanged.emit(value)
+
+    @Property(float, notify=downloadProgressTotalChanged)
+    def download_progress_total(self):
+        return self._download_progress_total
+
+    @download_progress_total.setter
+    def download_progress_total(self, value):
+        if self._download_progress_total != value:
+            self._download_progress_total = value
+            self.downloadProgressTotalChanged.emit(value)
 
     @Property(float, notify=audioLevelChanged)
     def audio_level(self):
@@ -142,6 +170,26 @@ class BotBridge(QObject):
         if self._seeking_enabled != value:
             self._seeking_enabled = value
             self.seekingEnabledChanged.emit(value)
+
+    @Property(bool, notify=resolvingChanged)
+    def resolving(self):
+        return self._resolving
+    
+    @resolving.setter
+    def resolving(self, value):
+        if self._resolving != value:
+            self._resolving = value
+            self.resolvingChanged.emit(value)
+
+    @Property(bool, notify=downloadingChanged)
+    def downloading(self):
+        return self._downloading
+    
+    @downloading.setter
+    def downloading(self, value):
+        if self._downloading != value:
+            self._downloading = value
+            self.downloadingChanged.emit(value)
 
     @Property(bool, notify=mediaSessionActiveChanged)
     def media_session_active(self):
@@ -620,6 +668,7 @@ class BotBridge(QObject):
 
     async def _download_and_play_file(self, url):
         """Download a file and add it to cache before playing"""
+        self.downloading = True
         try:
             import tempfile
             temp_dir = tempfile.mkdtemp()
@@ -647,10 +696,7 @@ class BotBridge(QObject):
             self.duration = info.get("duration", 0)
             self.channel_name = channel_name
             self.thumbnail_url = info.get("thumbnail") or info.get("thumbnails", [{}])[0].get("url", "")
-
             self.song_title = song_name
-
-            self.placeholder_status = "Caching audio file..."
             audio_file = self.audio_cache.add_file(url, temp_file, info)
 
             max_cache_size_mb = self._settings.value("maxCacheSize", 1024, type=int)
@@ -665,6 +711,7 @@ class BotBridge(QObject):
 
             self.current_audio_file = audio_file
             self.current_url = url
+            self.downloading = False
 
             await self._start_playback(audio_file)
 
@@ -727,13 +774,19 @@ class BotBridge(QObject):
                 downloaded = d.get("downloaded_bytes", 0)
                 total = d.get("total_bytes", 0) or d.get("total_bytes_estimate", 0)
                 if total:
-                    progress = (downloaded / total) * 100
-                    self.placeholder_status = f"Downloading: {progress:.1f}%"
+                    progress = (downloaded / total)
+                    self.download_progress = progress
+                    self.download_progress_total = 1.0
+                    self.placeholder_status = f"Downloading: {progress * 100:.1f}%"
                 else:
                     self.placeholder_status = "Downloading..."
             except:
                 self.placeholder_status = "Downloading..."
+                self.download_progress = 0.0
+                self.download_progress_total = 1.0
         elif d["status"] == "finished":
+            self.download_progress = 0.0
+            self.download_progress_total = 1.0
             self.placeholder_status = "Download complete, processing..."
 
     def on_playback_finished(self, error, audio_file):
@@ -859,6 +912,7 @@ class BotBridge(QObject):
     def resolve_title(self, index, user_input):
         """Resolve the title and channel for a YouTube URL or search term"""
         async def resolver():
+            self.resolving = True
             try:
                 self.placeholder_status = f"Resolving title for item {index}..."
     
@@ -916,6 +970,8 @@ class BotBridge(QObject):
             except Exception as e:
                 self.titleResolved.emit(index, f"Error: {str(e)}", "", "")
                 self.placeholder_status = ""
+
+            self.resolving = False
     
         asyncio.run_coroutine_threadsafe(resolver(), self.bot.loop)
     
@@ -1110,6 +1166,8 @@ class BotBridge(QObject):
             await asyncio.gather(*download_tasks)
     
             self.placeholder_status = "Download complete!"
+            self.bulk_current = 0
+            self.bulk_total = 0
     
         asyncio.run_coroutine_threadsafe(downloader(), self.bot.loop)
     

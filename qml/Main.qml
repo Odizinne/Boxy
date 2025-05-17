@@ -879,7 +879,6 @@ ApplicationWindow {
                     TextField {
                         id: playlistName
                         Layout.preferredHeight: editButton.implicitHeight
-                        //implicitHeight: 30
                         text: ""
                         placeholderText: "My super playlist"
                         Layout.fillWidth: true
@@ -1124,17 +1123,17 @@ ApplicationWindow {
                 SmoothProgressBar {
                     id: downloadProgress
                     Layout.fillWidth: true
-                    indeterminate: true
-                    visible: botBridge.placeholder_status !== "" &&
-                             botBridge.placeholder_status !== "Downloading playlist items..." &&
-                             botBridge.placeholder_status !== "Download complete!" &&
-                             botBridge.placeholder_status !== "All items already cached"
+                    indeterminate: botBridge.resolving
+                    visible: botBridge.resolving || botBridge.downloading
+                    from: 0
+                    to: botBridge.download_progress_total
+                    value: botBridge.download_progress
                 }
 
                 SmoothProgressBar {
                     id: playlistDownloadProgress
                     Layout.fillWidth: true
-                    visible: botBridge.placeholder_status === "Downloading playlist items..."
+                    visible: botBridge.bulk_current !== botBridge.bulk_total
                     from: 0
                     to: botBridge.bulk_total
                     value: botBridge.bulk_current
@@ -1150,8 +1149,6 @@ ApplicationWindow {
                         Layout.fillWidth: true
                         placeholderText: botBridge.placeholder_status !== "" ? botBridge.placeholder_status : "Enter YouTube URL or search term"
                         enabled: root.connectedToAPI
-                        //Material.containerStyle: Material.Filled
-
                         onAccepted: addButton.clicked()
                     }
 
