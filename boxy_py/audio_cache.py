@@ -18,13 +18,11 @@ class AudioCache:
             cache_dir: Optional custom cache directory path
         """
         if cache_dir is None:
-            # Use %localappdata%/Boxy/audio_files on Windows, 
-            # or equivalent on other platforms
             if platform.system() == "Windows":
                 cache_dir = os.path.join(os.environ.get("LOCALAPPDATA", ""), "Boxy", "audio_files")
-            elif platform.system() == "Darwin":  # macOS
+            elif platform.system() == "Darwin":  
                 cache_dir = os.path.join(os.path.expanduser("~"), "Library", "Caches", "Boxy", "audio_files")
-            else:  # Linux and other Unix-like
+            else:
                 cache_dir = os.path.join(os.path.expanduser("~"), ".cache", "Boxy", "audio_files")
         
         self.cache_dir = cache_dir
@@ -46,7 +44,6 @@ class AudioCache:
                     self.metadata = json.load(f)
             except (json.JSONDecodeError, IOError) as e:
                 print(f"Error loading metadata: {e}")
-                # Create a new metadata file if corrupted
                 self.metadata = {}
                 self._save_metadata()
         else:
@@ -89,14 +86,11 @@ class AudioCache:
             info = self.metadata[file_id]
             file_path = os.path.join(self.cache_dir, f"{file_id}.webm")
             
-            # Check if the file actually exists
             if os.path.exists(file_path):
-                # Update last access time
                 info['last_accessed'] = time.time()
                 self._save_metadata()
                 return file_path, info
             
-            # File referenced in metadata but doesn't exist
             del self.metadata[file_id]
             self._save_metadata()
             
@@ -117,10 +111,8 @@ class AudioCache:
         file_id = self._generate_file_id(url)
         cached_file_path = os.path.join(self.cache_dir, f"{file_id}.webm")
         
-        # Copy the file to the cache
         shutil.copy2(temp_file_path, cached_file_path)
         
-        # Record metadata
         file_size = os.path.getsize(cached_file_path)
         self.metadata[file_id] = {
             'url': url,
@@ -138,49 +130,41 @@ class AudioCache:
     
     def cleanup(self, max_size_mb=1024):
         """
-        Clean up old cache files to stay within size limits.
-        This is called during normal operation, not on exit.
+        Clean up cache files if size limit is exceeded.
+        Only deletes files when the cache is larger than the specified limit,
+        removing the least recently accessed files first.
 
         Args:
-            max_age_days: Maximum age of files in days
             max_size_mb: Maximum total cache size in MB
         """
         if not self.metadata:
             return
 
-        # Check total cache size
         total_size = sum(info.get('file_size', 0) for info in self.metadata.values())
         max_size_bytes = max_size_mb * 1024 * 1024
 
-        # Only cleanup if we exceed the size limit
         if total_size <= max_size_bytes:
             return
 
-        # Sort files by last access time (oldest first)
         items = sorted(self.metadata.items(), key=lambda x: x[1].get('last_accessed', 0))
 
-        # Delete files until we're under the max size
         for file_id, info in items:
             file_path = os.path.join(self.cache_dir, f"{file_id}.webm")
 
-            # Try to delete the file
             if os.path.exists(file_path):
                 try:
                     os.remove(file_path)
                     total_size -= info.get('file_size', 0)
                     del self.metadata[file_id]
 
-                    # Check if we're now under the limit
                     if total_size <= max_size_bytes:
                         break
 
                 except PermissionError:
-                    # File is probably in use (playing), skip it
                     continue
                 except OSError as e:
                     print(f"Error deleting cache file {file_path}: {e}")
             else:
-                # File is missing, remove from metadata
                 del self.metadata[file_id]
 
         self._save_metadata()
@@ -188,28 +172,22 @@ class AudioCache:
     def clear_all(self):
         """
         Clear ALL cache files. Used when closing the application.
-        This is different from cleanup() which only removes old files to maintain size limits.
         """
         try:
-            # Get all files in the cache directory
             for filename in os.listdir(self.cache_dir):
                 file_path = os.path.join(self.cache_dir, filename)
                 
-                # Skip the metadata file
                 if filename == "metadata.json":
                     continue
                     
-                # Try to delete the file
                 try:
                     if os.path.isfile(file_path):
                         os.remove(file_path)
                 except PermissionError:
-                    # File is in use (possibly playing), skip it
                     continue
                 except OSError as e:
                     print(f"Error deleting cache file {file_path}: {e}")
             
-            # Clear metadata
             self.metadata = {}
             self._save_metadata()
             
