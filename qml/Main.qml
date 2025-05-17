@@ -36,7 +36,7 @@ ApplicationWindow {
         from: 0.0
         to: 1.0
         value: botBridge.audio_level
-        visible: root.songLoaded
+        visible: root.songLoaded && (BoxySettings.vumeterIndex === 1 || BoxySettings.vumeterIndex === 2)
     }
 
     Shortcut {
@@ -542,11 +542,11 @@ ApplicationWindow {
                         cache: true
                         layer.smooth: true
                         RectangularShadow {
-                            visible: thumbnailImage.processedUrl
+                            visible: thumbnailImage.processedUrl && (BoxySettings.vumeterIndex === 0 || BoxySettings.vumeterIndex === 2)
                             anchors.fill: parent
                             anchors.margins: -4
-                            blur: 32
-                            spread: 3
+                            blur: 24
+                            spread: 4
                             color: Material.accent
                             z: -1
                             opacity: botBridge.audio_level

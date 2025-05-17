@@ -259,6 +259,21 @@ ApplicationWindow {
                                 }
                             }
                         }
+
+                        RowLayout {
+                            Layout.fillWidth: true
+                            Label {
+                                text: "VUMeter"
+                                Layout.fillWidth: true
+                            }
+
+                            ComboBox {
+                                model: ["Art shadow", "TopBar", "Art shadow + TopBar", "None"]
+                                currentIndex: BoxySettings.vumeterIndex
+                                onActivated: BoxySettings.vumeterIndex = currentIndex
+                                Layout.preferredHeight: 35
+                            }
+                        }
                     }
                 }
                 Label {
@@ -281,7 +296,7 @@ ApplicationWindow {
                         spacing: 15
 
                         RowLayout {
-                            Layout.preferredHeight: 30
+                            Layout.preferredHeight: 35
                             spacing: 10
 
                             Label {
@@ -294,7 +309,7 @@ ApplicationWindow {
                         }
 
                         RowLayout {
-                            Layout.preferredHeight: 30
+                            Layout.preferredHeight: 35
                             spacing: 10
 
                             Label {
@@ -307,7 +322,7 @@ ApplicationWindow {
                         }
 
                         RowLayout {
-                            Layout.preferredHeight: 30
+                            Layout.preferredHeight: 35
                             spacing: 10
 
                             Label {
@@ -323,7 +338,7 @@ ApplicationWindow {
                                 stepSize: 100
                                 value: BoxySettings.maxCacheSize
                                 editable: true
-                                Layout.preferredHeight: 30
+                                Layout.preferredHeight: 35
 
                                 onValueModified: {
                                     BoxySettings.maxCacheSize = value
@@ -340,7 +355,7 @@ ApplicationWindow {
                         }
 
                         RowLayout {
-                            Layout.preferredHeight: 30
+                            Layout.preferredHeight: 35
                             spacing: 10
 
                             Label {
@@ -353,7 +368,7 @@ ApplicationWindow {
                                 from: 1
                                 to: 8
                                 stepSize: 1
-                                Layout.preferredHeight: 30
+                                Layout.preferredHeight: 35
                                 value: BoxySettings.maxParallelDownloads
                                 editable: true
 
@@ -372,7 +387,7 @@ ApplicationWindow {
                         }
 
                         RowLayout {
-                            Layout.preferredHeight: 30
+                            Layout.preferredHeight: 35
                             spacing: 10
 
                             Label {
@@ -447,6 +462,7 @@ ApplicationWindow {
                                 placeholderText: "Enter your Discord bot token"
                                 echoMode: TextInput.Password
                                 selectByMouse: true
+                                Layout.preferredHeight: 35
                             }
 
                             CustomRoundButton {
