@@ -1,10 +1,6 @@
 import QtQuick
-import QtQuick.Controls
 import QtQuick.Layouts
-import QtQuick.Window
-import Qt.labs.platform as Platform
 import QtQuick.Controls.Material
-import QtQuick.Templates as T
 
 ApplicationWindow {
     id: setupWindow
