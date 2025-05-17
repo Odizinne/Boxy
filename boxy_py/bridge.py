@@ -574,6 +574,9 @@ class BotBridge(QObject):
     def play_url(self, url):
         """Play audio from URL or search term"""
         async def play_wrapper():
+            self.stopTimerSignal.emit()
+            self.position = 0
+            self.duration = 0
             if not self._current_channel or not self._current_server:
                 default_user_id = self._settings.value("autoJoinUserId", "", type=str)
                 if default_user_id and self.find_and_join_user(default_user_id):
@@ -607,9 +610,6 @@ class BotBridge(QObject):
                     await asyncio.sleep(0.1)
             else:
                 self._changing_song = False
-
-            self.stopTimerSignal.emit()
-            self._position = 0
 
             was_repeat = self.repeat_mode
             self.repeat_mode = False
