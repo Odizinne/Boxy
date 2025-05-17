@@ -27,7 +27,7 @@ ApplicationWindow {
         return false
     }
 
-    CustomLevelMeter {
+    SmoothProgressBar {
         id: leftAudioLevelMeter
         anchors.left: parent.left
         anchors.top: parent.top
@@ -1121,7 +1121,7 @@ ApplicationWindow {
                     }
                 }
 
-                ProgressBar {
+                SmoothProgressBar {
                     id: downloadProgress
                     Layout.fillWidth: true
                     indeterminate: true
@@ -1131,7 +1131,7 @@ ApplicationWindow {
                              botBridge.placeholder_status !== "All items already cached"
                 }
 
-                ProgressBar {
+                SmoothProgressBar {
                     id: playlistDownloadProgress
                     Layout.fillWidth: true
                     visible: botBridge.placeholder_status === "Downloading playlist items..."
