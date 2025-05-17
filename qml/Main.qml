@@ -641,10 +641,11 @@ ApplicationWindow {
                         from: 0
                         to: botBridge.duration || 0
                         value: botBridge.position || 0
-                        enabled: root.songLoaded && !downloadProgress.visible
-
+                        enabled: root.songLoaded && !downloadProgress.visible && botBridge.seeking_enabled
                         onPressedChanged: {
-                            if (!pressed) {
+                            if (pressed) {
+                                botBridge.stopTimerSignal() 
+                            } else {
                                 botBridge.seek(value)
                             }
                         }

@@ -3,7 +3,6 @@ import os
 import concurrent.futures
 import json
 import discord
-import random
 from PySide6.QtCore import QObject, Signal, Slot, Property, QTimer, QBuffer, QIODevice, QSettings
 import yt_dlp
 from youtube_search import YoutubeSearch
@@ -48,6 +47,7 @@ class BotBridge(QObject):
     audioLevelChanged = Signal(float)
     startAudioLevelTimer = Signal()
     stopAudioLevelTimer = Signal()
+    seekingEnabledChanged = Signal(bool)
 
     def __init__(self, bot):
         super().__init__()
@@ -74,6 +74,7 @@ class BotBridge(QObject):
         self._bulk_current = 0
         self._bulk_total = 0
         self._audio_level = 0.0
+        self._seeking_enabled = True
 
         # Initialize basic properties
         self.bot = bot
@@ -138,6 +139,16 @@ class BotBridge(QObject):
         if self._bulk_total != value:
             self._bulk_total = value
             self.bulkTotalChanged.emit(value)
+
+    @Property(bool, notify=seekingEnabledChanged)
+    def seeking_enabled(self):
+        return self._seeking_enabled
+    
+    @seeking_enabled.setter
+    def seeking_enabled(self, value):
+        if self._seeking_enabled != value:
+            self._seeking_enabled = value
+            self.seekingEnabledChanged.emit(value)
 
     @Property(bool, notify=mediaSessionActiveChanged)
     def media_session_active(self):
@@ -474,38 +485,30 @@ class BotBridge(QObject):
 
     @Slot(float)
     def seek(self, position):
-        """Seek to position in current audio"""
         if self.bot.voice_client and (self.bot.voice_client.is_playing() or self.bot.voice_client.is_paused()):
+            self.seeking_enabled = False
             was_playing = self.bot.voice_client.is_playing()
             position_ms = int(position * 1000)
-            new_source = discord.FFmpegPCMAudio(self.current_audio_file, before_options=f"-ss {position_ms}ms")
-            volume_transformer = discord.PCMVolumeTransformer(new_source, volume=self._volume)
-            level_analyzer = AudioLevelSource(volume_transformer, self)
 
-            original_after = getattr(self.bot.voice_client, "_player", None)
-            if original_after:
-                original_after = original_after.after
+            if self._position_timer.isActive():
+                self.stopTimerSignal.emit()
 
-            def dummy_callback(error):
-                pass
-
-            if hasattr(self.bot.voice_client, "_player") and self.bot.voice_client._player:
-                self.bot.voice_client._player.after = dummy_callback
-
-            self.bot.voice_client.source = level_analyzer
-
-            if hasattr(self.bot.voice_client, "_player") and self.bot.voice_client._player:
-                if original_after:
-                    self.bot.voice_client._player.after = original_after
-                else:
-                    self.bot.voice_client._player.after = lambda e: self.on_playback_finished(
-                        e, self.current_audio_file
-                    )
+            source = discord.FFmpegPCMAudio(
+                self.current_audio_file,
+                before_options=f"-ss {position_ms}ms"
+            )
+            volume_transformer = discord.PCMVolumeTransformer(source, volume=self._volume)
+            self.bot.voice_client.source = volume_transformer
 
             self.position = position
 
-            if not was_playing:
+            if was_playing:
+                self.bot.voice_client.resume()
+                self.startTimerSignal.emit()
+            else:
                 self.bot.voice_client.pause()
+
+            self.seeking_enabled = True
 
     @Slot(str, result=bool)
     def find_and_join_user(self, user_id):
