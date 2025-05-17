@@ -11,6 +11,7 @@ ApplicationWindow {
     maximumWidth: lyt.implicitWidth + 30 + 16
     minimumHeight: 700
     maximumHeight: 700
+    transientParent: null
     Material.theme: BoxySettings.darkMode ? Material.Dark : Material.Light
     Material.accent: Colors.accentColor
     Material.primary: Colors.primaryColor
