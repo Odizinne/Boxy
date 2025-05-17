@@ -76,27 +76,21 @@ class BotBridge(QObject):
         self._audio_level = 0.0
         self._seeking_enabled = True
 
-        # Initialize basic properties
         self.bot = bot
         self.current_audio_file = None
         self.current_url = None
         self._changing_song = False
 
-        # Initialize the audio cache
         self.audio_cache = AudioCache()
-
-        # Cache settings
         self.max_cache_size_mb = self._settings.value("maxCacheSize", 1024, type=int)
 
         self._position_timer = QTimer(self)
         self._position_timer.setInterval(1000)
         self._position_timer.timeout.connect(self._update_position)
 
-        # Connect signals
         self.startTimerSignal.connect(self._position_timer.start)
         self.stopTimerSignal.connect(self._position_timer.stop)
 
-        # Create thread pool for YouTube operations
         self._yt_pool = concurrent.futures.ThreadPoolExecutor(max_workers=2, thread_name_prefix="yt_worker")
 
     def __del__(self):
@@ -109,14 +103,13 @@ class BotBridge(QObject):
         if not self.is_playing:
             self.audio_level = 0.0
 
-    # Property Definitions
     @Property(float, notify=audioLevelChanged)
     def audio_level(self):
         return self._audio_level
     
     @audio_level.setter
     def audio_level(self, value):
-        if abs(self._audio_level - value) > 0.02:  # Only update on noticeable changes
+        if abs(self._audio_level - value) > 0.02:  
             self._audio_level = value
             self.audioLevelChanged.emit(value)
 
@@ -424,7 +417,6 @@ class BotBridge(QObject):
             if filename:
                 with open(filename, "r", encoding="utf-8") as f:
                     playlist_data = json.load(f)
-                    # Update playlist items to ensure they have channelName field
                     for item in playlist_data:
                         if "channelName" not in item:
                             item["channelName"] = ""
@@ -498,7 +490,8 @@ class BotBridge(QObject):
                 before_options=f"-ss {position_ms}ms"
             )
             volume_transformer = discord.PCMVolumeTransformer(source, volume=self._volume)
-            self.bot.voice_client.source = volume_transformer
+            level_analyzer = AudioLevelSource(volume_transformer, self)
+            self.bot.voice_client.source = level_analyzer
 
             self.position = position
 
@@ -611,33 +604,27 @@ class BotBridge(QObject):
 
     async def _play_cached_file(self, audio_file, info, url):
         """Play a file that's already in the cache"""
-        # Update metadata
         song_name = info['title']
         channel_name = info['channel']
         self.duration = info['duration']
         self.channel_name = channel_name
         self.thumbnail_url = info['thumbnail']
 
-        # Update UI
         self.song_title = song_name
         self.placeholder_status = "Using cached file..."
 
-        # Store current file/URL
         self.current_audio_file = audio_file
         self.current_url = url
 
-        # Start playback
         await self._start_playback(audio_file)
 
     async def _download_and_play_file(self, url):
         """Download a file and add it to cache before playing"""
         try:
-            # Create a temporary directory for download
             import tempfile
             temp_dir = tempfile.mkdtemp()
             temp_file = os.path.join(temp_dir, "audio.webm")
 
-            # Configure downloader
             ydl_opts = {
                 "format": "bestaudio/best",
                 "outtmpl": temp_file,
@@ -649,28 +636,23 @@ class BotBridge(QObject):
 
             self.placeholder_status = "Extracting video info..."
 
-            # Run yt_dlp in thread pool to prevent blocking
             loop = asyncio.get_event_loop()
             info = await loop.run_in_executor(
                 self._yt_pool,
                 lambda: self._extract_video_info(url, ydl_opts)
             )
 
-            # Update metadata
             song_name = info["title"]
             channel_name = info.get("channel", "") or info.get("uploader", "")
             self.duration = info.get("duration", 0)
             self.channel_name = channel_name
             self.thumbnail_url = info.get("thumbnail") or info.get("thumbnails", [{}])[0].get("url", "")
 
-            # Update UI
             self.song_title = song_name
 
-            # Add to cache
             self.placeholder_status = "Caching audio file..."
             audio_file = self.audio_cache.add_file(url, temp_file, info)
 
-            # Clean up cache
             max_cache_size_mb = self._settings.value("maxCacheSize", 1024, type=int)
             self.audio_cache.cleanup(max_size_mb=max_cache_size_mb)
 
@@ -681,14 +663,11 @@ class BotBridge(QObject):
                 cache_info['cache_location']
             )
 
-            # Store current file/URL
             self.current_audio_file = audio_file
             self.current_url = url
 
-            # Start playback
             await self._start_playback(audio_file)
 
-            # Clean up temp directory
             import shutil
             shutil.rmtree(temp_dir, ignore_errors=True)
 
@@ -759,7 +738,7 @@ class BotBridge(QObject):
 
     def on_playback_finished(self, error, audio_file):
         """Called when playback finishes"""
-        self.stopAudioLevelTimer.emit()  # Stop the audio level timer
+        self.stopAudioLevelTimer.emit() 
 
         if hasattr(self, '_changing_song') and self._changing_song:
             return
@@ -787,8 +766,6 @@ class BotBridge(QObject):
             self.position = 0
             source = discord.FFmpegPCMAudio(audio_file)
             volume_transformer = discord.PCMVolumeTransformer(source, volume=self._volume)
-
-            # Wrap with our level analyzer
             level_analyzer = AudioLevelSource(volume_transformer, self)
 
             self.bot.voice_client.play(
@@ -823,7 +800,6 @@ class BotBridge(QObject):
             "channels": {}
         }
         if self.bot:
-            # Get all servers
             for guild in self.bot.guilds:
                 server_id = str(guild.id)
                 result["servers"].append({
@@ -831,7 +807,6 @@ class BotBridge(QObject):
                     "id": server_id
                 })
     
-                # Get channels for this server
                 channels = []
                 for channel in guild.voice_channels:
                     channels.append({
@@ -1004,10 +979,8 @@ class BotBridge(QObject):
     
         async def disconnect_wrapper():
             try:
-                # First stop any playback and wait for it to complete
                 await self._stop_playing_async()
     
-                # Now disconnect
                 if self.bot.voice_client:
                     await self.bot.voice_client.disconnect()
                     self.bot.voice_client = None
@@ -1160,9 +1133,8 @@ class BotBridge(QObject):
             str: Data URL containing the processed image
         """
         if not url or url.startswith("data:"):
-            return url  # Already a data URL or empty
+            return url  
     
-        # For remote URLs, download the image to a temporary file
         if url.startswith("http"):
             import tempfile
             import requests
@@ -1177,19 +1149,17 @@ class BotBridge(QObject):
                     tmp_path = tmp.name
     
                 processed = create_rounded_thumbnail(tmp_path, size, corner_radius)
-                os.unlink(tmp_path)  # Delete temp file
+                os.unlink(tmp_path) 
     
             except Exception as e:
                 print(f"Error downloading image: {e}")
                 return ""
         else:
-            # Local file
             processed = create_rounded_thumbnail(url, size, corner_radius)
     
         if processed is None:
             return ""
     
-        # Convert to data URL
         buffer = QBuffer()
         buffer.open(QIODevice.WriteOnly)
         processed.save(buffer, "PNG")
