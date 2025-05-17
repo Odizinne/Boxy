@@ -541,7 +541,7 @@ ApplicationWindow {
                         Pane {
                             visible: thumbnailImage.processedUrl
                             Material.background: "transparent"
-                            Material.elevation: 6
+                            Material.elevation: 9
                             anchors.fill: parent
                             z: -1
                         }
