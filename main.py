@@ -91,12 +91,14 @@ def start_main_app(app, engine, token):
                 bridge._valid_token_format = False
                 app.quit()
                 return
-            
+
             bot_started = True
-            bot.run(token)
+            bridge.status = "Connecting..."
+            bot.run(token, reconnect=True)
+
         except Exception as e:
             print(f"Bot error: {e}")
-            app.quit()
+            bridge.status = "Connection Error"
     
     bot_thread = threading.Thread(target=bot_runner, daemon=True)
     bot_thread.start()

@@ -57,7 +57,7 @@ class BotBridge(QObject):
         super().__init__()
         self._settings = QSettings("Odizinne", "Boxy")
         self._media_session_active = False
-        self._status = "Disconnected"
+        self._status = "Connecting..."
         self._is_playing = False
         self._song_title = ""
         self._placeholder_status = ""
