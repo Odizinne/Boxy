@@ -11,55 +11,7 @@ from youtube_search import YoutubeSearch
 from boxy_py.utils import get_first_video_url, create_rounded_thumbnail
 import boxy_py.config as config
 from boxy_py.audio_cache import AudioCache
-
-class AudioLevelSource(discord.AudioSource):
-    def __init__(self, original_source, bridge):
-        self.original = original_source
-        self.bridge = bridge
-        self.last_update_time = 0
-        self.update_interval = 0.05  # 50ms between updates
-        
-    def read(self):
-        data = self.original.read()
-        
-        if data:
-            # Only update the level meter at certain intervals
-            import time
-            current_time = time.time()
-            if current_time - self.last_update_time >= self.update_interval:
-                # Calculate audio level (RMS - root mean square)
-                # This gives a good approximation of perceived loudness
-                if len(data) >= 2:
-                    import audioop
-                    rms = audioop.rms(data, 2)  # 2 bytes per sample (16-bit audio)
-                    # Convert to a 0-1 scale
-                    max_rms = 32768  # Max value for 16-bit audio
-                    level = min(1.0, rms / (max_rms * 0.5))  # Scale to make more sensitive
-                    
-                    # Update the bridge with the new level
-                    self.bridge.audio_level = level
-                    self.last_update_time = current_time
-        
-        return data
-
-    # Make sure volume property is passed through
-    @property
-    def volume(self):
-        return getattr(self.original, 'volume', 1.0)
-        
-    @volume.setter
-    def volume(self, value):
-        if hasattr(self.original, 'volume'):
-            self.original.volume = value
-        
-    # Make sure the source can be used for voice playback
-    def is_opus(self):
-        return getattr(self.original, 'is_opus', lambda: False)()
-        
-    # Forward cleanup method if it exists
-    def cleanup(self):
-        if hasattr(self.original, 'cleanup'):
-            self.original.cleanup()
+from boxy_py.audio_level_source import AudioLevelSource
 
 class BotBridge(QObject):
     statusChanged = Signal(str)
@@ -370,10 +322,8 @@ class BotBridge(QObject):
         if 0.0 <= value <= 1.0 and self._volume != value:
             self._volume = value
             if self.bot.voice_client and self.bot.voice_client.source:
-                # Check if this is our AudioLevelSource
                 if hasattr(self.bot.voice_client.source, 'original') and hasattr(self.bot.voice_client.source.original, 'volume'):
                     self.bot.voice_client.source.original.volume = value
-                # Or direct volume control
                 elif hasattr(self.bot.voice_client.source, 'volume'):
                     self.bot.voice_client.source.volume = value
             self.volumeChanged.emit(value)
@@ -530,8 +480,6 @@ class BotBridge(QObject):
             position_ms = int(position * 1000)
             new_source = discord.FFmpegPCMAudio(self.current_audio_file, before_options=f"-ss {position_ms}ms")
             volume_transformer = discord.PCMVolumeTransformer(new_source, volume=self._volume)
-
-            # Wrap with our level analyzer
             level_analyzer = AudioLevelSource(volume_transformer, self)
 
             original_after = getattr(self.bot.voice_client, "_player", None)
@@ -753,8 +701,6 @@ class BotBridge(QObject):
                     self.position = 0
                     source = discord.FFmpegPCMAudio(audio_file)
                     volume_transformer = discord.PCMVolumeTransformer(source, volume=self._volume)
-
-                    # Wrap with our level analyzer
                     level_analyzer = AudioLevelSource(volume_transformer, self)
 
                     self.bot.voice_client.play(
@@ -762,7 +708,7 @@ class BotBridge(QObject):
                         after=lambda e: self.on_playback_finished(e, audio_file)
                     )
                     self.is_playing = True
-                    self.startAudioLevelTimer.emit()  # We'll still use the timer to maintain UI updates
+                    self.startAudioLevelTimer.emit()  
                     self.placeholder_status = ""
 
                     await asyncio.sleep(0.2)
@@ -847,13 +793,13 @@ class BotBridge(QObject):
                 after=lambda e: self.on_playback_finished(e, audio_file)
             )
             self.is_playing = True
-            self.startAudioLevelTimer.emit()  # Start the audio level timer
+            self.startAudioLevelTimer.emit() 
             self.startTimerSignal.emit()
             self.song_loaded = True
 
     async def cleanup(self):
         """Clean up resources when application exits"""
-        self.stopAudioLevelTimer.emit()  # Stop the audio level timer
+        self.stopAudioLevelTimer.emit() 
         if self.bot.voice_client:
             await self.bot.voice_client.disconnect()
             self.bot.voice_client = None
