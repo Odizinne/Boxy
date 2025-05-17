@@ -27,6 +27,16 @@ ApplicationWindow {
         return false
     }
 
+    CustomLevelMeter {
+        id: leftAudioLevelMeter
+        anchors.left: parent.left
+        anchors.top: parent.top
+        anchors.right: parent.right
+        from: 0.0
+        to: 1.0
+        value: botBridge.audio_level
+    }
+
     Shortcut {
         sequence: "Ctrl+N"
         enabled: root.connectedToAPI && playlistModel.count > 0 && !root.isResolvingAny
