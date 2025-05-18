@@ -515,20 +515,26 @@ class BotBridge(QObject):
     @Slot()
     def toggle_playback(self):
         """Toggle play/pause state"""
+        asyncio.run_coroutine_threadsafe(self._toggle_playback_async(), self.bot.loop)
+
+    async def _toggle_playback_async(self):
+        """Async version of toggle_playback that can be awaited"""
         if not self.bot.voice_client:
             return
 
-        if self.bot.voice_client.is_playing():
-            self.bot.voice_client.pause()
-            self.is_playing = False
-            self.stopAudioLevelTimer.emit()
-            self.stopTimerSignal.emit()
-            self.audio_level = 0
-        elif self.bot.voice_client.is_paused():
+        should_be_playing = not (self.bot.voice_client.is_playing())
+
+        if should_be_playing and self.bot.voice_client.is_paused():
             self.bot.voice_client.resume()
             self.is_playing = True
             self.startAudioLevelTimer.emit()
             self.startTimerSignal.emit()
+        elif not should_be_playing and self.bot.voice_client.is_playing():
+            self.bot.voice_client.pause()
+            self.is_playing = False
+            self.stopAudioLevelTimer.emit() 
+            self.stopTimerSignal.emit()
+            self.audio_level = 0
 
     @Slot(bool)
     def set_repeat_mode(self, enabled):
