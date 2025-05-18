@@ -14,5 +14,5 @@ Settings {
     property double volume: 0.8
     property string autoJoinUserId: ""
     property int accentColorIndex: 5
-    property int vumeterIndex: 0
+    property bool vuMeter: true
 }

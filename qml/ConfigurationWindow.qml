@@ -191,6 +191,20 @@ ApplicationWindow {
                                 Layout.rightMargin: -10
                             }
                         }
+                        
+                        RowLayout {
+                            Layout.fillWidth: true
+                            Label {
+                                text: "VUMeter"
+                                Layout.fillWidth: true
+                            }
+
+                            Switch {
+                                checked: BoxySettings.vuMeter
+                                onClicked: BoxySettings.vuMeter = checked
+                                Layout.rightMargin: -10
+                            }
+                        }
 
                         RowLayout {
                             Layout.fillWidth: true
@@ -258,21 +272,6 @@ ApplicationWindow {
                                         }
                                     }
                                 }
-                            }
-                        }
-
-                        RowLayout {
-                            Layout.fillWidth: true
-                            Label {
-                                text: "VUMeter"
-                                Layout.fillWidth: true
-                            }
-
-                            ComboBox {
-                                model: ["Art shadow", "TopBar", "Art shadow + TopBar", "None"]
-                                currentIndex: BoxySettings.vumeterIndex
-                                onActivated: BoxySettings.vumeterIndex = currentIndex
-                                Layout.preferredHeight: 35
                             }
                         }
                     }

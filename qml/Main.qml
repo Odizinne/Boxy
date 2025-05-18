@@ -29,16 +29,30 @@ ApplicationWindow {
     }
 
     SmoothProgressBar {
-        id: leftAudioLevelMeter
         anchors.left: parent.left
         anchors.top: parent.top
         anchors.right: parent.right
-        from: 0.0
-        to: 1.0
-        value: botBridge.audio_level
-        visible: root.songLoaded && (BoxySettings.vumeterIndex === 1 || BoxySettings.vumeterIndex === 2)
+        id: downloadProgress
+        Layout.fillWidth: true
+        indeterminate: botBridge.resolving
+        visible: botBridge.resolving || botBridge.downloading
+        from: 0
+        to: botBridge.download_progress_total
+        value: botBridge.download_progress
     }
 
+    SmoothProgressBar {
+        anchors.left: parent.left
+        anchors.top: parent.top
+        anchors.right: parent.right
+        id: playlistDownloadProgress
+        Layout.fillWidth: true
+        visible: botBridge.bulk_current !== botBridge.bulk_total
+        from: 0
+        to: botBridge.bulk_total
+        value: botBridge.bulk_current
+    }
+                
     Shortcut {
         sequence: "Ctrl+N"
         enabled: root.connectedToAPI && playlistModel.count > 0 && !root.isResolvingAny
@@ -501,7 +515,6 @@ ApplicationWindow {
                         spacing: 10
 
                         Label {
-                            id: songLabel
                             text: botBridge.song_title || "No song playing"
                             Layout.fillWidth: true
                             Layout.preferredWidth: parent.width * 0.85
@@ -514,7 +527,6 @@ ApplicationWindow {
                         }
 
                         Label {
-                            id: channelLabel
                             text: botBridge.channel_name || ""
                             Layout.fillWidth: true
                             Layout.preferredWidth: parent.width * 0.85
@@ -542,14 +554,15 @@ ApplicationWindow {
                         cache: true
                         layer.smooth: true
                         RectangularShadow {
-                            visible: thumbnailImage.processedUrl && (BoxySettings.vumeterIndex === 0 || BoxySettings.vumeterIndex === 2)
+                            visible: thumbnailImage.processedUrl
                             anchors.fill: parent
-                            anchors.margins: -4
+                            anchors.margins: BoxySettings.vuMeter ? -4 : 0
                             blur: 24
                             spread: 4
-                            color: Material.accent
+                            color: BoxySettings.vuMeter ? Material.accent : "black"
                             z: -1
-                            opacity: botBridge.audio_level
+                            opacity: BoxySettings.vuMeter ? botBridge.audio_level : 0.3
+                            offset: Qt.vector2d(0.0, 0.0)
                             radius: 0
                             Behavior on opacity {
                                 NumberAnimation {
@@ -557,7 +570,6 @@ ApplicationWindow {
                                     easing.type: Easing.OutQuad
                                 }
                             }
-                            offset: Qt.vector2d(0.0, 0.0)
                         }
                     }
                 }
@@ -1058,25 +1070,6 @@ ApplicationWindow {
                             }
                         }
                     }
-                }
-
-                SmoothProgressBar {
-                    id: downloadProgress
-                    Layout.fillWidth: true
-                    indeterminate: botBridge.resolving
-                    visible: botBridge.resolving || botBridge.downloading
-                    from: 0
-                    to: botBridge.download_progress_total
-                    value: botBridge.download_progress
-                }
-
-                SmoothProgressBar {
-                    id: playlistDownloadProgress
-                    Layout.fillWidth: true
-                    visible: botBridge.bulk_current !== botBridge.bulk_total
-                    from: 0
-                    to: botBridge.bulk_total
-                    value: botBridge.bulk_current
                 }
 
                 RowLayout {

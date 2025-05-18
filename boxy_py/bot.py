@@ -23,7 +23,6 @@ class BoxyBot(commands.Bot):
             self.bridge.status = "Connected"
             self.bridge._voice_connected = False
             self.bridge.voiceConnectedChanged.emit(False)
-            #await asyncio.sleep(0.5)
             self.bridge.update_servers()
 
     async def on_voice_state_update(self, member, before, after):
