@@ -1170,5 +1170,12 @@ ApplicationWindow {
     ConfigurationWindow {
         id: configurationWindow
         visible: false
+        function show() {
+            if (!visible) {
+                x = root.x + 50
+                y = root.y + 50
+                visible = true
+            }
+        }
     }
 }
