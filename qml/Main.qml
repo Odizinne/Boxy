@@ -28,6 +28,12 @@ ApplicationWindow {
         return false
     }
 
+    onVisibleChanged: {
+        if (!visible) {
+            Qt.quit()
+        }
+    }
+
     SmoothProgressBar {
         anchors.left: parent.left
         anchors.top: parent.top
@@ -39,6 +45,12 @@ ApplicationWindow {
         from: 0
         to: botBridge.download_progress_total
         value: botBridge.download_progress
+        onVisibleChanged: {
+            if (!visible) {
+                botBridge.download_progress = 0
+                botBridge.download_progress_total = 1
+            }
+        }
     }
 
     SmoothProgressBar {
@@ -47,10 +59,16 @@ ApplicationWindow {
         anchors.right: parent.right
         id: playlistDownloadProgress
         Layout.fillWidth: true
-        visible: botBridge.bulk_current !== botBridge.bulk_total
+        visible: botBridge.bulk_downloading
         from: 0
         to: botBridge.bulk_total
         value: botBridge.bulk_current
+        onVisibleChanged: {
+            if (!visible) {
+                botBridge.bulk_current = 0
+                botBridge.bulk_total = 0
+            }
+        }
     }
                 
     Shortcut {

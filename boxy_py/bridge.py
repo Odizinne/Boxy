@@ -52,6 +52,7 @@ class BotBridge(QObject):
     downloadingChanged = Signal(bool)
     downloadProgressChanged = Signal(float)
     downloadProgressTotalChanged = Signal(float)
+    bulkDownloadingChanged = Signal(bool)
 
     def __init__(self, bot):
         super().__init__()
@@ -83,6 +84,7 @@ class BotBridge(QObject):
         self._downloading = False
         self._download_progress = 0.0
         self._download_progress_total = 1.0
+        self._bulk_downloading = False
 
         self.bot = bot
         self.current_audio_file = None
@@ -170,6 +172,16 @@ class BotBridge(QObject):
         if self._seeking_enabled != value:
             self._seeking_enabled = value
             self.seekingEnabledChanged.emit(value)
+
+    @Property(bool, notify=bulkDownloadingChanged)
+    def bulk_downloading(self):
+        return self._bulk_downloading
+    
+    @bulk_downloading.setter
+    def bulk_downloading(self, value):
+        if self._bulk_downloading != value:
+            self._bulk_downloading = value
+            self.bulkDownloadingChanged.emit(value)
 
     @Property(bool, notify=resolvingChanged)
     def resolving(self):
@@ -785,8 +797,6 @@ class BotBridge(QObject):
                 self.download_progress = 0.0
                 self.download_progress_total = 1.0
         elif d["status"] == "finished":
-            self.download_progress = 0.0
-            self.download_progress_total = 1.0
             self.placeholder_status = "Download complete, processing..."
 
     def on_playback_finished(self, error, audio_file):
@@ -1088,6 +1098,7 @@ class BotBridge(QObject):
     def download_all_playlist_items(self, urls):
         """Download all playlist items to cache with parallel processing based on user settings"""
         async def downloader():
+            self.bulk_downloading = True
             cached_count = 0
             non_cached_urls = []
             for i, url in enumerate(urls):
@@ -1164,10 +1175,8 @@ class BotBridge(QObject):
                 download_tasks.append(download_item(url_index, url))
     
             await asyncio.gather(*download_tasks)
-    
             self.placeholder_status = "Download complete!"
-            self.bulk_current = 0
-            self.bulk_total = 0
+            self.bulk_downloading = False
     
         asyncio.run_coroutine_threadsafe(downloader(), self.bot.loop)
     
