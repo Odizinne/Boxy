@@ -33,7 +33,44 @@ ApplicationWindow {
             Qt.quit()
         }
     }
-
+    
+    //ColumnLayout {
+    //    z: 10
+    //    RowLayout {
+    //    Slider {
+    //        from: 0
+    //        to: 64
+    //        value: artShadow.blur
+    //        onValueChanged: artShadow.blur = value
+    //    }
+    //    Label {
+    //        text: artShadow.blur
+    //    }
+    //    }
+    //    RowLayout {
+    //    Slider {
+    //        from: 0
+    //        to: 64
+    //        value: artShadow.spread
+    //        onValueChanged: artShadow.spread = value
+    //    }
+    //    Label {
+    //        text: artShadow.spread
+    //    }
+    //    }
+    //            RowLayout {
+    //    Slider {
+    //        from: 0
+    //        to: 64
+    //        value: artShadow.radius
+    //        onValueChanged: artShadow.radius = value
+    //    }
+    //    Label {
+    //        text: artShadow.radius
+    //    }
+    //    }
+    //}
+//
     SmoothProgressBar {
         anchors.left: parent.left
         anchors.top: parent.top
@@ -572,16 +609,15 @@ ApplicationWindow {
                         cache: true
                         layer.smooth: true
                         RectangularShadow {
+                            id: artShadow
                             visible: thumbnailImage.processedUrl
                             anchors.fill: parent
-                            anchors.margins: BoxySettings.vuMeter ? -4 : 0
-                            blur: 24
-                            spread: 4
+                            anchors.margins: BoxySettings.vuMeter ? 4 : 0
+                            blur: 32
+                            spread: 2
                             color: BoxySettings.vuMeter ? Material.accent : "black"
                             z: -1
                             opacity: BoxySettings.vuMeter ? botBridge.audio_level : 0.3
-                            offset: Qt.vector2d(0.0, 0.0)
-                            radius: 0
                             Behavior on opacity {
                                 NumberAnimation {
                                     duration: 300
