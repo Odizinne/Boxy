@@ -34,43 +34,6 @@ ApplicationWindow {
         }
     }
     
-    //ColumnLayout {
-    //    z: 10
-    //    RowLayout {
-    //    Slider {
-    //        from: 0
-    //        to: 64
-    //        value: artShadow.blur
-    //        onValueChanged: artShadow.blur = value
-    //    }
-    //    Label {
-    //        text: artShadow.blur
-    //    }
-    //    }
-    //    RowLayout {
-    //    Slider {
-    //        from: 0
-    //        to: 64
-    //        value: artShadow.spread
-    //        onValueChanged: artShadow.spread = value
-    //    }
-    //    Label {
-    //        text: artShadow.spread
-    //    }
-    //    }
-    //            RowLayout {
-    //    Slider {
-    //        from: 0
-    //        to: 64
-    //        value: artShadow.radius
-    //        onValueChanged: artShadow.radius = value
-    //    }
-    //    Label {
-    //        text: artShadow.radius
-    //    }
-    //    }
-    //}
-//
     SmoothProgressBar {
         anchors.left: parent.left
         anchors.top: parent.top
