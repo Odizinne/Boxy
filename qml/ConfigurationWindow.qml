@@ -97,7 +97,7 @@ ApplicationWindow {
         Item {
             id: container
             width: lyt.implicitWidth + 30
-            height: lyt.implicitHeight + 30
+            height: lyt.implicitHeight + 60
             anchors.fill: parent
 
             ColumnLayout {
