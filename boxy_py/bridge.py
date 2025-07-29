@@ -1117,6 +1117,7 @@ class BotBridge(QObject):
     
             if non_cached_total == 0:
                 self.placeholder_status = "All items already cached"
+                self.bulk_downloading = False
                 return
     
             self.bulk_current = 0
