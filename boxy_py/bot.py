@@ -78,12 +78,11 @@ class BoxyBot(commands.Bot):
                 self._reconnect_attempts += 1
                 await asyncio.sleep(5)
                 
-                if not self.is_closed():
+                if not self.is_closed() and self.is_ready():
                     self._disconnected = False
+                    if self.bridge:
+                        self.bridge.status = "Connected"  
                     return
                     
             except Exception as e:
                 print(f"Reconnection attempt failed: {e}")
-                
-        if self._reconnect_attempts >= self._max_reconnect_attempts and self.bridge:
-            self.bridge.status = "Connection failed"
