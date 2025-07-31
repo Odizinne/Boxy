@@ -4,6 +4,9 @@ $boxyExtractPath = "$env:LOCALAPPDATA\Programs\Boxy-main"  # Correct path for Bo
 $pythonInstaller = "python-3.13.3-amd64.exe"
 $pythonVersion = "3.13.3"
 $pythonPath = "$env:LOCALAPPDATA\Programs\Python\Python313\python.exe"
+$venvPath = "$boxyExtractPath\venv"
+$venvPythonPath = "$venvPath\Scripts\python.exe"
+$venvPythonwPath = "$venvPath\Scripts\pythonw.exe"
 $desktopShortcutName = "Boxy.lnk"
 $desktopPath = [System.Environment]::GetFolderPath("Desktop")
 $shortcutPath = Join-Path -Path $desktopPath -ChildPath $desktopShortcutName
@@ -69,10 +72,18 @@ if ($python) {
     }
 }
 
+# Create virtual environment if it doesn't exist
+if (-not (Test-Path $venvPath)) {
+    Write-Host "Creating virtual environment..."
+    & $pythonPath -m venv $venvPath
+} else {
+    Write-Host "Virtual environment already exists at $venvPath"
+}
+
 # Install dependencies if requirements.txt exists
 if (Test-Path "$boxyExtractPath\requirements.txt") {
-    Write-Host "Installing dependencies from requirements.txt..."
-    & $pythonPath -m pip install -r "$boxyExtractPath\requirements.txt"
+    Write-Host "Installing dependencies from requirements.txt into virtual environment..."
+    & $venvPythonPath -m pip install -r "$boxyExtractPath\requirements.txt"
 } else {
     Write-Warning "requirements.txt not found. Skipping dependency install."
 }
@@ -86,36 +97,33 @@ Write-Host "Creating desktop shortcut..."
 $wshShell = New-Object -ComObject WScript.Shell
 $shortcut = $wshShell.CreateShortcut($shortcutPath)
 
-# Set the target of the shortcut
-$shortcut.TargetPath = $pythonPath
+# Set the target of the shortcut to use venv Python
+$shortcut.TargetPath = $venvPythonPath
 $shortcut.Arguments = "`"$currentDir\main.py`""
 $shortcut.WorkingDirectory = $currentDir.Path  # Set working directory to current location
-$shortcut.IconLocation = "$pythonPath,0" # Optional: set Python icon for the shortcut
+$shortcut.IconLocation = "$venvPythonPath,0" # Optional: set Python icon for the shortcut
 $shortcut.Save()
 
 # Create a second desktop shortcut for running without a console
-$pythonwPath = "$env:LOCALAPPDATA\Programs\Python\Python313\pythonw.exe"
 $shortcutNameNoConsole = "Boxy (No console).lnk"
 $shortcutPathNoConsole = Join-Path -Path $desktopPath -ChildPath $shortcutNameNoConsole
 
 Write-Host "Creating 'Boxy (No console)' desktop shortcut..."
 
 $shortcutNoConsole = $wshShell.CreateShortcut($shortcutPathNoConsole)
-$shortcutNoConsole.TargetPath = $pythonwPath
+$shortcutNoConsole.TargetPath = $venvPythonwPath
 $shortcutNoConsole.Arguments = "`"$currentDir\main.py`""
 $shortcutNoConsole.WorkingDirectory = $currentDir.Path
-$shortcutNoConsole.IconLocation = "$pythonwPath,0"
+$shortcutNoConsole.IconLocation = "$venvPythonwPath,0"
 $shortcutNoConsole.Save()
 
 Write-Host "Desktop shortcuts created successfully at $shortcutPath"
 
-
-# Run boxy with visible console (normal python) after prompt
+# Run boxy with visible console (using venv python) after prompt
 if (Test-Path "$boxyExtractPath\main.py") {
     Write-Host "Launching Boxy in console mode..."
-    Start-Process -FilePath $pythonPath -ArgumentList "$currentDir\main.py" -WindowStyle Normal
+    Start-Process -FilePath $venvPythonPath -ArgumentList "$currentDir\main.py" -WindowStyle Normal
     Write-Host "You can safely close this window."
 } else {
     Write-Warning "Could not find main.py in the current directory."
 }
-
