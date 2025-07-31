@@ -1042,12 +1042,13 @@ ApplicationWindow {
                                     spacing: 2
 
                                     Label {
-                                        text: model.resolvedTitle || model.userTyped
+                                        text: (model.resolvedTitle && model.resolvedTitle.startsWith("Mix - ") ? 
+                                               model.resolvedTitle.substring(6) : model.resolvedTitle) || model.userTyped
                                         font.bold: model.resolvedTitle ? true : false
                                         Layout.fillWidth: true
                                         elide: Text.ElideRight
                                     }
-
+                                    
                                     Label {
                                         text: model.channelName
                                         visible: model.channelName ? true : false
