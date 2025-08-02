@@ -7,17 +7,11 @@ class BoxyBot(commands.Bot):
         super().__init__(*args, **kwargs)
         self.voice_client = None
         self.bridge = None
-        self._last_failed_reconnect = 0
-        self._reconnect_attempts = 0
-        self._max_reconnect_attempts = 10
-        self._reconnect_delay = 5  
         self._reconnect_task = None
-        self._disconnected = False
+        self._is_manually_disconnected = False
 
     async def on_ready(self):
-        self._reconnect_attempts = 0
-        self._reconnect_delay = 5
-        self._disconnected = False
+        self._is_manually_disconnected = False
         await self.bridge.update_rich_presence()
         if self.bridge:
             self.bridge.status = "Connected"
@@ -51,38 +45,51 @@ class BoxyBot(commands.Bot):
             self.voice_client = None
 
     async def on_disconnect(self):
-        if self._disconnected:
+        if self._is_manually_disconnected:
             return
             
-        self._disconnected = True
-        
         if self.bridge:
             self.bridge.status = "Disconnected"
         
-        if not self._reconnect_task or self._reconnect_task.done():
-            self._reconnect_task = asyncio.create_task(self._attempt_reconnect())
+        # Cancel any existing reconnect task
+        if self._reconnect_task and not self._reconnect_task.done():
+            self._reconnect_task.cancel()
             
-    async def _attempt_reconnect(self):
-        while self._disconnected and self._reconnect_attempts < self._max_reconnect_attempts:
-            current_delay = min(self._reconnect_delay * (2 ** min(self._reconnect_attempts, 3)), 60)
+        # Start monitoring for reconnection
+        self._reconnect_task = asyncio.create_task(self._monitor_reconnection())
             
-            if self.bridge:
-                self.bridge.status = f"Connecting... (Attempt {self._reconnect_attempts + 1})"
+    async def _monitor_reconnection(self):
+        """Monitor for reconnection and update status accordingly"""
+        try:
+            # Wait a bit to see if we reconnect automatically
+            await asyncio.sleep(2)
             
-            await asyncio.sleep(current_delay)
-            
-            try:
-                if self.bridge:
-                    self.bridge.status = "Connecting..."
+            # If we're still disconnected after a short wait, show connecting status
+            if not self.is_ready() and self.bridge and not self._is_manually_disconnected:
+                self.bridge.status = "Connecting..."
                 
-                self._reconnect_attempts += 1
-                await asyncio.sleep(5)
-                
-                if not self.is_closed() and self.is_ready():
-                    self._disconnected = False
+            # Wait for reconnection or timeout
+            reconnect_timeout = 30  # 30 seconds timeout
+            start_time = asyncio.get_event_loop().time()
+            
+            while not self.is_ready() and not self._is_manually_disconnected:
+                current_time = asyncio.get_event_loop().time()
+                if current_time - start_time > reconnect_timeout:
                     if self.bridge:
-                        self.bridge.status = "Connected"  
-                    return
+                        self.bridge.status = "Connection failed"
+                    break
                     
-            except Exception as e:
-                print(f"Reconnection attempt failed: {e}")
+                await asyncio.sleep(1)
+                
+        except asyncio.CancelledError:
+            # Task was cancelled, which is fine
+            pass
+        except Exception as e:
+            print(f"Error in reconnection monitor: {e}")
+
+    async def close(self):
+        """Override close to mark as manually disconnected"""
+        self._is_manually_disconnected = True
+        if self._reconnect_task and not self._reconnect_task.done():
+            self._reconnect_task.cancel()
+        await super().close()
